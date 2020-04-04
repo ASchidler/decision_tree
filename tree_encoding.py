@@ -139,27 +139,29 @@ class TreeEncoding(base_encoding.BaseEncoding):
             self.add_clause(-self.d1[r][1])
 
         # Discriminating features
-        for j in range(2, num_nodes + 1):
+        for j in range(2, num_nodes + 1, 2):
             for r in range(1, instance.num_features + 1):
                 for direction in [False, True]:
-                    jpath = self.d1[r][j] if direction else self.d0[r][j]
-                    clause = [-jpath]
-
+                    jpathl = self.d1[r][j] if direction else self.d0[r][j]
+                    jpathr = self.d1[r][j+1] if direction else self.d0[r][j+1]
                     for i in TreeEncoding.pr(j):
                         ipath = self.d1[r][i] if direction else self.d0[r][i]
 
-                        # If discriminated at the parent, also discriminated at the child
-                        v1 = self.add_auxiliary(self.p[j][i], ipath)
-                        clause.append(v1)
-                        self.add_clause(-v1, jpath)
+                        # Children inherit from the parent
+                        self.add_clause(-self.left[i][j], -ipath, jpathl)
+                        self.add_clause(-self.right[i][j+1], -ipath, jpathr)
 
-                        if (j % 2 == 0 and direction) or (j % 2 == 1 and not direction):
-                            chld = self.left[i][j] if j % 2 == 0 else self.right[i][j]
-                            v2 = self.add_auxiliary(chld, self.a[r][i])
-                            clause.append(v2)
-                            self.add_clause(-v2, jpath)
-
-                    self.add_clause(*clause)
+                        if direction:
+                            # The current node discriminates
+                            self.add_clause(-self.left[i][j], -self.a[r][i], jpathl)
+                            # Other side of the implication
+                            self.add_clause(-jpathl, -self.left[i][j], ipath, self.a[r][i])
+                            self.add_clause(-jpathr, -self.right[i][j+1], ipath)
+                        else:
+                            self.add_clause(-self.right[i][j+1], -self.a[r][i], jpathr)
+                            # Other side of the implication
+                            self.add_clause(-jpathl, -self.left[i][j], ipath)
+                            self.add_clause(-jpathr, -self.right[i][j + 1], ipath, self.a[r][i])
 
     def encode_feature(self, instance, num_nodes):
         # Feature assignment
@@ -175,6 +177,7 @@ class TreeEncoding(base_encoding.BaseEncoding):
                     v1 = self.add_auxiliary(self.u[r][i], self.p[j][i])
                     clause.append(v1)
                     self.add_clause(-self.a[r][j], self.u[r][j])
+                    #self.add_clause(-self.u[r][i], -self.p[j][i], self.u[r][j])
                     self.add_clause(-v1, self.u[r][j])
                 self.add_clause(*clause)
 
@@ -195,10 +198,13 @@ class TreeEncoding(base_encoding.BaseEncoding):
     def encode_examples(self, instance, num_nodes):
         for e in instance.examples:
             for j in range(1, num_nodes + 1):
+                # If the class of the leaf differs from the class of the example, at least one
+                # node on the way must discriminate against the example, otherwise the example
+                # could be classified wrong
                 clause = [-self.v[j]]
                 clause.append(self.c[j] if e.cls else -self.c[j])
                 for r in range(1, instance.num_features):
-                    clause.append(self.d1[r][j] if e.features[r] else self.d0[r][j])
+                    clause.append(self.d0[r][j] if e.features[r] else self.d1[r][j])
                 self.add_clause(*clause)
 
     def encode(self, instance, num_nodes):
