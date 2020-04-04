@@ -1,15 +1,17 @@
 class DecisionTreeNode:
-    def __init__(self, feature):
+    def __init__(self, feature, id):
         self.is_leaf = False
         self.feature = feature
         self.left = None
         self.right = None
+        self.id = id
 
 
 class DecisionTreeLeaf:
-    def __init__(self, cls):
+    def __init__(self, cls, id):
         self.is_leaf = True
         self.cls = cls
+        self.id = id
 
 
 class DecisionTree:
@@ -34,7 +36,7 @@ class DecisionTree:
     def set_root(self, feature):
         if self.root is not None:
             print("Root already set")
-        self.root = DecisionTreeNode(feature)
+        self.root = DecisionTreeNode(feature, 1)
         self.nodes[1] = self.root
 
     def _add_node(self, id, parent, polarity, node):
@@ -59,10 +61,10 @@ class DecisionTree:
             self.nodes[parent].right = node
 
     def add_node(self, id, parent, feature, polarity):
-        self._add_node(id, parent, polarity, DecisionTreeNode(feature))
+        self._add_node(id, parent, polarity, DecisionTreeNode(feature, id))
 
     def add_leaf(self, id, parent, polarity, cls):
-        self._add_node(id, parent, polarity, DecisionTreeLeaf(cls))
+        self._add_node(id, parent, polarity, DecisionTreeLeaf(cls, id))
 
     def decide(self, features):
         cnode = self.root

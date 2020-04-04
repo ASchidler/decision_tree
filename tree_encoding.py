@@ -174,9 +174,10 @@ class TreeEncoding(base_encoding.BaseEncoding):
 
                     # Using the feature sets u in rest of sub-tree
                     self.add_clause(-self.a[r][j], self.u[r][j])
-                    # Inheritance of u
+                    # Inheritance of u from parent to child
                     self.add_clause(-self.u[r][i], -self.p[j][i], self.u[r][j])
-                    self.add_clause(-self.u[r][j], self.a[r][j], -self.p[j][i], self.u[r][i])
+                    # Other side of the equivalence, if urj is true, than one of the conditions must hold
+                    self.add_clause(-self.u[r][j], -self.p[j][i], self.a[r][j], self.u[r][i])
 
 
         # Leafs have no feature
@@ -248,7 +249,7 @@ class TreeEncoding(base_encoding.BaseEncoding):
 
             if not is_leaf:
                 for r in range(1, instance.num_features + 1):
-                    if model[self.a[r][1]]:
+                    if model[self.a[r][j]]:
                         if feature is None:
                             feature = r
                         else:
@@ -257,4 +258,60 @@ class TreeEncoding(base_encoding.BaseEncoding):
             else:
                 tree.add_leaf(j, parent, j % 2 == 0, model[self.c[j]])
 
+        self.check_consistency(model, instance, num_nodes, tree)
         return tree
+
+    def check_consistency(self, model, instance, num_nodes, tree):
+        # Check left, right vars
+        for j in range(2, num_nodes + 1):
+            cnt = 0
+            for i in TreeEncoding.pr(j):
+                if j % 2 == 0 and model[self.left[i][j]]:
+                    cnt += 1
+                elif j % 2 == 1 and model[self.right[i][j]]:
+                    cnt += 1
+
+            if cnt != 1:
+                print(f"Found non 1 child assignment of node {j}")
+
+
+        # Check feature paths
+        prev = [-1 for _ in range(0, num_nodes + 1)]
+        for node in range(1, num_nodes + 1):
+            if not tree.nodes[node].is_leaf:
+                prev[tree.nodes[node].left.id] = node
+                prev[tree.nodes[node].right.id] = node
+
+        for node in range(2, num_nodes + 1):
+            if tree.nodes[node].is_leaf:
+                features = []
+                values = []
+                path = [node]
+                cp = node
+                # trace path from leaf to root
+                while cp != 1:
+                    path.append(prev[cp])
+                    features.append(tree.nodes[prev[cp]].feature)
+                    values.append(tree.nodes[prev[cp]].left.id == cp)
+                    cp = prev[cp]
+                path.pop()
+                path.reverse()
+                features.reverse()
+                values.reverse()
+
+                # Now verify the model
+                for i in range(0, len(path)):
+                    feat = features[i]
+                    cnode = path[i]
+                    d1val = values[i]
+                    d0val = not values[i]
+
+                    for j in range(i, len(path)):
+                        if not tree.nodes[path[j]].is_leaf and tree.nodes[path[j]].feature == feat:
+                            print(f"ERROR duplicate feature {feat} in nodes {cnode} and {path[j]}")
+                        if not model[self.u[feat][path[j]]]:
+                            print(f"ERROR u for feature {feat} not set for node {path[j]}")
+                        if model[self.d0[feat][path[j]]] != d0val:
+                            print(f"ERROR d0 value wrong, feature {feat} at node {path[j]} is leaf: {tree.nodes[path[j]].is_leaf}")
+                        if model[self.d1[feat][path[j]]] != d1val:
+                            print(f"ERROR d1 value wrong, feature {feat} at node {path[j]} is leaf: {tree.nodes[path[j]].is_leaf}")
