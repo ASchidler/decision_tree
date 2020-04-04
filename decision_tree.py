@@ -20,7 +20,7 @@ class DecisionTree:
         self.root = None
         self.nodes = [None for _ in range(0, num_nodes + 1)] # Indexing starts at 1
 
-    def check_tree_consistency(self):
+    def check_consistency(self):
         q = [self.root]
         cnt = 0
         while q:
@@ -76,3 +76,41 @@ class DecisionTree:
                 cnode = cnode.right
 
         return cnode.cls
+
+
+class DecisionDiagram:
+    def __init__(self, num_features, num_nodes):
+        self.num_features = num_features
+        self.root = None
+        self.nodes = [None for _ in range(0, num_nodes + 1)] # Indexing starts at 1
+        self.nodes[num_nodes] = DecisionTreeLeaf(False, num_nodes)
+        self.nodes[num_nodes-1] = DecisionTreeLeaf(True, num_nodes-1)
+
+    def add_node(self, id, feature, left, right):
+        if self.nodes[id] is not None:
+            print(f"ERROR: Node {id} already set")
+
+        self.nodes[id] = DecisionTreeNode(feature, id)
+        if self.nodes[left] is None:
+            print(f"ERROR: For node {id} the left node {left} has not been added")
+        else:
+            self.nodes[id].left = self.nodes[left]
+
+        if self.nodes[right] is None:
+            print(f"ERROR: For node {id} the left node {right} has not been added")
+        else:
+            self.nodes[id].right = self.nodes[right]
+
+    def decide(self, features):
+        cnode = self.root
+
+        while not cnode.is_leaf:
+            if features[cnode.feature]:
+                cnode = cnode.left
+            else:
+                cnode = cnode.right
+
+        return cnode.cls
+
+    def check_consistency(self):
+        pass

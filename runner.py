@@ -6,6 +6,7 @@ import os
 import time
 import parser
 from tree_encoding import TreeEncoding
+from diagram_encoding import DecisionDiagramEncoding
 
 instance = parser.parse(sys.argv[1])
 l_bound = 0
@@ -29,22 +30,26 @@ def parse_minisat(f):
     return model
 
 
-while not stop:
+while l_bound < u_bound:
     with open("tmp.enc", "w") as f:
-        encoding = TreeEncoding(f)
+        encoding = DecisionDiagramEncoding(f) # TreeEncoding(f)
         encoding.encode(instance, c_bound)
+    print(f"Num clauses: {encoding.clauses}")
 
     with open("tmp.txt", "w") as outf:
         p1 = subprocess.Popen(['minisat', '-verb=0', "tmp.enc", "tmpout.txt"])
 
     p1.wait()
 
+    stop = True
     with open("tmpout.txt", "r") as f:
         model = parse_minisat(f)
-        tree = encoding.decode(model, instance, c_bound)
-        if tree is not None:
-            stop = True
-            tree.check_tree_consistency()
+        if model is None:
+            l_bound = c_bound + 1
+            c_bound = l_bound + 1
+        else:
+            tree = encoding.decode(model, instance, c_bound)
+            tree.check_consistency()
 
             # Verify tree
             total = 0
@@ -57,4 +62,7 @@ while not stop:
                 else:
                     correct += 1
             print(f"Accuracy: {correct/total}")
+            u_bound = c_bound
+            c_bound -= 1
 
+print(f"Final result: {u_bound}")
