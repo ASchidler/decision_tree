@@ -168,18 +168,16 @@ class TreeEncoding(base_encoding.BaseEncoding):
         # u means that the feature already occurred in the current branch
         for r in range(1, instance.num_features + 1):
             for j in range(1, num_nodes + 1):
-                clause = [-self.u[r][j], self.a[r][j]]
-
                 for i in TreeEncoding.pr(j):
                     # If u is true for the parent, the feature must not be used by any child
                     self.add_clause(-self.u[r][i], -self.p[j][i], -self.a[r][j])
 
-                    v1 = self.add_auxiliary(self.u[r][i], self.p[j][i])
-                    clause.append(v1)
+                    # Using the feature sets u in rest of sub-tree
                     self.add_clause(-self.a[r][j], self.u[r][j])
-                    #self.add_clause(-self.u[r][i], -self.p[j][i], self.u[r][j])
-                    self.add_clause(-v1, self.u[r][j])
-                self.add_clause(*clause)
+                    # Inheritance of u
+                    self.add_clause(-self.u[r][i], -self.p[j][i], self.u[r][j])
+                    self.add_clause(-self.u[r][j], self.a[r][j], -self.p[j][i], self.u[r][i])
+
 
         # Leafs have no feature
         for r in range(1, instance.num_features + 1):
