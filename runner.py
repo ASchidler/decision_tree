@@ -12,7 +12,7 @@ from tree_depth_encoding import TreeDepthEncoding
 instance = parser.parse(sys.argv[1])
 l_bound = 0
 u_bound = sys.maxsize
-c_bound = 8
+c_bound = 15
 stop = False
 
 enc_file = f"{os.getpid()}.enc"
@@ -37,8 +37,8 @@ def parse_minisat(f):
 while l_bound < u_bound:
     with open(enc_file, "w") as f:
         #encoding = DecisionDiagramEncoding(f)
-        #encoding = TreeEncoding(f)
-        encoding = TreeDepthEncoding(f)
+        encoding = TreeEncoding(f)
+        #encoding = TreeDepthEncoding(f)
         encoding.encode(instance, c_bound)
     print(f"Num clauses: {encoding.clauses}")
 
@@ -51,8 +51,8 @@ while l_bound < u_bound:
     with open(model_file, "r") as f:
         model = parse_minisat(f)
         if model is None:
-            l_bound = c_bound + 1
-            c_bound = l_bound + 1
+            l_bound = c_bound + encoding.increment
+            c_bound = l_bound + encoding.increment
         else:
             tree = encoding.decode(model, instance, c_bound)
             tree.check_consistency()
@@ -62,7 +62,7 @@ while l_bound < u_bound:
             correct = 0
             for e in instance.examples:
                 decision = tree.decide(e.features)
-                total += encoding.increment
+                total += 1
                 if decision != e.cls:
                     print(f"ERROR: Decision mismatch, should be {e.cls} but is {decision}.")
                 else:

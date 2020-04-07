@@ -169,12 +169,13 @@ class TreeEncoding(base_encoding.BaseEncoding):
         # u means that the feature already occurred in the current branch
         for r in range(1, instance.num_features + 1):
             for j in range(1, num_nodes + 1):
+                # Using the feature sets u in rest of sub-tree
+                self.add_clause(-self.a[r][j], self.u[r][j])
+
                 for i in TreeEncoding.pr(j):
                     # If u is true for the parent, the feature must not be used by any child
                     self.add_clause(-self.u[r][i], -self.p[j][i], -self.a[r][j])
 
-                    # Using the feature sets u in rest of sub-tree
-                    self.add_clause(-self.a[r][j], self.u[r][j])
                     # Inheritance of u from parent to child
                     self.add_clause(-self.u[r][i], -self.p[j][i], self.u[r][j])
                     # Other side of the equivalence, if urj is true, than one of the conditions must hold
@@ -229,7 +230,6 @@ class TreeEncoding(base_encoding.BaseEncoding):
             print(f"ERROR: No feature found for root")
 
         # Add other nodes
-        # TODO: Theoretically parent only has to go from j/2 to j-1
         for j in range(2, num_nodes + 1):
             is_leaf = model[self.v[j]]
 
@@ -274,7 +274,6 @@ class TreeEncoding(base_encoding.BaseEncoding):
 
             if cnt != 1:
                 print(f"Found non 1 child assignment of node {j}")
-
 
         # Check feature paths
         prev = [-1 for _ in range(0, num_nodes + 1)]
