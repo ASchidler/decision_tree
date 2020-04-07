@@ -31,7 +31,7 @@ class DecisionTree:
                 assert (e.left is not None and e.right is not None)
                 q.append(e.left)
                 q.append(e.right)
-        assert(cnt == len(self.nodes) - 1)
+#        assert(cnt == len(self.nodes) - 1)
 
     def set_root(self, feature):
         if self.root is not None:

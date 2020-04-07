@@ -14,6 +14,7 @@ class TreeEncoding(base_encoding.BaseEncoding):
         self.d0 = None
         self.d1 = None
         self.c = None
+        self.increment = 2
 
     def init_vars(self, instance, num_nodes):
         # First the tree structure

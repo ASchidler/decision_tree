@@ -3,6 +3,7 @@ class BaseEncoding:
         self.vars = 0
         self.clauses = 0
         self.stream = stream
+        self.increment = 1
 
     def add_var(self):
         self.vars += 1
