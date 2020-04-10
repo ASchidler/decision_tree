@@ -77,6 +77,28 @@ class DecisionTree:
 
         return cnode.cls
 
+    def get_path(self, features):
+        cnode = self.root
+
+        while not cnode.is_leaf:
+            if features[cnode.feature]:
+                cnode = cnode.left
+            else:
+                cnode = cnode.right
+
+        return [cnode] # Leaf is identification enough
+
+    def get_accuracy(self, examples):
+        total = 0
+        correct = 0
+        for e in examples:
+            decision = self.decide(e.features)
+            total += 1
+            if decision == e.cls:
+                correct += 1
+
+        return correct / total
+
 
 class DecisionDiagram:
     def __init__(self, num_features, num_nodes):
@@ -111,6 +133,32 @@ class DecisionDiagram:
                 cnode = cnode.right
 
         return cnode.cls
+
+    def get_path(self, features):
+        cnode = self.root
+        pth = []
+
+        while not cnode.is_leaf:
+            pth.append(cnode)
+            if features[cnode.feature]:
+                cnode = cnode.left
+            else:
+                cnode = cnode.right
+
+        # TODO: Since the leaf is a conclusion of the preceding path, this can theoretically be skipped...
+        pth.append(cnode)
+        return pth
+
+    def get_accuracy(self, examples):
+        total = 0
+        correct = 0
+        for e in examples:
+            decision = self.decide(e.features)
+            total += 1
+            if decision == e.cls:
+                correct += 1
+
+        return correct / total
 
     def check_consistency(self):
         pass

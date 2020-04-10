@@ -12,7 +12,7 @@ from tree_depth_encoding import TreeDepthEncoding
 instance = parser.parse(sys.argv[1])
 l_bound = 0
 u_bound = sys.maxsize
-c_bound = 15
+c_bound = 6
 stop = False
 
 enc_file = f"{os.getpid()}.enc"
@@ -36,8 +36,8 @@ def parse_minisat(f):
 
 while l_bound < u_bound:
     with open(enc_file, "w") as f:
-        #encoding = DecisionDiagramEncoding(f)
-        encoding = TreeEncoding(f)
+        encoding = DecisionDiagramEncoding(f)
+        #encoding = TreeEncoding(f)
         #encoding = TreeDepthEncoding(f)
         encoding.encode(instance, c_bound)
     print(f"Num clauses: {encoding.clauses}")

@@ -46,6 +46,7 @@ class DecisionDiagramEncoding(base_encoding.BaseEncoding):
         # Each node, except the leafs, has assigned exactly one feature
         for i in range(1, num_nodes + 1 - 2):
             clause = []
+
             for r in range(1, instance.num_features + 1):
                 clause.append(self.feature[r][i])
                 for r2 in range(r + 1, instance.num_features + 1):
