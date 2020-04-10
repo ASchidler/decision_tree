@@ -57,24 +57,30 @@ class DecisionDiagramEncoding(base_encoding.BaseEncoding):
         # evars express that the node is reachable for the current example
 
         for e in instance.examples:
-            evars = [self.add_var() if i > 0 else None for i in range(0, num_nodes + 1)]
+            fvar = [self.add_var() if i > 0 else None for i in range(0, num_nodes + 1)]
+            pvar = [self.add_var() if i > 0 else None for i in range(0, num_nodes + 1)]
+
+            for i in range(1, num_nodes + 1 - 2):
+                for r in range(1, instance.num_features + 1):
+                    if e.features[r]:
+                        self.add_clause(-self.feature[r][i], fvar[i])
+                    else:
+                        self.add_clause(-self.feature[r][i], -fvar[i])
+
             # Place forbidden marker on the class that must not be reachable
             if e.cls:
-                self.add_clause(evars[-1])
+                self.add_clause(-pvar[-1])
             else:
-                self.add_clause(evars[-2])
+                self.add_clause(-pvar[-2])
 
-            # The forbidden marker must not reach the root
-            self.add_clause(-evars[1])
+            # Root is always reachable
+            self.add_clause(pvar[1])
 
             # Propagate the marker
             for i in range(1, num_nodes + 1 - 2):
                 for j in range(i + 1, num_nodes + 1):
-                    for r in range(1, instance.num_features + 1):
-                        if e.features[r]:
-                            self.add_clause(-self.left[i][j], -evars[j], -self.feature[r][i], evars[i])
-                        else:
-                            self.add_clause(-self.right[i][j], -evars[j], -self.feature[r][i], evars[i])
+                    self.add_clause(-self.left[i][j], -pvar[i], -fvar[i], pvar[j])
+                    self.add_clause(-self.right[i][j], -pvar[i], fvar[i], pvar[j])
 
     def encode(self, instance, num_nodes):
         self.init_var(instance, num_nodes)
