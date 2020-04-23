@@ -156,6 +156,26 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
                     print("Error, non matching class in last group!")
             tree.add_leaf(p, pp, pol, cls)
 
+        # Simplify
+        def simplify(node):
+            if node.is_leaf:
+                return
+
+            changed = True
+            while changed:
+                changed = False
+
+                if not node.left.is_leaf and node.feature == node.left.feature:
+                    node.left = node.left.left
+                    changed = True
+                if not node.right.is_leaf and node.feature == node.right.feature:
+                    node.right = node.right.right
+                    changed = True
+
+            simplify(node.left)
+            simplify(node.right)
+
+        simplify(tree.root)
         return tree
 
     def check_consistency(self, model, instance, num_nodes, tree):

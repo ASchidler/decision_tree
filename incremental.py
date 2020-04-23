@@ -18,8 +18,8 @@ import random
 instance = parser.parse(sys.argv[1])
 
 #encoding = DecisionDiagramEncoding
-encoding = TreeEncoding
-#encoding = TreeDepthEncoding
+#encoding = TreeEncoding
+encoding = TreeDepthEncoding
 
 def parse_minisat(f):
     first = f.readline()
@@ -74,6 +74,7 @@ def compute_tree(c_instance, starting_bound):
         os.remove(out_file)
 
     print(f"Final result: {u_bound}")
+    print(f"Nodes: {tree.get_nodes()}, Depth: {tree.get_depth()}")
     return tree
 
 

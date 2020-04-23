@@ -99,6 +99,24 @@ class DecisionTree:
 
         return correct / total
 
+    def get_depth(self):
+        def dfs_find(node, level):
+            if node.is_leaf:
+                return level
+            else:
+                return max(dfs_find(node.left, level + 1), dfs_find(node.right, level + 1))
+
+        return dfs_find(self.root, 0)
+
+    def get_nodes(self):
+        def dfs_find(node, cnt):
+            if node.is_leaf:
+                return cnt + 1
+            else:
+                return dfs_find(node.left, cnt) + dfs_find(node.right, cnt) + 1
+
+        return dfs_find(self.root, 0)
+
 
 class DecisionDiagram:
     def __init__(self, num_features, num_nodes):
@@ -162,3 +180,15 @@ class DecisionDiagram:
 
     def check_consistency(self):
         pass
+
+    def get_depth(self):
+        def dfs_find(node, level):
+            if node.is_leaf:
+                return level
+            else:
+                return max(dfs_find(node.left, level + 1), dfs_find(node.right, level + 1))
+
+        return dfs_find(self.root, 0)
+
+    def get_nodes(self):
+        return len(self.nodes) - 1
