@@ -162,9 +162,9 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
         pass
 
     @staticmethod
-    def new_bound(tree):
+    def new_bound(tree, instance):
         if tree is None:
-            return 3
+            return 1
 
         def dfs_find(node, level):
             if node.is_leaf:
@@ -173,3 +173,7 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
                 return max(dfs_find(node.left, level + 1), dfs_find(node.right, level + 1))
 
         return dfs_find(tree.root, 0)
+
+    @staticmethod
+    def lb():
+        return 1

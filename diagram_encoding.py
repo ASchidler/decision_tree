@@ -125,8 +125,12 @@ class DecisionDiagramEncoding(base_encoding.BaseEncoding):
         return bdd
 
     @staticmethod
-    def new_bound(tree):
+    def new_bound(tree, instance):
         if tree is None:
             return 3
 
         return len(tree.nodes) - 1
+
+    @staticmethod
+    def lb():
+        return 3

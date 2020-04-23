@@ -3,7 +3,7 @@ import random
 
 class BddExamples:
     def __init__(self, features, cls):
-        self.features = features
+        self.features = list(features)
         self.cls = cls
 
 

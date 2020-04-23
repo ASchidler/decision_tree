@@ -1,6 +1,6 @@
 import base_encoding
 from decision_tree import DecisionTree
-
+from math import log2
 
 class TreeEncoding(base_encoding.BaseEncoding):
     def __init__(self, stream):
@@ -320,8 +320,12 @@ class TreeEncoding(base_encoding.BaseEncoding):
                             print(f"ERROR d1 value wrong, feature {feat} at node {path[j]} is leaf: {tree.nodes[path[j]].is_leaf}")
 
     @staticmethod
-    def new_bound(tree):
+    def new_bound(tree, instance):
         if tree is None:
             return 3
 
-        return len(tree.nodes) - 1
+        return min(len(tree.nodes) - 1, 2 * 2**instance.num_features - 1)
+
+    @staticmethod
+    def lb():
+        return 3

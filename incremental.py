@@ -17,9 +17,9 @@ import random
 
 instance = parser.parse(sys.argv[1])
 
-# encoding = DecisionDiagramEncoding
-# encoding = TreeEncoding
-encoding = TreeDepthEncoding
+#encoding = DecisionDiagramEncoding
+encoding = TreeEncoding
+#encoding = TreeDepthEncoding
 
 def parse_minisat(f):
     first = f.readline()
@@ -37,7 +37,7 @@ def parse_minisat(f):
 
 
 def compute_tree(c_instance, starting_bound):
-    l_bound = 0
+    l_bound = encoding.lb()
     u_bound = sys.maxsize
     c_bound = starting_bound
 
@@ -97,17 +97,17 @@ for _ in range(0, 50):
         standins = set()
         for r in retain:
             standins.add(tuple(last_tree.get_path(r.features)))
-            new_instance.add_example(r)
+            new_instance.add_example(bdd_instance.BddExamples(r.features, r.cls))
 
-        for e in last_instance.examples:
+        for e in instance.examples: #last_instance.examples:
             pth = tuple(last_tree.get_path(e.features))
             if pth not in standins:
                 standins.add(pth)
                 retain.append(e)
-                new_instance.add_example(e)
+                new_instance.add_example(bdd_instance.BddExamples(e.features, e.cls))
 
         print(f"Retained {len(new_instance.examples)} examples")
-
+    new_instance.check_consistency()
     i = last_index + 1
     t_target = target // 2
     f_target = target // 2
@@ -121,19 +121,20 @@ for _ in range(0, 50):
 
         if last_tree is None or last_tree.decide(e.features) != e.cls:
             if e.cls and t_target > 0:
-                new_instance.add_example(e)
+                new_instance.add_example(bdd_instance.BddExamples(e.features, e.cls))
                 t_target -= 1
             elif not e.cls and f_target > 0:
-                new_instance.add_example(e)
+                new_instance.add_example(bdd_instance.BddExamples(e.features, e.cls))
                 f_target -= 1
         i += 1
     last_index = i
+    new_instance.check_consistency()
     print(f"Using {len(new_instance.examples)} examples")
     bdd_instance.reduce(new_instance)
     new_instance.functional_dependencies()
     new_instance.check_consistency()
 
-    last_tree = compute_tree(new_instance, encoding.new_bound(last_tree))
+    last_tree = compute_tree(new_instance, encoding.new_bound(last_tree, new_instance))
     acc = last_tree.get_accuracy(instance.examples)
     if acc >= last_accuracy:
         last_accuracy = acc
