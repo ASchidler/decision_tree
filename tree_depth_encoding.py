@@ -160,3 +160,16 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
 
     def check_consistency(self, model, instance, num_nodes, tree):
         pass
+
+    @staticmethod
+    def new_bound(tree):
+        if tree is None:
+            return 3
+
+        def dfs_find(node, level):
+            if node.is_leaf:
+                return level
+            else:
+                return max(dfs_find(node.left, level + 1), dfs_find(node.right, level + 1))
+
+        return dfs_find(tree.root, 0)

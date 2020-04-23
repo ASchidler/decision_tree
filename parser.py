@@ -1,4 +1,4 @@
-from BddInstance import BddInstance, BddExamples
+from bdd_instance import BddInstance, BddExamples
 
 
 def parse(filename):

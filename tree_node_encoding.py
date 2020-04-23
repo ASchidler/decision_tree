@@ -73,9 +73,9 @@ class TreeEncoding(base_encoding.BaseEncoding):
     @staticmethod
     def rr(i, mx):
         if i % 2 == 0:
-            return range(i + 3, min(2 * i, mx) + 1, 2)
+            return range(i + 3, min(2 * i + 1, mx) + 1, 2)
         else:
-            return range(i + 2, min(2 * i, mx) + 1, 2)
+            return range(i + 2, min(2 * i + 1, mx) + 1, 2)
 
     @staticmethod
     def pr(j):
@@ -199,12 +199,15 @@ class TreeEncoding(base_encoding.BaseEncoding):
     def encode_examples(self, instance, num_nodes):
         for e in instance.examples:
             for j in range(1, num_nodes + 1):
+                self.add_clause(-self.c[j], self.c[j])
+
                 # If the class of the leaf differs from the class of the example, at least one
                 # node on the way must discriminate against the example, otherwise the example
                 # could be classified wrong
                 clause = [-self.v[j]]
                 clause.append(self.c[j] if e.cls else -self.c[j])
-                for r in range(1, instance.num_features):
+
+                for r in range(1, instance.num_features + 1):
                     clause.append(self.d0[r][j] if e.features[r] else self.d1[r][j])
                 self.add_clause(*clause)
 
@@ -315,3 +318,10 @@ class TreeEncoding(base_encoding.BaseEncoding):
                             print(f"ERROR d0 value wrong, feature {feat} at node {path[j]} is leaf: {tree.nodes[path[j]].is_leaf}")
                         if model[self.d1[feat][path[j]]] != d1val:
                             print(f"ERROR d1 value wrong, feature {feat} at node {path[j]} is leaf: {tree.nodes[path[j]].is_leaf}")
+
+    @staticmethod
+    def new_bound(tree):
+        if tree is None:
+            return 3
+
+        return len(tree.nodes) - 1

@@ -12,7 +12,7 @@ from tree_depth_encoding import TreeDepthEncoding
 instance = parser.parse(sys.argv[1])
 l_bound = 0
 u_bound = sys.maxsize
-c_bound = 6
+c_bound = 17
 stop = False
 
 enc_file = f"{os.getpid()}.enc"

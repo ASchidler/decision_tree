@@ -123,3 +123,10 @@ class DecisionDiagramEncoding(base_encoding.BaseEncoding):
                 bdd.root = bdd.nodes[1]
 
         return bdd
+
+    @staticmethod
+    def new_bound(tree):
+        if tree is None:
+            return 3
+
+        return len(tree.nodes) - 1

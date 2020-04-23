@@ -10,9 +10,10 @@ class BaseEncoding:
         return self.vars
 
     def add_clause(self, *args):
-        self.stream.write(' '.join([str(x) for x in args]))
-        self.stream.write(" 0\n")
-        self.clauses += 1
+        if len(args) > 0:
+            self.stream.write(' '.join([str(x) for x in args]))
+            self.stream.write(" 0\n")
+            self.clauses += 1
 
     '''Encode the conjunction of args as auxiliary variable. 
             The auxiliary variable can then be used instead of the conjunction'''
