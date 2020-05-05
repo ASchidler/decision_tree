@@ -36,9 +36,16 @@ class MiniSatSolver(BaseSolver):
 
 
 class WrMaxsatSolver(BaseSolver):
-    def run(self, input_file, model_file):
+    def supports_timeout(self):
+        return True
+
+    def run(self, input_file, model_file, timeout=0):
         with open(model_file, "w") as mf:
-            return subprocess.Popen(['/home/asc/Dev/uwrmaxsat/build/release/bin/uwrmaxsat', input_file, '-m'], stdout=mf)
+            if timeout == 0:
+                return subprocess.Popen(['/home/asc/Dev/uwrmaxsat/build/release/bin/uwrmaxsat', input_file, '-m'], stdout=mf)
+            else:
+                return subprocess.Popen(['/home/asc/Dev/uwrmaxsat/build/release/bin/uwrmaxsat', input_file, '-m', f'-cpu-lim={timeout}'],
+                                        stdout=mf)
 
     def parse(self, f):
         model = {}
@@ -50,6 +57,8 @@ class WrMaxsatSolver(BaseSolver):
                     converted = int(v)
                     model[abs(converted)] = converted > 0
 
+        if len(model) == 0:
+            return None
         return model
 
 
@@ -146,12 +155,15 @@ class MaxSatRunner:
             inst_encoding = self.encoder(f)
             inst_encoding.encode(instance)
 
-        p1 = self.solver.run(enc_file, model_file)
+        p1 = self.solver.run(enc_file, model_file, timeout)
 
-        if timeout == 0:
+        if timeout == 0 or self.solver.supports_timeout():
             p1.wait()
         else:
-            p1.wait(timeout=timeout)
+            try:
+                p1.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                pass
 
         result = None
         with open(model_file, "r") as f:

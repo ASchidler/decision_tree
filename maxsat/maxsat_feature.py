@@ -49,5 +49,5 @@ class MaxsatFeatureEncoding(base_encoding.BaseEncoding):
 
 def compute_features(instance):
     runner = sat_tools.MaxSatRunner(MaxsatFeatureEncoding, sat_tools.WrMaxsatSolver())
-    result = runner.run(instance)
+    result = runner.run(instance, timeout=10)
     return result
