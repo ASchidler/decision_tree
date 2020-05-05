@@ -1,5 +1,6 @@
 import random
-
+import feature_encoding
+import maxsat.maxsat_feature as maxsat_feature
 
 class BddExamples:
     def __init__(self, features, cls):
@@ -166,14 +167,20 @@ class BddInstance:
                 seen[c_key] = e.cls
 
 
-def reduce(instance, randomized_runs=5, remove=False):
+def reduce(instance, randomized_runs=5, remove=False, optimal=False):
     print(f"Before: {instance.num_features} Features, {len(instance.examples)} examples")
-    keys = [instance.min_key(randomize=True) for _ in range(0, randomized_runs)]
-    keys.append(instance.min_key(randomize=False))
-    keys.sort(key=lambda x: len(x))
+
+    if not optimal:
+        keys = [instance.min_key(randomize=True) for _ in range(0, randomized_runs)]
+        keys.append(instance.min_key(randomize=False))
+        keys.sort(key=lambda x: len(x))
+        min_key = keys[0]
+    else:
+        # min_key = feature_encoding.compute_features(instance)
+        min_key = maxsat_feature.compute_features(instance)
 
     removal = set(range(1, instance.num_features + 1))
-    for k in keys[0]:
+    for k in min_key:
         removal.remove(k)
 
     unnecessary = instance.find_same_features()

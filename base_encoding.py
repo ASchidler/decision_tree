@@ -1,9 +1,22 @@
+from os import linesep
+
+
 class BaseEncoding:
     def __init__(self, stream):
         self.vars = 0
         self.clauses = 0
         self.stream = stream
         self.increment = 1
+        # Placeholder for header
+        self.stream.write(" ".join(["" for _ in range(0, 100)]))
+
+    def write_header(self, instance):
+        self.stream.seek(0)
+        header = f"p cnf {self.vars} {self.clauses}"
+        padding = 100 - len(header) - len(linesep)
+        self.stream.write(header)
+        self.stream.write(" ".join(["" for _ in range(0, padding)]))
+        self.stream.write(linesep)
 
     def add_var(self):
         self.vars += 1
