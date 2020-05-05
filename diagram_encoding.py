@@ -82,6 +82,29 @@ class DecisionDiagramEncoding(base_encoding.BaseEncoding):
                     self.add_clause(-self.left[i][j], -pvar[i], -fvar[i], pvar[j])
                     self.add_clause(-self.right[i][j], -pvar[i], fvar[i], pvar[j])
 
+    def encode_examples2(self, instance, num_nodes):
+
+        for e in instance.examples:
+            fvar = [self.add_var() if i > 0 else None for i in range(0, num_nodes + 1)]
+
+            # Place forbidden marker on the class that must not be reachable
+            # Root is always reachable
+            self.add_clause(fvar[1])
+            if e.cls:
+                self.add_clause(-fvar[-1])
+                self.add_clause(fvar[-2])
+            else:
+                self.add_clause(fvar[-1])
+                self.add_clause(-fvar[-2])
+
+            for i in range(1, num_nodes + 1 - 2):
+                for j in range(i + 1, num_nodes + 1):
+                    for r in range(1, instance.num_features + 1):
+                        if e.features[r]:
+                            self.add_clause(-self.feature[r][i], -self.left[i][j], -fvar[i], fvar[j])
+                        else:
+                            self.add_clause(-self.feature[r][i], -self.right[i][j], -fvar[i], fvar[j])
+
     def encode(self, instance, num_nodes):
         self.init_var(instance, num_nodes)
         self.encode_diagram(instance, num_nodes)

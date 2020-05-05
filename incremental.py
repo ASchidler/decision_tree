@@ -11,72 +11,17 @@ from tree_depth_encoding import TreeDepthEncoding
 from bdd_instance import BddInstance
 import bdd_instance
 import random
+import sat_tools
 
 # TODO: Start each run with prev size + 1 to increase the chance of getting a SAT result first.
 # TODO: Select n examples, s.t. each example increases the number of features required in the key
+# TODO: Sanity check that accuracy over test set is indeed 100%
 
 instance = parser.parse(sys.argv[1])
 
-#encoding = DecisionDiagramEncoding
+encoding = DecisionDiagramEncoding
 #encoding = TreeEncoding
-encoding = TreeDepthEncoding
-
-def parse_minisat(f):
-    first = f.readline()
-    if first.startswith("UNSAT"):
-        return None
-
-    # TODO: This could be faster using a list...
-    model = {}
-    vars = f.readline().split()
-    for v in vars:
-        val = int(v)
-        model[abs(val)] = val > 0
-
-    return model
-
-
-def compute_tree(c_instance, starting_bound):
-    l_bound = encoding.lb()
-    u_bound = sys.maxsize
-    c_bound = starting_bound
-
-    enc_file = f"{os.getpid()}.enc"
-    model_file = f"{os.getpid()}.model"
-    out_file = f"{os.getpid()}.output"
-
-    while l_bound < u_bound:
-        print(f"Running with limit {c_bound}")
-        with open(enc_file, "w") as f:
-            inst_encoding = encoding(f)
-            inst_encoding.encode(c_instance, c_bound)
-
-        with open(out_file, "w") as outf:
-            FNULL = open(os.devnull, 'w')
-            p1 = subprocess.Popen(['minisat', '-verb=0', enc_file, model_file], stdout=FNULL, stderr=subprocess.STDOUT)
-
-        p1.wait()
-
-        with open(model_file, "r") as f:
-            model = parse_minisat(f)
-            if model is None:
-                l_bound = c_bound + inst_encoding.increment
-                c_bound = l_bound
-            else:
-                tree = inst_encoding.decode(model, c_instance, c_bound)
-                tree.check_consistency()
-
-                u_bound = c_bound
-                c_bound -= inst_encoding.increment
-
-        os.remove(enc_file)
-        os.remove(model_file)
-        os.remove(out_file)
-
-    print(f"Final result: {u_bound}")
-    print(f"Nodes: {tree.get_nodes()}, Depth: {tree.get_depth()}")
-    return tree
-
+#encoding = TreeDepthEncoding
 
 target = 50
 last_instance = None
@@ -86,9 +31,12 @@ retain = []
 last_accuracy = 0
 last_index = -1
 
+bdd_instance.reduce(instance, optimal=True)
 bdd_instance.reduce(instance)
 instance.functional_dependencies()
 instance.check_consistency()
+
+runner = sat_tools.SatRunner(encoding, sat_tools.MiniSatSolver())
 
 for _ in range(0, 50):
     new_instance = BddInstance()
@@ -135,7 +83,9 @@ for _ in range(0, 50):
     new_instance.functional_dependencies()
     new_instance.check_consistency()
 
-    last_tree = compute_tree(new_instance, encoding.new_bound(last_tree, new_instance))
+    last_tree = runner.run(instance, encoding.new_bound(last_tree, new_instance))
+    last_tree.check_consistency()
+    print(f"Nodes: {last_tree.get_nodes()}, Depth: {last_tree.get_depth()}")
     acc = last_tree.get_accuracy(instance.examples)
     if acc >= last_accuracy:
         last_accuracy = acc
