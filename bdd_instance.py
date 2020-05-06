@@ -2,10 +2,22 @@ import random
 import feature_encoding
 import maxsat.maxsat_feature as maxsat_feature
 
+
 class BddExamples:
-    def __init__(self, features, cls):
+    def __init__(self, features, cls, id):
         self.features = list(features)
         self.cls = cls
+        self.id = id
+
+    def copy(self):
+        return BddExamples(self.features, self.cls, self.id)
+
+    def dist(self, other_instance, limit):
+        cnt = 0
+        for i in range(1, limit+1):
+            if self.features[i] != other_instance.features[i]:
+                cnt += 1
+        return cnt
 
 
 class BddInstance:

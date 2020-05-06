@@ -3,6 +3,7 @@ from bdd_instance import BddInstance, BddExamples
 
 def parse(filename):
     instance = BddInstance()
+    id = 1
     with open(filename, "r") as f:
         for ln in f:
             fields = ln.split(',')
@@ -22,6 +23,7 @@ def parse(filename):
 
             if not skip:
                 cls = example.pop()
-                instance.add_example(BddExamples(example, cls))
+                instance.add_example(BddExamples(example, cls, id))
+                id += 1
 
     return instance

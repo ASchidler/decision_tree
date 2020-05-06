@@ -2,11 +2,13 @@ import base_encoding
 from decision_tree import DecisionTree
 import math
 
+
 class TreeDepthEncoding(base_encoding.BaseEncoding):
     def __init__(self, stream):
         base_encoding.BaseEncoding.__init__(self, stream)
         self.g = None
         self.d = None
+        self.c = None
 
     def init_vars(self, instance, depth):
         self.d = []
@@ -22,7 +24,11 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
             for j in range(i + 1, len(instance.examples)):
                 self.g[i][j] = [self.add_var() for _ in range(0, depth + 1)]
 
-    def encode(self, instance, depth):
+        self.c = [self.add_var() if i > 1 else None for i in range(0, depth + 1)]
+
+    def encode(self, instance):
+        # Maximum depth is either one for each feature, or enough such that all examples have a unique leaf.
+        depth = min(math.ceil(math.log2(len(instance.examples))), instance.num_features + 1)
         self.init_vars(instance, depth)
 
         # Add level 0, all examples are in the same group
@@ -79,7 +85,6 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
                         self.add_clause(-self.d[i][dl][f], -self.d[i][dl][f2])
                 self.add_clause(*clause)
 
-        self.write_header(instance)
     def decode(self, model, instance, depth):
         tree = DecisionTree(instance.num_features, 2**(depth+1) - 1)
 
