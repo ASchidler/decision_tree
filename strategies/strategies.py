@@ -5,9 +5,35 @@ from bdd_instance import BddInstance
 class InitialStrategy:
     def __init__(self, instance):
         self.instance = instance
+        self.last_index = 0
 
     def find_next(self, c_tree, last_tree, last_instance, target):
-        pass
+        new_instance = BddInstance()
+        new_instance.num_features = self.instance.num_features
+
+        i = self.last_index + 1
+        t_target = target // 2
+        f_target = target // 2
+        while i != self.last_index:
+            if i >= len(self.instance.examples):
+                i = 0
+
+            if f_target == 0 and t_target == 0:
+                break
+
+            e = self.instance.examples[i]
+
+            if last_tree is None or last_tree.decide(e.features) != e.cls:
+                if e.cls and t_target > 0:
+                    new_instance.add_example(e.copy())
+                    t_target -= 1
+                elif not e.cls and f_target > 0:
+                    new_instance.add_example(e.copy())
+                    f_target -= 1
+            i += 1
+        self.last_index = i
+
+        return new_instance
 
 
 class IncrementalStrategy:
