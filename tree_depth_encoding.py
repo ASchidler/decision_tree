@@ -1,6 +1,6 @@
 import base_encoding
 from decision_tree import DecisionTree
-
+import math
 
 class TreeDepthEncoding(base_encoding.BaseEncoding):
     def __init__(self, stream):
@@ -79,6 +79,7 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
                         self.add_clause(-self.d[i][dl][f], -self.d[i][dl][f2])
                 self.add_clause(*clause)
 
+        self.write_header(instance)
     def decode(self, model, instance, depth):
         tree = DecisionTree(instance.num_features, 2**(depth+1) - 1)
 
