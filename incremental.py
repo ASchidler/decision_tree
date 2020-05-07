@@ -38,7 +38,8 @@ bdd_instance.reduce(instance)
 instance.functional_dependencies()
 instance.check_consistency()
 
-strategy = strat.IncrementalStrategy(instance)
+strategy = strat.RandomStrategy(instance)
+#strategy = strat.IncrementalStrategy(instance)
 runner = sat_tools.SatRunner(encoding, sat_tools.MiniSatSolver())
 
 for _ in range(0, 50):
