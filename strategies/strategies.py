@@ -1,5 +1,6 @@
 from collections import defaultdict
 from bdd_instance import BddInstance
+import random
 
 
 class InitialStrategy:
@@ -39,7 +40,8 @@ class InitialStrategy:
 class IncrementalStrategy:
     def __init__(self, instance):
         self.instance = instance
-        self.default_strategy = InitialStrategy(instance)
+        #self.default_strategy = InitialStrategy(instance)
+        self.default_strategy = RandomStrategy(instance)
         self.hit_count = {x.id: 0 for x in instance.examples}
 
     def find_next(self, c_tree, last_tree, last_instance, target):
@@ -54,7 +56,7 @@ class IncrementalStrategy:
 
         for e in self.instance.examples:  # last_instance.examples:
             pth = tuple(last_tree.get_path(e.features))
-            # result = last_tree.decide(e.features)
+            #result = last_tree.decide(e.features)
             result = c_tree.decide(e.features)
 
             if result != e.cls:
@@ -65,7 +67,7 @@ class IncrementalStrategy:
         print(f"Found {len(path_partition_correct)} correct paths and {len(path_partition_incorrect)} incorrect paths")
         # Select path representatives
         for k, v in path_partition_correct.items():
-            v.sort(key=lambda x: self.hit_count[x.id])
+            v.sort(key=lambda x: -1 * self.hit_count[x.id])
             c_experiment = v.pop()
             v.clear()
             v.append(c_experiment)
@@ -90,5 +92,20 @@ class IncrementalStrategy:
 
                     if len(new_instance.examples) >= target:
                         break
+
+        return new_instance
+
+
+class RandomStrategy:
+    def __init__(self, instance):
+        self.instance = instance
+
+    def find_next(self, c_tree, last_tree, last_instance, target):
+        new_instance = BddInstance()
+        new_instance.num_features = self.instance.num_features
+
+        for _ in range(0, target):
+            idx = random.randint(0, len(self.instance.examples) - 1)
+            new_instance.add_example(self.instance.examples[idx].copy())
 
         return new_instance
