@@ -202,3 +202,37 @@ class DecisionDiagram:
                 return 1 + dfs_find(node.left) + dfs_find(node.right)
 
         return dfs_find(self.root)
+
+    def simplify(self):
+        """Simplifies BDD by removing nodes that have only one branch"""
+
+        q = [self.root]
+
+        while q:
+            n = q.pop()
+            if n.is_leaf:
+                continue
+
+            # Check left node
+            if not n.left.is_leaf and n.left.left.is_leaf and n.left.left.cls is None:
+                n.left = n.left.right
+                q.append(n)
+            elif not n.left.is_leaf and n.left.right.is_leaf and n.left.right.cls is None:
+                n.left = n.left.left
+                q.append(n)
+            elif not n.right.is_leaf and n.right.left.is_leaf and n.right.left.cls is None:
+                n.right = n.right.right
+                q.append(n)
+            elif not n.right.is_leaf and n.right.right.is_leaf and n.right.right.cls is None:
+                n.right = n.right.left
+                q.append(n)
+            else:
+                q.append(n.left)
+                q.append(n.right)
+
+        # Handle edge case, where all samples have the same class
+        if self.root.left.is_leaf and self.root.right.is_leaf:
+            if self.root.left.cls is None:
+                self.root.left = self.nodes[2] if self.root.right.id == 3 else self.nodes[3]
+            elif self.root.right.cls is None:
+                self.root.right = self.nodes[2] if self.root.left.id == 3 else self.nodes[3]
