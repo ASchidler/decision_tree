@@ -122,9 +122,10 @@ class DecisionDiagram:
     def __init__(self, num_features, num_nodes):
         self.num_features = num_features
         self.root = None
-        self.nodes = [None for _ in range(0, num_nodes + 1)] # Indexing starts at 1
+        self.nodes = [None for _ in range(0, num_nodes + 2)] # Indexing starts at 1
         self.nodes[num_nodes] = DecisionTreeLeaf(False, num_nodes)
         self.nodes[num_nodes-1] = DecisionTreeLeaf(True, num_nodes-1)
+        self.nodes[num_nodes + 1] = DecisionTreeLeaf(None, num_nodes + 1)
 
     def add_node(self, id, feature, left, right):
         if self.nodes[id] is not None:
@@ -173,6 +174,8 @@ class DecisionDiagram:
         correct = 0
         for e in examples:
             decision = self.decide(e.features)
+            if decision is None:
+                print("ERROR: Hit default decision")
             total += 1
             if decision == e.cls:
                 correct += 1
