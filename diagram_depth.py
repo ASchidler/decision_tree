@@ -285,7 +285,7 @@ class DiagramDepthEncoding(base_encoding.BaseEncoding):
             tree.add_node(i, nodes[i][2], nodes[i][0] if nodes[i][0] is not None else dummy, nodes[i][1] if nodes[i][1] is not None else dummy)
 
         tree.root = tree.nodes[1]
-
+        tree.simplify()
         return tree
 
     def check_consistency(self, model, instance, num_nodes, tree):
