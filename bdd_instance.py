@@ -128,7 +128,7 @@ class BddInstance:
             key = key2
 
         i = 0
-        while i < len(key):
+        while i < len(key) and len(key) > 1: # > 1 is necessary, in case the class is the same for all examples
             c_idx = key.pop(i)
             seen_keys = {}
             correct = True
@@ -163,6 +163,11 @@ class BddInstance:
                 seen[c_key] = e.cls
 
         return key
+
+    def min_key2(self):
+        """This heuristic takes a different approach and adds te necessary features for distinction one by one"""
+        p_examples = []
+
 
     def check_consistency(self):
         seen = {}
@@ -208,8 +213,9 @@ def reduce(instance, randomized_runs=5, remove=False, optimal=False):
         while cIdx in removal:
             cIdx -= 1
 
-        if cIdx < 1:
-            print("Error, need to remove feature, but non left")
+        # Leave at least one feature
+        if cIdx <= 0:
+            break
 
         if cIdx > u:
             instance.reduce_map.append((u, cIdx))
@@ -222,6 +228,7 @@ def reduce(instance, randomized_runs=5, remove=False, optimal=False):
                 e.features.pop(cIdx)
 
     instance.num_features -= len(removal)
+    instance.num_features = max(instance.num_features, 1)
 
     # Remove duplicate examples
     seen = set()
