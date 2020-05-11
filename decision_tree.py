@@ -131,6 +131,7 @@ class DecisionDiagram:
             print(f"ERROR: Node {id} already set")
 
         self.nodes[id] = DecisionTreeNode(feature, id)
+
         if self.nodes[left] is None:
             print(f"ERROR: For node {id} the left node {left} has not been added")
         else:
@@ -191,4 +192,10 @@ class DecisionDiagram:
         return dfs_find(self.root, 0)
 
     def get_nodes(self):
-        return len(self.nodes) - 1
+        def dfs_find(node):
+            if node.is_leaf:
+                return 1
+            else:
+                return 1 + dfs_find(node.left) + dfs_find(node.right)
+
+        return dfs_find(self.root)
