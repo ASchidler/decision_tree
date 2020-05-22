@@ -165,36 +165,104 @@ class BddInstance:
         return key
 
     def min_key2(self):
-        """This heuristic takes a different approach and adds te necessary features for distinction one by one"""
-        p_examples = []
+        """This heuristic takes a different approach and adds the necessary features for distinction one by one"""
+        p_examples = [e for e in self.examples if e.cls]
+        n_examples = [e for e in self.examples if not e.cls]
 
+        feats = {f: set() for f in range(1, self.num_features+1)}
+        key = []
 
-    def check_consistency(self):
+        for e1 in p_examples:
+            for e2 in n_examples:
+                for f in range(1, self.num_features+1):
+                    if e1.features[f] != e2.features[f]:
+                        # TODO: there is probably a more efficient way, but tuples are not supported
+                        feats[f].add((e1.id, e2.id))
+
+        cont = True
+        while cont:
+            cont = False
+            max_card = 0
+            max_f = None
+            for k, v in feats.items():
+                if len(v) > max_card:
+                    max_card = len(v)
+                    max_f = k
+            if max_card > 0:
+                cont = True
+                key.append(max_f)
+                vals = feats.pop(max_f)
+                for c_v in vals:
+                    for v in feats.values():
+                        v.discard(c_v)
+
         seen = {}
 
         for e in self.examples:
             values = []
-            for i in range(1, self.num_features + 1):
-                values.append(e.features[i])
+            for j in key:
+                values.append(e.features[j])
             c_key = tuple(values)
             if c_key in seen and seen[c_key] != e.cls:
-                print("Not consistent")
+                print("Not a key")
                 exit(1)
             else:
                 seen[c_key] = e.cls
 
+        return key
 
-def reduce(instance, randomized_runs=5, remove=False, optimal=False):
+    def min_key3(self):
+        """As min_key2, not greedy but random"""
+        p_examples = [e for e in self.examples if e.cls]
+        n_examples = [e for e in self.examples if not e.cls]
+
+        key = set()
+        for e1 in p_examples:
+            for e2 in n_examples:
+                done = False
+                c_diff = []
+                for f in range(1, self.num_features+1):
+                    if e1.features[f] != e2.features[f]:
+                        if f in key:
+                            done = True
+                            break
+                        c_diff.append(f)
+                # If no differing feature is yet in the key
+                if not done:
+                    # Add random feature
+                    key.add(c_diff[random.randint(0, len(c_diff) - 1)])
+
+        return list(key)
+
+    def check_consistency(self):
+        for i, e1 in enumerate(self.examples):
+            for j, e2 in enumerate(self.examples):
+                if j > i and e1.cls != e2.cls:
+                    found = False
+                    for f in range(1, self.num_features+1):
+                        if e1.features[f] != e2.features[f]:
+                            found = True
+                            break
+                    if not found:
+                        print("Not consistent")
+                        exit(1)
+
+
+def reduce(instance, randomized_runs=1, remove=False, optimal=False, min_key=None):
     print(f"Before: {instance.num_features} Features, {len(instance.examples)} examples")
 
-    if not optimal:
-        keys = [instance.min_key(randomize=True) for _ in range(0, randomized_runs)]
-        keys.append(instance.min_key(randomize=False))
-        keys.sort(key=lambda x: len(x))
-        min_key = keys[0]
-    else:
-        # min_key = feature_encoding.compute_features(instance)
-        min_key = maxsat_feature.compute_features(instance)
+    if min_key is None:
+        if not optimal:
+            keys = [instance.min_key(randomize=True) for _ in range(0, randomized_runs-1)]
+            keys.append(instance.min_key(randomize=False))
+            keys.extend([instance.min_key3() for _ in range(0, randomized_runs)])
+            #keys.append(instance.min_key2())
+            keys.append(maxsat_feature.compute_features(instance))
+            keys.sort(key=lambda x: len(x))
+            min_key = keys[0]
+        else:
+            # min_key = feature_encoding.compute_features(instance)
+            min_key = maxsat_feature.compute_features(instance)
 
     removal = set(range(1, instance.num_features + 1))
     for k in min_key:

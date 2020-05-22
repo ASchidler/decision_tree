@@ -1,0 +1,4 @@
+outlook:sunny,outlook:rain,outlook:overcast, temperature: mild, temperature: hot, temperature: cool, humidity, windy, classes
+0,0,1,1,0,0, high, true, +
+0,1,0,1,0,0, high, true, -
+1,0,0,1,0,0, high, false, -

@@ -47,7 +47,7 @@ class MaxsatFeatureEncoding(base_encoding.BaseEncoding):
         self.stream.write(linesep)
 
 
-def compute_features(instance):
+def compute_features(instance, timeout=120):
     runner = sat_tools.MaxSatRunner(MaxsatFeatureEncoding, sat_tools.WrMaxsatSolver())
-    result = runner.run(instance, timeout=10)
+    result = runner.run(instance, timeout=timeout)
     return result

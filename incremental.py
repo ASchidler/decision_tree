@@ -40,10 +40,10 @@ bdd_instance.reduce(instance)
 instance.functional_dependencies()
 instance.check_consistency()
 
-#strategy = strat.RandomStrategy(instance)
+strategy = strat.RandomStrategy(instance)
 #strategy = strat.IncrementalStrategy(instance)
 #strategy = strat.RetainingStrategy(instance)
-strategy = strat.UpdatedRetainingStrategy(instance)
+#strategy = strat.UpdatedRetainingStrategy(instance)
 runner = sat_tools.SatRunner(encoding, sat_tools.MiniSatSolver())
 improved = False
 
@@ -67,6 +67,9 @@ for _ in range(0, 100):
         last_accuracy = acc
         c_tree = last_tree
         improved = True
+
+    if acc > 0.99999999:
+        break
 
     new_instance.unreduce_instance(last_tree)
     new_instance.check_consistency()

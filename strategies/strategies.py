@@ -3,6 +3,10 @@ from bdd_instance import BddInstance
 import random
 import sys
 
+# TODO: Choose k minimal distance sets of l elements, where the distance between the k sets is maximal
+# TODO: Award point if better or new is worse
+# TODO: Deduct point if worse or new is better
+# TODO: Start with smaller sets and build them up.
 
 class InitialStrategy:
     def __init__(self, instance):
