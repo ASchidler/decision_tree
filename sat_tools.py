@@ -163,7 +163,8 @@ class MaxSatRunner:
             try:
                 p1.wait(timeout=timeout)
             except subprocess.TimeoutExpired:
-                pass
+                if p1.is_alive():
+                    p1.terminate()
 
         result = None
         with open(model_file, "r") as f:

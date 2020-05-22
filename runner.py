@@ -36,9 +36,9 @@ def parse_minisat(f):
 
 while l_bound < u_bound:
     with open(enc_file, "w") as f:
-        encoding = DecisionDiagramEncoding(f)
+        #encoding = DecisionDiagramEncoding(f)
         #encoding = TreeEncoding(f)
-        #encoding = TreeDepthEncoding(f)
+        encoding = TreeDepthEncoding(f)
         encoding.encode(instance, c_bound)
     print(f"Num clauses: {encoding.clauses}")
 
