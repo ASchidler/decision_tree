@@ -2,6 +2,7 @@ import base_encoding
 from decision_tree import DecisionTree
 from math import log2
 
+
 class TreeEncoding(base_encoding.BaseEncoding):
     def __init__(self, stream):
         base_encoding.BaseEncoding.__init__(self, stream)
@@ -217,6 +218,7 @@ class TreeEncoding(base_encoding.BaseEncoding):
         self.encode_discriminating(instance, num_nodes)
         self.encode_feature(instance, num_nodes)
         self.encode_examples(instance, num_nodes)
+        self.write_header(instance)
 
     def decode(self, model, instance, num_nodes):
         # TODO: This could be faster, but for debugging purposes, check for consistency

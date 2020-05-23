@@ -65,10 +65,11 @@ class BddInstance:
     def unreduce_instance(self, tree):
         self.reduce_map.reverse()
         for v1, v2 in self.reduce_map:
-            for n in tree.nodes:
-                if n is not None and not n.is_leaf:
-                    if n.feature == v1:
-                        n.feature = v2
+            if tree is not None:
+                for n in tree.nodes:
+                    if n is not None and not n.is_leaf:
+                        if n.feature == v1:
+                            n.feature = v2
             for e in self.examples:
                 e.features[v1], e.features[v2] = e.features[v2], e.features[v1]
         self.num_features = len(self.examples[0].features) - 1
@@ -251,24 +252,26 @@ class BddInstance:
 def reduce(instance, randomized_runs=1, remove=False, optimal=False, min_key=None):
     print(f"Before: {instance.num_features} Features, {len(instance.examples)} examples")
 
+    unnecessary = []
     if min_key is None:
         if not optimal:
             keys = [instance.min_key(randomize=True) for _ in range(0, randomized_runs-1)]
             keys.append(instance.min_key(randomize=False))
             keys.extend([instance.min_key3() for _ in range(0, randomized_runs)])
-            #keys.append(instance.min_key2())
-            keys.append(maxsat_feature.compute_features(instance))
+            keys.append(instance.min_key2())
+            #keys.append(maxsat_feature.compute_features(instance))
             keys.sort(key=lambda x: len(x))
             min_key = keys[0]
         else:
             # min_key = feature_encoding.compute_features(instance)
             min_key = maxsat_feature.compute_features(instance)
 
+        unnecessary = instance.find_same_features()
+
     removal = set(range(1, instance.num_features + 1))
     for k in min_key:
         removal.remove(k)
 
-    unnecessary = instance.find_same_features()
     removal.update(unnecessary)
     removalL = list(removal)
 

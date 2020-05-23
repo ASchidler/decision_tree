@@ -8,8 +8,13 @@ import parser
 from tree_node_encoding import TreeEncoding
 from diagram_encoding import DecisionDiagramEncoding
 from tree_depth_encoding import TreeDepthEncoding
+from diagram_depth import DiagramDepthEncoding
 
 instance = parser.parse(sys.argv[1])
+test_instance = instance
+if sys.argv[1].endswith("_training.csv"):
+    test_instance = parser.parse(sys.argv[1][0:-1 * len("_training.csv")] + "_test.csv")
+
 l_bound = 0
 u_bound = sys.maxsize
 c_bound = 17
@@ -34,11 +39,13 @@ def parse_minisat(f):
 
     return model
 
+tree = None
 while l_bound < u_bound:
     with open(enc_file, "w") as f:
         #encoding = DecisionDiagramEncoding(f)
-        #encoding = TreeEncoding(f)
-        encoding = TreeDepthEncoding(f)
+        encoding = TreeEncoding(f)
+        #encoding = TreeDepthEncoding(f)
+        #encoding = DiagramDepthEncoding(f)
         encoding.encode(instance, c_bound)
     print(f"Num clauses: {encoding.clauses}")
 
@@ -72,6 +79,8 @@ while l_bound < u_bound:
             c_bound -= encoding.increment
 
 print(f"Final result: {u_bound}")
+if tree is not None:
+    print(f"Accuracy: {tree.get_accuracy(test_instance.examples)}")
 
 os.remove(enc_file)
 os.remove(model_file)
