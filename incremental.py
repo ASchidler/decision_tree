@@ -21,11 +21,14 @@ import strategies.strategies as strat
 # TODO: Sanity check that accuracy over test set is indeed 100%
 
 instance = parser.parse(sys.argv[1])
+test_instance = instance
+if sys.argv[1].endswith("_training.csv"):
+    test_instance = parser.parse(sys.argv[1][0:-1 * len("_training.csv")] + "_test.csv")
 
 #encoding = DecisionDiagramEncoding
 #encoding = TreeEncoding
-#encoding = TreeDepthEncoding
-encoding = DiagramDepthEncoding
+encoding = TreeDepthEncoding
+#encoding = DiagramDepthEncoding
 
 target = 50
 last_instance = None
@@ -34,6 +37,7 @@ last_tree = None
 retain = []
 last_accuracy = 0
 last_index = -1
+limit = 20
 
 #bdd_instance.reduce(instance, optimal=True)
 bdd_instance.reduce(instance)
@@ -44,10 +48,11 @@ strategy = strat.RandomStrategy(instance)
 #strategy = strat.IncrementalStrategy(instance)
 #strategy = strat.RetainingStrategy(instance)
 #strategy = strat.UpdatedRetainingStrategy(instance)
-runner = sat_tools.SatRunner(encoding, sat_tools.MiniSatSolver())
+runner = sat_tools.SatRunner(encoding, sat_tools.CadicalSolver()) #sat_tools.GlucoseSolver()) #sat_tools.MiniSatSolver())
 improved = False
 
-for _ in range(0, 100):
+start_time = time.time()
+while (time.time() - start_time) < limit:
     new_instance = strategy.find_next(c_tree, last_tree, last_instance, target, improved)
 
     new_instance.check_consistency()
@@ -56,24 +61,28 @@ for _ in range(0, 100):
     new_instance.functional_dependencies()
     new_instance.check_consistency()
 
-    last_tree = runner.run(new_instance, encoding.new_bound(last_tree, new_instance))
-    last_tree.check_consistency()
-    print(f"Nodes: {last_tree.get_nodes()}, Depth: {last_tree.get_depth()}")
-    test_acc = last_tree.get_accuracy(new_instance.examples)
-    print(test_acc)
-    acc = last_tree.get_accuracy(instance.examples)
-    improved = False
-    if acc > last_accuracy:
-        last_accuracy = acc
-        c_tree = last_tree
-        improved = True
+    last_tree = runner.run(new_instance, encoding.new_bound(last_tree, new_instance), timeout=limit - (time.time() - start_time))
 
-    if acc > 0.99999999:
-        break
+    if last_tree is not None:
+        last_tree.check_consistency()
+        print(f"Nodes: {last_tree.get_nodes()}, Depth: {last_tree.get_depth()}")
+        test_acc = last_tree.get_accuracy(new_instance.examples)
+        print(test_acc)
+        acc = last_tree.get_accuracy(instance.examples)
+        improved = False
+        if acc > last_accuracy:
+            last_accuracy = acc
+            c_tree = last_tree
+            improved = True
+
+        print(f"Accuracy: {last_accuracy}, This run {acc}")
+        if acc > 0.99999999:
+            break
 
     new_instance.unreduce_instance(last_tree)
     new_instance.check_consistency()
     last_instance = new_instance
-    print(f"Accuracy: {last_accuracy}, This run {acc}")
 
 print("Done")
+if c_tree is not None:
+    print(f"Accuracy: {c_tree.get_accuracy(test_instance.examples)}")

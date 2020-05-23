@@ -195,13 +195,18 @@ class DecisionDiagram:
         return dfs_find(self.root, 0)
 
     def get_nodes(self):
+        nodes = set()
+
         def dfs_find(node):
+            nodes.add(node)
             if node.is_leaf:
                 return 1
             else:
-                return 1 + dfs_find(node.left) + dfs_find(node.right)
+                dfs_find(node.left)
+                dfs_find(node.right)
 
-        return dfs_find(self.root)
+        dfs_find(self.root)
+        return len(nodes)
 
     def simplify(self):
         """Simplifies BDD by removing nodes that have only one branch"""

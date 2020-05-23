@@ -1,7 +1,13 @@
 import os
 import subprocess
 import sys
-from enum import Enum
+import resource
+from datetime import time
+import time
+
+def limit_memory(limit):
+    if limit > 0:
+        resource.setrlimit(resource.RLIMIT_AS, (limit * 1024 * 1024, (limit + 30) * 1024 * 1024))
 
 
 class BaseSolver:
@@ -9,16 +15,16 @@ class BaseSolver:
         print("Not implemented")
         raise
 
-    def run(self, input_file, model_file):
+    def run(self, input_file, model_file, mem_limit=0):
         print("Not implemented")
         raise
 
 
 class MiniSatSolver(BaseSolver):
-    def run(self, input_file, model_file):
+    def run(self, input_file, model_file, mem_limit=0):
         FNULL = open(os.devnull, 'w')
         return subprocess.Popen(['minisat', '-verb=0', input_file, model_file], stdout=FNULL,
-                                      stderr=subprocess.STDOUT)
+                                      stderr=subprocess.STDOUT, preexec_fn=lambda: limit_memory(mem_limit))
 
     def parse(self, f):
         first = f.readline()
@@ -34,6 +40,49 @@ class MiniSatSolver(BaseSolver):
 
         return model
 
+
+class GlucoseSolver(BaseSolver):
+    def run(self, input_file, model_file, mem_limit=0):
+        FNULL = open(os.devnull, 'w')
+        return subprocess.Popen(['/home/asc/aschidler/Code/frasmt_pace/glucose', '-verb=0', input_file, model_file], stdout=FNULL,
+                                      stderr=subprocess.STDOUT, preexec_fn=lambda: limit_memory(mem_limit))
+
+    def parse(self, f):
+        first = f.readline()
+        if first.startswith("UNSAT"):
+            return None
+
+        # TODO: This could be faster using a list...
+        model = {}
+        vars = first.split()
+        for v in vars:
+            val = int(v)
+            model[abs(val)] = val > 0
+
+        return model
+
+
+class CadicalSolver(BaseSolver):
+    def run(self, input_file, model_file, mem_limit=0):
+        out_file = open(model_file, "w")
+        return subprocess.Popen(['/home/asc/Downloads/cadical-1.0.0-c861e12/build/cadical', '-q', input_file], stdout=out_file,
+                                      stderr=subprocess.STDOUT, preexec_fn=lambda: limit_memory(mem_limit))
+
+    def parse(self, f):
+        first = f.readline()
+        if first.startswith("s UNSAT"):
+            return None
+
+        # TODO: This could be faster using a list...
+        model = {}
+        for _, ln in enumerate(f):
+            if ln.startswith("v "):
+                vars = ln.split()
+                for v in vars[1:]:
+                    val = int(v)
+                    model[abs(val)] = val > 0
+
+        return model
 
 class WrMaxsatSolver(BaseSolver):
     def supports_timeout(self):
@@ -99,31 +148,44 @@ class SatRunner:
         self.solver = solver
         self.encoder = encoder
 
-    def run(self, instance, starting_bound, timeout=0):
+    def run(self, instance, starting_bound, timeout=0, memlimit=0):
         l_bound = self.encoder.lb()
         u_bound = sys.maxsize
         c_bound = starting_bound
 
         enc_file = os.path.join(self.base_path, f"{self.tmp_file}.enc")
         model_file = os.path.join(self.base_path, f"{self.tmp_file}.model")
-        out_file = os.path.join(self.base_path, f"{self.tmp_file}.out")
 
+        start = time.time()
         while l_bound < u_bound:
             print(f"Running with limit {c_bound}")
             with open(enc_file, "w") as f:
                 inst_encoding = self.encoder(f)
                 inst_encoding.encode(instance, c_bound)
 
-            with open(out_file, "w") as outf:
-                p1 = self.solver.run(enc_file, model_file)
+            p1 = self.solver.run(enc_file, model_file, memlimit)
 
             if timeout == 0:
                 p1.wait()
             else:
-                p1.wait(timeout=timeout)
+                try:
+                    elapsed = time.time() - start
+                    p1.wait(timeout=timeout-elapsed)
+                except subprocess.TimeoutExpired:
+                    if p1.poll() is None:
+                        p1.terminate()
+                    return None
+
+            if not os.path.exists(model_file):
+                os.remove(enc_file)
+                return None
 
             with open(model_file, "r") as f:
                 model = self.solver.parse(f)
+
+                if model is not None and len(model) == 0:
+                    return None
+
                 if model is None:
                     l_bound = c_bound + inst_encoding.increment
                     c_bound = l_bound
@@ -133,9 +195,8 @@ class SatRunner:
                     u_bound = c_bound
                     c_bound -= inst_encoding.increment
 
-            os.remove(enc_file)
             os.remove(model_file)
-            os.remove(out_file)
+            os.remove(enc_file)
 
         return tree
 
@@ -163,7 +224,7 @@ class MaxSatRunner:
             try:
                 p1.wait(timeout=timeout)
             except subprocess.TimeoutExpired:
-                if p1.is_alive():
+                if p1.poll() is None:
                     p1.terminate()
 
         result = None

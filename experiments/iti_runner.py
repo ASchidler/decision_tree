@@ -11,8 +11,9 @@ class Node:
 
 
 iti_path = "/home/asc/bin/iti"
-
-for fl in os.listdir(sys.argv[1]):
+targets = list(os.listdir(sys.argv[1]))
+targets.sort()
+for fl in targets:
     if os.path.isdir(os.path.join(sys.argv[1], fl)):
         process = subprocess.Popen([iti_path, fl, "-ltraining", "-qtest", "-f", "-t", "-w"], stdout=subprocess.PIPE)
         output, _ = process.communicate()
