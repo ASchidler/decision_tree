@@ -11,7 +11,7 @@ import sat_tools
 
 sample_path = sys.argv[1]
 timeout = 1000
-memlimit = 2048
+memlimit = 2048 * 5
 
 enc_idx = int(sys.argv[2])
 slv_idx = int(sys.argv[3])
@@ -38,7 +38,8 @@ if not os.path.exists(fln_name):
         out_file.write("project;sample;total;successful;nodes;depth;runtime;accuracy")
         out_file.write(os.linesep)
 
-done = {}
+#done = {}
+done = {"shuttleM": set(["0.1", "0.05"])}
 
 with open(fln_name, "r+") as out_file:
     for idx, ln in enumerate(out_file):
@@ -59,9 +60,10 @@ with open(fln_name, "r+") as out_file:
 
             sample_paths.sort()
             for sample in sample_paths:
-                if project in done and sample in done[project]:
+                sample_name = os.path.split(sample)[-1]
+                if project in done and sample_name in done[project]:
                     continue
-                print(f"  Starting sample {os.path.split(sample)[-1]}")
+                print(f"  Starting sample {sample_name}")
                 cnt_success = 0
                 sum_acc = 0
                 sum_depth = 0
@@ -89,8 +91,9 @@ with open(fln_name, "r+") as out_file:
                             sum_time += elapsed
                         else:
                             print("      Tree not found in time")
-                out_file.write(f"{project};{sample};{cnt};{cnt_success};{sum_node/cnt_success};{sum_depth/cnt_success};"
-                               f"{sum_time/cnt_success};{sum_acc/cnt_success}{os.linesep}")
+                cnt_divisor = cnt_success if cnt_success > 0 else 1
+                out_file.write(f"{project};{sample_name};{cnt};{cnt_success};{sum_node/cnt_divisor};{sum_depth/cnt_divisor};"
+                               f"{sum_time/cnt_divisor};{sum_acc/cnt_divisor}{os.linesep}")
                 print("Finished sample")
             print("Finished project")
 

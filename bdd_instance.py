@@ -177,7 +177,6 @@ class BddInstance:
             for e2 in n_examples:
                 for f in range(1, self.num_features+1):
                     if e1.features[f] != e2.features[f]:
-                        # TODO: there is probably a more efficient way, but tuples are not supported
                         feats[f].add((e1.id, e2.id))
 
         cont = True
@@ -233,10 +232,25 @@ class BddInstance:
                     # Add random feature
                     key.add(c_diff[random.randint(0, len(c_diff) - 1)])
 
+        seen = {}
+
+        for e in self.examples:
+            values = []
+            for j in key:
+                values.append(e.features[j])
+            c_key = tuple(values)
+            if c_key in seen and seen[c_key] != e.cls:
+                print("Not a key")
+                exit(1)
+            else:
+                seen[c_key] = e.cls
+
         return list(key)
 
     def check_consistency(self):
+        ids = set()
         for i, e1 in enumerate(self.examples):
+            ids.add(e1.id)
             for j, e2 in enumerate(self.examples):
                 if j > i and e1.cls != e2.cls:
                     found = False
@@ -249,8 +263,8 @@ class BddInstance:
                         exit(1)
 
 
-def reduce(instance, randomized_runs=1, remove=False, optimal=False, min_key=None):
-    print(f"Before: {instance.num_features} Features, {len(instance.examples)} examples")
+def reduce(instance, randomized_runs=5, remove=False, optimal=False, min_key=None):
+    # print(f"Before: {instance.num_features} Features, {len(instance.examples)} examples")
 
     unnecessary = []
     if min_key is None:
@@ -258,8 +272,9 @@ def reduce(instance, randomized_runs=1, remove=False, optimal=False, min_key=Non
             keys = [instance.min_key(randomize=True) for _ in range(0, randomized_runs-1)]
             keys.append(instance.min_key(randomize=False))
             keys.extend([instance.min_key3() for _ in range(0, randomized_runs)])
-            keys.append(instance.min_key2())
-            #keys.append(maxsat_feature.compute_features(instance))
+            if len(instance.examples) < 5000:
+                keys.append(instance.min_key2())
+
             keys.sort(key=lambda x: len(x))
             min_key = keys[0]
         else:
@@ -273,30 +288,24 @@ def reduce(instance, randomized_runs=1, remove=False, optimal=False, min_key=Non
         removal.remove(k)
 
     removal.update(unnecessary)
-    removalL = list(removal)
 
-    # Work from back to front to avoid conflicts
-    removalL.sort(reverse=True)
-
-    cIdx = instance.num_features
     instance.reduce_map = []
-    for u in removalL:
-        while cIdx in removal:
-            cIdx -= 1
+    cFront = 1
+    cBack = instance.num_features
 
-        # Leave at least one feature
-        if cIdx <= 0:
-            break
-
-        if cIdx > u:
-            instance.reduce_map.append((u, cIdx))
-            removal.remove(u)
-            removal.add(cIdx)
-        for e in instance.examples:
-            if cIdx > u:
-                e.features[u], e.features[cIdx] = e.features[cIdx], e.features[u]
-            if remove:
-                e.features.pop(cIdx)
+    while cFront < cBack:
+        while cFront not in removal and cFront < cBack:
+            cFront += 1
+        while cBack in removal:
+            cBack -= 1
+        if cFront < cBack:
+            removal.remove(cFront)
+            removal.add(cBack)
+            instance.reduce_map.append((cFront, cBack))
+            for e in instance.examples:
+                e.features[cFront], e.features[cBack] = e.features[cBack], e.features[cFront]
+                if remove:
+                    e.features.pop(cBack)
 
     instance.num_features -= len(removal)
     instance.num_features = max(instance.num_features, 1)
@@ -313,6 +322,6 @@ def reduce(instance, randomized_runs=1, remove=False, optimal=False, min_key=Non
             seen.add(k)
             i += 1
 
-    print(f"After: {instance.num_features} Features, {len(instance.examples)} examples")
+    # print(f"After: {instance.num_features} Features, {len(instance.examples)} examples")
 
 

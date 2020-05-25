@@ -157,3 +157,11 @@ class DecisionDiagramEncoding(base_encoding.BaseEncoding):
     @staticmethod
     def lb():
         return 3
+
+    @staticmethod
+    def max_instances(num_features, limit):
+        if num_features < 50:
+            return 100
+        if num_features < 100:
+            return 70
+        return 50

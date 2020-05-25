@@ -5,6 +5,7 @@ import resource
 from datetime import time
 import time
 
+
 def limit_memory(limit):
     if limit > 0:
         resource.setrlimit(resource.RLIMIT_AS, (limit * 1024 * 1024, (limit + 30) * 1024 * 1024))
@@ -23,7 +24,7 @@ class BaseSolver:
 class MiniSatSolver(BaseSolver):
     def run(self, input_file, model_file, mem_limit=0):
         FNULL = open(os.devnull, 'w')
-        return subprocess.Popen(['minisat', '-verb=0', input_file, model_file], stdout=FNULL,
+        return subprocess.Popen(['minisat', '-verb=0', f'-mem-lim={mem_limit}', input_file, model_file], stdout=FNULL,
                                       stderr=subprocess.STDOUT, preexec_fn=lambda: limit_memory(mem_limit))
 
     def parse(self, f):
@@ -44,7 +45,7 @@ class MiniSatSolver(BaseSolver):
 class GlucoseSolver(BaseSolver):
     def run(self, input_file, model_file, mem_limit=0):
         FNULL = open(os.devnull, 'w')
-        return subprocess.Popen(['/home/asc/aschidler/Code/frasmt_pace/glucose', '-verb=0', input_file, model_file], stdout=FNULL,
+        return subprocess.Popen(['/home/asc/bin/glucose', '-verb=0', f'-mem-lim={mem_limit}', input_file, model_file], stdout=FNULL,
                                       stderr=subprocess.STDOUT, preexec_fn=lambda: limit_memory(mem_limit))
 
     def parse(self, f):
@@ -158,7 +159,7 @@ class SatRunner:
 
         start = time.time()
         while l_bound < u_bound:
-            print(f"Running with limit {c_bound}")
+            # print(f"Running with limit {c_bound}")
             with open(enc_file, "w") as f:
                 inst_encoding = self.encoder(f)
                 inst_encoding.encode(instance, c_bound)

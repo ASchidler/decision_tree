@@ -8,13 +8,18 @@ import sys
 # TODO: Deduct point if worse or new is better
 # TODO: Start with smaller sets and build them up.
 
+
 class InitialStrategy:
     def __init__(self, instance):
         self.instance = instance
 
-    def find_next(self, c_tree, last_tree, last_instance, target, improved):
+    def find_next(self, c_tree, last_tree, last_instance, target, improved, best_instance):
         new_instance = BddInstance()
         new_instance.num_features = self.instance.num_features
+        if len(self.instance.examples) <= target:
+            for e in self.instance.examples:
+                new_instance.add_example(e.copy())
+            return new_instance
 
         p_examples = []
         n_examples = []
@@ -46,12 +51,17 @@ class InitialStrategy2:
     def __init__(self, instance):
         self.instance = instance
 
-    def find_next(self, c_tree, last_tree, last_instance, target, improved):
+    def find_next(self, c_tree, last_tree, last_instance, target, improved, best_instance):
         new_instance = BddInstance()
         new_instance.num_features = self.instance.num_features
 
         p_examples = []
         n_examples = []
+
+        if len(self.instance.examples) <= target:
+            for e in self.instance.examples:
+                new_instance.add_example(e.copy())
+            return new_instance
 
         for e in self.instance.examples:
             if e.cls:
@@ -80,8 +90,10 @@ class InitialStrategy2:
                             c_max = dist
                             c_max_examp = ex
 
-                added.add(c_max_examp.id)
-                new_instance.add_example(c_max_examp.copy())
+                # This may happen if one collection does not have enough entries
+                if c_max_examp is not None:
+                    added.add(c_max_examp.id)
+                    new_instance.add_example(c_max_examp.copy())
 
         return new_instance
 
@@ -93,15 +105,21 @@ class IncrementalStrategy:
         self.default_strategy = RandomStrategy(instance)
         self.hit_count = {x.id: 0 for x in instance.examples}
 
-    def find_next(self, c_tree, last_tree, last_instance, target, improved):
+    def find_next(self, c_tree, last_tree, last_instance, target, improved, best_instance):
         if c_tree is None:
-            return self.default_strategy.find_next(c_tree, last_tree, last_instance, target)
+            return self.default_strategy.find_next(c_tree, last_tree, last_instance, target, improved, best_instance)
 
         new_instance = BddInstance()
         new_instance.num_features = self.instance.num_features
 
+        if len(self.instance.examples) <= target:
+            for e in self.instance.examples:
+                new_instance.add_example(e.copy())
+            return new_instance
+
         path_partition_correct = defaultdict(list)
         path_partition_incorrect = defaultdict(list)
+        fillers = []
 
         for e in self.instance.examples:  # last_instance.examples:
             pth = tuple(last_tree.get_path(e.features))
@@ -118,6 +136,7 @@ class IncrementalStrategy:
         for k, v in path_partition_correct.items():
             v.sort(key=lambda x: -1 * self.hit_count[x.id])
             c_experiment = v.pop()
+            fillers.extend(v)
             v.clear()
             v.append(c_experiment)
             new_instance.add_example(c_experiment.copy())
@@ -133,14 +152,24 @@ class IncrementalStrategy:
 
         # Select negative representative
         while len(new_instance.examples) < target:
+            found_any = False
             for k, v in path_partition_incorrect.items():
                 if v:
                     _, c_experiment = v.pop()
                     new_instance.add_example(c_experiment.copy())
                     self.hit_count[c_experiment.id] += 1
+                    found_any = True
 
                     if len(new_instance.examples) >= target:
                         break
+            if not found_any:
+                break
+
+        # Fill up with other examples
+        if len(new_instance.examples) < target:
+            fillers.sort(key=lambda x: -1 * self.hit_count[x.id])
+            for i in range(0, min(len(fillers), target - len(new_instance.examples))):
+                new_instance.add_example(fillers[i].copy())
 
         return new_instance
 
@@ -149,13 +178,16 @@ class RandomStrategy:
     def __init__(self, instance):
         self.instance = instance
 
-    def find_next(self, c_tree, last_tree, last_instance, target, improved):
+    def find_next(self, c_tree, last_tree, last_instance, target, improved, best_instance):
         new_instance = BddInstance()
         new_instance.num_features = self.instance.num_features
-
-        for _ in range(0, target):
-            idx = random.randint(0, len(self.instance.examples) - 1)
-            new_instance.add_example(self.instance.examples[idx].copy())
+        if len(self.instance.examples) <= target:
+            for e in self.instance.examples:
+                new_instance.add_example(e.copy())
+        else:
+            for _ in range(0, target):
+                idx = random.randint(0, len(self.instance.examples) - 1)
+                new_instance.add_example(self.instance.examples[idx].copy())
 
         return new_instance
 
@@ -166,12 +198,17 @@ class RetainingStrategy:
         self.retain = []
         self.default_strategy = InitialStrategy(instance) #RandomStrategy(instance)
 
-    def find_next(self, c_tree, last_tree, last_instance, target, improved):
+    def find_next(self, c_tree, last_tree, last_instance, target, improved, best_instance):
         if c_tree is None:
-            return self.default_strategy.find_next(c_tree, last_tree, last_instance, target)
+            return self.default_strategy.find_next(c_tree, last_tree, last_instance, target, improved, best_instance)
 
         new_instance = BddInstance()
         new_instance.num_features = self.instance.num_features
+
+        if len(self.instance.examples) <= target:
+            for e in self.instance.examples:
+                new_instance.add_example(e.copy())
+            return new_instance
 
         if last_instance is not None:
             standins = set()
@@ -183,7 +220,7 @@ class RetainingStrategy:
                 pth = tuple(last_tree.get_path(e.features))
                 if pth not in standins:
                     standins.add(pth)
-                    self.retain.append(e)
+                    self.retain.append(e.copy())
                     new_instance.add_example(e.copy())
 
             print(f"Retained {len(new_instance.examples)} examples")
@@ -216,15 +253,24 @@ class UpdatedRetainingStrategy:
         self.default_strategy = InitialStrategy2(instance) #InitialStrategy(instance) #RandomStrategy(instance)
         self.points = [0 for _ in range(0, max(x.id for x in self.instance.examples) + 1)]
 
-    def find_next(self, c_tree, last_tree, last_instance, target, improved):
+    def find_next(self, c_tree, last_tree, last_instance, target, improved, best_instance):
         if c_tree is None:
-            return self.default_strategy.find_next(c_tree, last_tree, last_instance, target, improved)
+            return self.default_strategy.find_next(c_tree, last_tree, last_instance, target, improved, best_instance)
 
         for e in last_instance.examples:
             self.points[e.id] += 1 if improved else -1
 
+        if last_tree is not None and not improved:
+            for e in best_instance.examples:
+                self.points[e.id] += 1
+
         new_instance = BddInstance()
         new_instance.num_features = self.instance.num_features
+
+        if len(self.instance.examples) <= target:
+            for e in self.instance.examples:
+                new_instance.add_example(e.copy())
+            return new_instance
 
         path_partition_correct = defaultdict(list)
         path_partition_incorrect = defaultdict(list)
@@ -279,5 +325,3 @@ class UpdatedRetainingStrategy:
 
         return new_instance
 
-
-# TODO: Use a certain amount of random choices and do not forget to increment points, whenever a new selection does not imprive!
