@@ -17,6 +17,9 @@ memlimit = 2048 * 5
 enc_idx = int(sys.argv[2])
 slv_idx = int(sys.argv[3])
 
+tmpdir = "./" if len(sys.argv) == 4 else sys.argv[4]
+outdir = "./" if len(sys.argv) == 4 else sys.argv[5]
+
 encodings = [
     diagram_encoding.DecisionDiagramEncoding,
     diagram_depth.DiagramDepthEncoding,
@@ -32,16 +35,16 @@ solvers = [
 ]
 
 encoding = encodings[enc_idx]
-runner = sat_tools.SatRunner(encoding, solvers[slv_idx]())
+runner = sat_tools.SatRunner(encoding, solvers[slv_idx](), base_path=tmpdir)
 
-fln_name = f"results_encodings_{enc_idx}_{slv_idx}.csv"
+fln_name = os.path.join(outdir, f"results_encodings_{enc_idx}_{slv_idx}.csv")
 if not os.path.exists(fln_name):
     with open(fln_name, "w") as out_file:
         out_file.write("project;sample;total;successful;nodes;depth;runtime;accuracy;size")
         out_file.write(os.linesep)
 
-#done = {}
-done = {"shuttleM": set(["0.1", "0.05"])}
+done = {}
+#done = {"shuttleM": set(["0.1", "0.05"])}
 
 with open(fln_name, "r+") as out_file:
     for idx, ln in enumerate(out_file):
