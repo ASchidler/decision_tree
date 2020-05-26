@@ -153,6 +153,7 @@ class SatRunner:
         l_bound = self.encoder.lb()
         u_bound = sys.maxsize
         c_bound = starting_bound
+        enc_size = 0
 
         enc_file = os.path.join(self.base_path, f"{self.tmp_file}.enc")
         model_file = os.path.join(self.base_path, f"{self.tmp_file}.model")
@@ -163,7 +164,7 @@ class SatRunner:
             with open(enc_file, "w") as f:
                 inst_encoding = self.encoder(f)
                 inst_encoding.encode(instance, c_bound)
-
+            enc_size = max(enc_size, os.path.getsize(enc_file))
             p1 = self.solver.run(enc_file, model_file, memlimit)
 
             if timeout == 0:
@@ -175,17 +176,17 @@ class SatRunner:
                 except subprocess.TimeoutExpired:
                     if p1.poll() is None:
                         p1.terminate()
-                    return None
+                    return None, enc_size
 
             if not os.path.exists(model_file):
                 os.remove(enc_file)
-                return None
+                return None, enc_size
 
             with open(model_file, "r") as f:
                 model = self.solver.parse(f)
 
                 if model is not None and len(model) == 0:
-                    return None
+                    return None, enc_size
 
                 if model is None:
                     l_bound = c_bound + inst_encoding.increment
@@ -199,7 +200,7 @@ class SatRunner:
             os.remove(model_file)
             os.remove(enc_file)
 
-        return tree
+        return tree, enc_size
 
 
 class MaxSatRunner:
