@@ -262,6 +262,21 @@ class BddInstance:
                         print("Not consistent")
                         exit(1)
 
+    def is_binary(self):
+        cls = set()
+        for e in self.examples:
+            cls.add(e.cls)
+            if len(cls) > 2:
+                return False
+
+        for f in range(1, self.num_features+1):
+            vals = set()
+            for e in self.examples:
+                vals.add(e.features[f])
+                if len(vals) > 2:
+                    return False
+
+        return True
 
 def reduce(instance, randomized_runs=5, remove=False, optimal=False, min_key=None):
     # print(f"Before: {instance.num_features} Features, {len(instance.examples)} examples")
@@ -323,5 +338,4 @@ def reduce(instance, randomized_runs=5, remove=False, optimal=False, min_key=Non
             i += 1
 
     # print(f"After: {instance.num_features} Features, {len(instance.examples)} examples")
-
 

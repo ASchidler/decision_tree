@@ -40,3 +40,31 @@ def parse(filename):
             id += 1
 
     return instance
+
+
+def parse_nonbinary(filename):
+    instance = BddInstance()
+    id = 1
+    first_line = True
+
+    with open(filename, "r") as f:
+        for ln in f:
+            # Skip header
+            if first_line:
+                first_line = False
+                continue
+            fields = ln.split(',')
+            example = []
+
+            for i, fd in enumerate(fields):
+                # Not binary values, skip line
+                fd = fd.strip()
+                estr = fd.lower()
+
+                example.append(estr)
+
+            cls = example.pop()
+            instance.add_example(BddExamples(example, cls, id))
+            id += 1
+
+    return instance

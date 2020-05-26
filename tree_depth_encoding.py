@@ -1,5 +1,5 @@
 import base_encoding
-from decision_tree import DecisionTree
+from decision_tree import DecisionTree, NonBinaryTree
 import math
 
 class TreeDepthEncoding(base_encoding.BaseEncoding):
@@ -31,14 +31,14 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
                 self.add_clause(self.g[i][j][0])
 
         # Transitivity
-        for i in range(0, len(instance.examples)):
-            for j in range(i + 1, len(instance.examples)):
-                for dl in range(1, depth + 1):
-                    for k in range(j + 1, len(instance.examples)):
-                        if i != k and j != k:
-                            self.add_clause(-self.g[i][j][dl], -self.g[j][k][dl], self.g[i][k][dl])
-                            self.add_clause(-self.g[i][j][dl], -self.g[i][k][dl], self.g[j][k][dl])
-                            self.add_clause(-self.g[i][k][dl], -self.g[j][k][dl], self.g[i][j][dl])
+        # for i in range(0, len(instance.examples)):
+        #     for j in range(i + 1, len(instance.examples)):
+        #         for dl in range(1, depth + 1):
+        #             for k in range(j + 1, len(instance.examples)):
+        #                 if i != k and j != k:
+        #                     self.add_clause(-self.g[i][j][dl], -self.g[j][k][dl], self.g[i][k][dl])
+        #                     self.add_clause(-self.g[i][j][dl], -self.g[i][k][dl], self.g[j][k][dl])
+        #                     self.add_clause(-self.g[i][k][dl], -self.g[j][k][dl], self.g[i][j][dl])
 
         # Verify that at last level, the partitioning is by class
         for i in range(0, len(instance.examples)):
@@ -81,7 +81,77 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
 
         self.write_header(instance)
 
+    def decode_nonbinary(self, model, instance, depth):
+        tree = NonBinaryTree()
+
+        def find_feature(ce, cdl):
+            ce_feature = None
+            for cf in range(1, instance.num_features+1):
+                if model[self.d[ce][cdl][cf]]:
+                    if ce_feature is None:
+                        ce_feature = cf
+                    else:
+                        print(f"ERROR double feature {cf} and {ce_feature} for experiment {ce}, at level {cdl}.")
+            if ce_feature is None:
+                print(f"ERROR no feature for {ce} at level {cdl}.")
+            return ce_feature
+
+        def df_tree(grp, parent, d):
+            if d == depth:
+                cls = grp[0][1].cls
+                for _, e in grp:
+                    if e.cls != cls:
+                        print(f"Error, double cls in leaf group {cls}, {e.cls}")
+                tree.add_leaf(parent, grp[0][1].features[parent.feature], cls)
+                return
+
+            # Find feature
+            f = find_feature(grp[0][0], d)
+
+            # Find groups
+            new_grps = []
+
+            for e_id, e in grp:
+                found = False
+                for ng in new_grps:
+                    n_id, _ = ng[0]
+                    u = min(e_id, n_id)
+                    v = max(e_id, n_id)
+
+                    if model[self.g[u][v][d+1]]:
+                        if found:
+                            print("Double group membership")
+                            exit(1)
+                        found = True
+                        ng.append((e_id, e))
+                if not found:
+                    new_grps.append([(e_id, e)])
+
+            # Check group consistency
+            if parent is not None:
+                for ng in new_grps:
+                    val = ng[0][1].features[parent.feature]
+
+                    for _, e in ng:
+                        if e.features[parent.feature] != val:
+                            print(f"Inhomogenous group, values {val}, {e.features[f]}")
+                            exit(1)
+
+            if len(new_grps) > 1:
+                val = None if parent is None else grp[0][1].features[parent.feature]
+                n_n = tree.add_node(parent, val, f)
+                for ng in new_grps:
+                   df_tree(ng, n_n, d+1)
+            else:
+                df_tree(new_grps[0], parent, d+1)
+
+        df_tree(list(enumerate(instance.examples)), None, 0)
+        return tree
+
     def decode(self, model, instance, depth):
+        if not instance.is_binary():
+            return self.decode_nonbinary(model, instance, depth)
+
         tree = DecisionTree(instance.num_features, 2**(depth+1) - 1)
 
         # Root
@@ -97,87 +167,61 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
                 print(f"ERROR no feature for {ce} at level {cdl}.")
             return ce_feature
 
-        node = 2
-        feature = find_feature(0, 0)
-        tree.set_root(feature)
-        groups = {1: ([i for i in range(0, len(instance.examples))], None, None)}
-
-        for dl in range(0, depth+1):
-            new_groups = {}
-            while groups:
-                p = next(iter(groups))
-                g, pol, pp = groups.pop(p)
-                g1 = []
-                g2 = []
-                g.reverse()  # Process in increasing order when popping
-                n = g.pop()  # Use smallest element as reference
-                g1.append(n)
-                # Separate g into two groups, based in n
-                while g:
-                    n2 = g.pop()
-                    if model[self.g[n][n2][dl]]:
-                        g1.append(n2)
-                    else:
-                        g2.append(n2)
-
-                # Check if the decision split the group
-                if len(g2) == 0:
-                    new_groups[p] = (g1, pol, pp)
-                else:
-                    if p > 1:
-                        f = find_feature(n, dl-1)
-                        tree.add_node(p, pp, f, pol)
-
-                    polarity = instance.examples[n].features[tree.nodes[p].feature]
-                    new_groups[node] = (g1, polarity, p)
-                    node += 1
-                    new_groups[node] = (g2, not polarity, p)
-                    node += 1
-
-                    # Consistency
-                    for cg in [g1, g2]:
-                        f = tree.nodes[p].feature
-                        for i in range(0, len(cg)):
-                            for j in range(i+1, len(cg)):
-                                if not model[self.g[cg[i]][cg[j]][dl]]:
-                                    print("ERROR: Group mismatch")
-                                if instance.examples[cg[i]].features[f] != instance.examples[cg[j]].features[f]:
-                                    print("ERROR: Feature values inconsistency")
-                        n = cg[0]
-                        for i in range(n+1, len(instance.examples)):
-                            if model[self.g[n][i][dl]] and i not in cg:
-                                print("ERROR: Element missing")
-
-            groups = new_groups
-
-        # Find leafs
-        for p, (group, pol, pp) in groups.items():
-            cls = instance.examples[group[0]].cls
-            for e in group:
-                if instance.examples[e].cls != cls:
-                    print("Error, non matching class in last group!")
-            tree.add_leaf(p, pp, pol, cls)
-
-        # Simplify
-        def simplify(node):
-            if node.is_leaf:
+        def df_tree(grp, parent, d):
+            if d == depth:
+                cls = grp[0][1].cls
+                for _, e in grp:
+                    if e.cls != cls:
+                        print(f"Error, double cls in leaf group {cls}, {e.cls}")
+                val = grp[0][1].features[parent.feature]
+                tree.add_leaf(2 * parent.id + (0 if val else 1), parent.id, val, cls)
                 return
 
-            changed = True
-            while changed:
-                changed = False
+            # Find feature
+            f = find_feature(grp[0][0], d)
 
-                if not node.left.is_leaf and node.feature == node.left.feature:
-                    node.left = node.left.left
-                    changed = True
-                if not node.right.is_leaf and node.feature == node.right.feature:
-                    node.right = node.right.right
-                    changed = True
+            # Find groups
+            new_grps = []
 
-            simplify(node.left)
-            simplify(node.right)
+            for e_id, e in grp:
+                found = False
+                for ng in new_grps:
+                    n_id, _ = ng[0]
+                    u = min(e_id, n_id)
+                    v = max(e_id, n_id)
 
-        simplify(tree.root)
+                    if model[self.g[u][v][d+1]]:
+                        if found:
+                            print("Double group membership")
+                            exit(1)
+                        found = True
+                        ng.append((e_id, e))
+                if not found:
+                    new_grps.append([(e_id, e)])
+
+            # Check group consistency
+            if parent is not None:
+                for ng in new_grps:
+                    val = ng[0][1].features[parent.feature]
+
+                    for _, e in ng:
+                        if e.features[parent.feature] != val:
+                            print(f"Inhomogenous group, values {val}, {e.features[f]}")
+                            exit(1)
+
+            if len(new_grps) > 1:
+                if parent is None:
+                    tree.set_root(f)
+                    n_n = tree.nodes[1]
+                else:
+                    val = grp[0][1].features[parent.feature]
+                    n_n = tree.add_node(2 * parent.id + (0 if val else 1), parent.id, f, val)
+                for ng in new_grps:
+                    df_tree(ng, n_n, d+1)
+            else:
+                df_tree(new_grps[0], parent, d+1)
+
+        df_tree(list(enumerate(instance.examples)), None, 0)
         return tree
 
     def check_consistency(self, model, instance, num_nodes, tree):
