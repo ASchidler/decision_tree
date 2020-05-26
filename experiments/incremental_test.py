@@ -15,6 +15,7 @@ import random
 import sat_tools
 from collections import defaultdict
 import strategies.strategies as strat
+from aaai_encoding import AAAIEncoding
 
 timeout = 1000
 memlimit = 2048 * 5
@@ -23,15 +24,17 @@ input_path = sys.argv[1]
 enc_idx = int(sys.argv[2])
 solver_idx = int(sys.argv[3])
 strat_idx = int(sys.argv[4])
+enable_red = True if sys.argv[5] == "1" else False
 
-tmp_dir = "." if len(sys.argv) == 5 else sys.argv[5]
-result_dir = "." if len(sys.argv) == 5 else sys.argv[6]
+tmp_dir = "." if len(sys.argv) == 6 else sys.argv[6]
+result_dir = "." if len(sys.argv) == 6 else sys.argv[7]
 
 encodings = [
     DecisionDiagramEncoding,
     DiagramDepthEncoding,
     TreeDepthEncoding,
-    TreeEncoding
+    TreeEncoding,
+    AAAIEncoding
 ]
 
 solvers = [
@@ -58,7 +61,8 @@ runner = sat_tools.SatRunner(encoding, solver(), base_path=tmp_dir)
 # TODO: Sanity check that accuracy over test set is indeed 100%
 
 done = set()
-out_file = f"results_incremental_{os.path.split(input_path)[-1]}_{enc_idx}_{solver_idx}_{strat_idx}.csv"
+test = os.path.split(os.path.normpath(input_path))
+out_file = f"results_incremental_{os.path.split(os.path.normpath(input_path))[-1]}_{enc_idx}_{solver_idx}_{enable_red}_{strat_idx}.csv"
 out_file = os.path.join(result_dir, out_file)
 
 if not os.path.exists(out_file):
@@ -93,21 +97,26 @@ with open(out_file, "r+") as of:
             tree_cnt = 0
 
             start_time = time.time()
+            target = encoding.max_instances(instance.num_features, 1)
             while best_acc < 0.99999 and (time.time() - start_time) < timeout:
                 # Increment number after all 10 computed trees
-                target = encoding.max_instances(instance.num_features, 1) + (tree_cnt // 10 * 10)
+                if tree_cnt > 0 and tree_cnt % 10 == 0:
+                    target = max(target + 10, int(target * 1.1))
+
                 new_instance = strategy.find_next(best_tree, last_tree, last_instance, target, improved, best_instance)
 
                 new_instance.check_consistency()
                 print(f"Using {len(new_instance.examples)} examples")
-                bdd_instance.reduce(new_instance)
-                new_instance.check_consistency()
+                if enable_red:
+                    bdd_instance.reduce(new_instance)
+                    new_instance.check_consistency()
 
-                last_tree = runner.run(new_instance, encoding.new_bound(last_tree, new_instance),
+                last_tree,_ = runner.run(new_instance, encoding.new_bound(last_tree, new_instance),
                                        timeout=timeout - (time.time() - start_time), memlimit=memlimit)
 
                 improved = False
-                new_instance.unreduce_instance(last_tree)
+                if enable_red:
+                    new_instance.unreduce_instance(last_tree)
                 last_instance = new_instance
 
                 if last_tree is not None:
@@ -126,10 +135,14 @@ with open(out_file, "r+") as of:
 
             if best_tree is None:
                 of.write(f"{instance_name};None")
+                print(
+                    f"Finished {instance_name}, No tree found")
             else:
                 of.write(f"{instance_name};{best_acc};{best_tree.get_accuracy(test_instance.examples)};"
                          f"{best_tree.get_nodes()};{best_tree.get_depth()}{os.linesep}")
+                print(
+                    f"Finished {instance_name}, Training accuracy: {best_acc}, Test accuracy: {best_tree.get_accuracy(test_instance.examples)}")
+            of.flush()
 
-            print(f"Finished {instance_name}, Training accuracy: {best_acc}, Test accuracy: {best_tree.get_accuracy(test_instance.examples)}")
             print("")
             print("")

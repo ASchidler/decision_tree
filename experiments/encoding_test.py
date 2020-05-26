@@ -8,6 +8,7 @@ import sys
 import os
 import parser
 import sat_tools
+import aaai_encoding
 
 sample_path = sys.argv[1]
 timeout = 1000
@@ -20,7 +21,8 @@ encodings = [
     diagram_encoding.DecisionDiagramEncoding,
     diagram_depth.DiagramDepthEncoding,
     tree_depth_encoding.TreeDepthEncoding,
-    tree_node_encoding.TreeEncoding
+    tree_node_encoding.TreeEncoding,
+    aaai_encoding.AAAIEncoding
 ]
 
 solvers = [
@@ -35,7 +37,7 @@ runner = sat_tools.SatRunner(encoding, solvers[slv_idx]())
 fln_name = f"results_encodings_{enc_idx}_{slv_idx}.csv"
 if not os.path.exists(fln_name):
     with open(fln_name, "w") as out_file:
-        out_file.write("project;sample;total;successful;nodes;depth;runtime;accuracy")
+        out_file.write("project;sample;total;successful;nodes;depth;runtime;accuracy;size")
         out_file.write(os.linesep)
 
 #done = {}
@@ -69,6 +71,7 @@ with open(fln_name, "r+") as out_file:
                 sum_depth = 0
                 sum_node = 0
                 sum_time = 0
+                enc_size = 0
                 cnt = 0
                 for in_file in os.listdir(sample):
                     if os.path.isfile(os.path.join(sample, in_file)) and in_file.endswith("training.csv"):
@@ -77,7 +80,7 @@ with open(fln_name, "r+") as out_file:
                         new_instance = parser.parse(os.path.join(sample, in_file))
                         test_instance = parser.parse(os.path.join(sample, in_file[0:-1 * len("training.csv")] + "test.csv"))
                         start = time.time()
-                        tree = runner.run(new_instance, encoding.new_bound(None, new_instance),
+                        tree, enc_size = runner.run(new_instance, encoding.new_bound(None, new_instance),
                            timeout=timeout, memlimit=memlimit)
 
                         elapsed = time.time() - start
@@ -89,11 +92,13 @@ with open(fln_name, "r+") as out_file:
                             sum_node += tree.get_nodes()
                             sum_depth += tree.get_depth()
                             sum_time += elapsed
+                            enc_size += enc_size
                         else:
                             print("      Tree not found in time")
                 cnt_divisor = cnt_success if cnt_success > 0 else 1
                 out_file.write(f"{project};{sample_name};{cnt};{cnt_success};{sum_node/cnt_divisor};{sum_depth/cnt_divisor};"
-                               f"{sum_time/cnt_divisor};{sum_acc/cnt_divisor}{os.linesep}")
+                               f"{sum_time/cnt_divisor};{sum_acc/cnt_divisor};{enc_size/cnt_divisor}{os.linesep}")
+                out_file.flush()
                 print("Finished sample")
             print("Finished project")
 
