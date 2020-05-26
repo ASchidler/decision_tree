@@ -329,20 +329,29 @@ class UpdatedRetainingStrategy:
 class AAAI:
     def __init__(self, instance):
         self.instance = instance
+        self.retain = []
 
     def find_next(self, c_tree, last_tree, last_instance, target, improved, best_instance):
+        new_instance = BddInstance()
+        new_instance.num_features = self.instance.num_features
         if c_tree is None:
-            new_instance = BddInstance()
-            new_instance.num_features = self.instance.num_features
-
             for _ in range(0, 5):
                 new_instance.add_example(self.instance.examples[random.randint(0, len(self.instance.examples)-1)].copy())
 
+            [self.retain.append(e.copy()) for e in new_instance.examples]
+
             return new_instance
+
+        new_instance = BddInstance()
+        new_instance.num_features = self.instance.num_features
+
+        for e in self.retain:
+            new_instance.add_example(e.copy())
 
         for e in self.instance.examples:
             if c_tree.decide(e.features) != e.cls:
-                last_instance.examples.append(e.copy())
-                return last_instance
+                self.retain.append(e.copy())
+                new_instance.add_example(e.copy())
+                return new_instance
 
-        return None
+        return new_instance

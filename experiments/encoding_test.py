@@ -91,6 +91,8 @@ with open(fln_name, "r+") as out_file:
                         if tree is not None:
                             print(f"     Tree found, Nodes {tree.get_nodes()}, Depth {tree.get_depth()}, Accuracy {tree.get_accuracy(test_instance.examples)}, Time {elapsed}")
                             cnt_success += 1
+                            if tree.get_accuracy(new_instance.examples) < 0.99999:
+                                print(f"ERROR: accuracy only: {tree.get_accuracy(new_instance.examples)}")
                             sum_acc += tree.get_accuracy(test_instance.examples)
                             sum_node += tree.get_nodes()
                             sum_depth += tree.get_depth()

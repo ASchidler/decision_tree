@@ -102,7 +102,7 @@ with open(out_file, "r+") as of:
             while best_acc < 0.99999 and (time.time() - start_time) < timeout:
                 # Increment number after all 10 computed trees
                 if tree_cnt > 0 and tree_cnt % 10 == 0:
-                    target = max(target + 10, int(target * 1.1))
+                    target += max(10, target // 10)
 
                 new_instance = strategy.find_next(best_tree, last_tree, last_instance, target, improved, best_instance)
 

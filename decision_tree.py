@@ -60,11 +60,13 @@ class DecisionTree:
                 raise
             self.nodes[parent].right = node
 
+        return node
+
     def add_node(self, id, parent, feature, polarity):
-        self._add_node(id, parent, polarity, DecisionTreeNode(feature, id))
+        return self._add_node(id, parent, polarity, DecisionTreeNode(feature, id))
 
     def add_leaf(self, id, parent, polarity, cls):
-        self._add_node(id, parent, polarity, DecisionTreeLeaf(cls, id))
+        return self._add_node(id, parent, polarity, DecisionTreeLeaf(cls, id))
 
     def decide(self, features):
         cnode = self.root
@@ -116,6 +118,110 @@ class DecisionTree:
                 return dfs_find(node.left, cnt) + dfs_find(node.right, cnt) + 1
 
         return dfs_find(self.root, 0)
+
+
+class NonBinaryNode:
+    def __init__(self, id):
+        self.is_leaf = False
+        self.cls = None
+        self.children = {}
+        self.feature = None
+        self.parent = None
+        self.id = id
+
+
+class NonBinaryTree:
+    def __init__(self):
+        self.nodes = []
+
+    def _add_node(self, parent, n, value):
+        if parent is None:
+            if len(self.nodes) > 0:
+                print("Double root")
+                exit(1)
+
+        if parent is not None:
+            if value in self.nodes[parent.id].children:
+                print(f"Duplicate nodes for value {value}")
+                exit(1)
+
+            self.nodes[parent.id].children[value] = n
+
+        self.nodes.append(n)
+
+    def add_leaf(self, parent, value, cls):
+        n_n = NonBinaryNode(len(self.nodes))
+        n_n.is_leaf = True
+        n_n.cls = cls
+
+        self._add_node(parent, n_n, value)
+        return n_n
+
+    def add_node(self, parent, value, feature):
+        n_n = NonBinaryNode(len(self.nodes))
+        n_n.feature = feature
+        self._add_node(parent, n_n, value)
+        return n_n
+
+    def decide(self, features):
+        cnode = self.nodes[0]
+
+        while not cnode.is_leaf:
+            if features[cnode.feature] not in cnode.children:
+                return None
+            else:
+                cnode = cnode.children[features[cnode.feature]]
+
+        return cnode.cls
+
+    def get_path(self, features):
+        cnode = self.nodes[0]
+
+        while not cnode.is_leaf:
+            while not cnode.is_leaf:
+                if features[cnode.feature] not in cnode.children:
+                    return [cnode] # The internal node should suffice as identification, as there is only one path there
+                else:
+                    cnode = cnode.children[features[cnode.feature]]
+
+            if features[cnode.feature]:
+                cnode = cnode.left
+            else:
+                cnode = cnode.right
+
+        return [cnode]  # Leaf is identification enough
+
+    def get_accuracy(self, examples):
+        total = 0
+        correct = 0
+        for e in examples:
+            decision = self.decide(e.features)
+            total += 1
+            if decision == e.cls:
+                correct += 1
+
+        return correct / total
+
+    def get_depth(self):
+        def dfs_find(node, level):
+            if node.is_leaf:
+                return level
+            else:
+                return max(dfs_find(x, level + 1) for x in node.children.values())
+
+        return dfs_find(self.nodes[0], 0)
+
+    def get_nodes(self):
+        def dfs_find(node, cnt):
+            if node.is_leaf:
+                return cnt + 1
+            else:
+                return sum(dfs_find(x, cnt) for x in node.children.values()) + 1
+
+        return dfs_find(self.nodes[0], 0)
+
+    def check_consistency(self):
+        pass
 
 
 class DecisionDiagram:
