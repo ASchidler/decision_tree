@@ -47,7 +47,8 @@ strategies = [
     strat.RandomStrategy,
     strat.IncrementalStrategy,
     strat.RetainingStrategy,
-    strat.UpdatedRetainingStrategy
+    strat.UpdatedRetainingStrategy,
+    strat.AAAI
 ]
 
 selected_strategy = strategies[strat_idx]
