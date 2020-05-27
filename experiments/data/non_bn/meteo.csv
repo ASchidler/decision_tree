@@ -1,0 +1,15 @@
+outlook, temperature, humidity, windy, classes
+overcast, hot, high, false, +
+rain, mild, high, false, + 
+rain, cool, normal, false, + 
+overcast, cool, normal, true, + 
+sunny, cool, normal, false, + 
+rain, mild, normal, false, + 
+sunny, mild, normal, true, + 
+overcast, mild, high, true, + 
+overcast, hot, normal, false, + 
+rain, mild, high, true, - 
+sunny, hot, high, false, - 
+sunny, hot, high, true, - 
+rain, cool, normal, true, - 
+sunny, mild, high, false, - 
