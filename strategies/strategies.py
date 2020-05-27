@@ -295,7 +295,7 @@ class UpdatedRetainingStrategy:
                     for c_other in target_collection:
                         c_dist += c_top.dist(c_other, self.instance.num_features)
                     top_dist.append((c_dist, c_top))
-                top_dist.sort(reverse=reverse)
+                top_dist.sort(reverse=reverse, key=lambda x: x[0])
                 added.add(top_dist[0][1].id)
                 new_instance.add_example(top_dist[0][1].copy())
 

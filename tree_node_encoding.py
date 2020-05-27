@@ -212,12 +212,74 @@ class TreeEncoding(base_encoding.BaseEncoding):
                     clause.append(self.d0[r][j] if e.features[r] else self.d1[r][j])
                 self.add_clause(*clause)
 
-    def encode(self, instance, num_nodes):
+    def improve(self, num_nodes):
+        ld = [None]
+        for i in range(1, num_nodes + 1):
+            ld.append([])
+            for t in range(0, i//2 + 1):
+                ld[i].append(self.add_var())
+                if t == 0:
+                    self.add_clause(ld[i][t])
+                else:
+                    if i > 1:
+                        self.add_clause(-ld[i - 1][t - 1], -self.v[i], ld[i][t])
+                        if t < len(ld[i-1]):
+                            # Carry over
+                            self.add_clause(-ld[i-1][t], ld[i][t])
+                            # Increment if leaf
+                            # i == 1 cannot be a leaf, as it is the root
+                            self.add_clause(-ld[i][t], ld[i-1][t], ld[i-1][t-1])
+                            self.add_clause(-ld[i][t], ld[i-1][t], self.v[i])
+                        else:
+                            self.add_clause(-ld[i][t], ld[i - 1][t - 1])
+                            self.add_clause(-ld[i][t], self.v[i])
+                    # Use bound
+                    if 2*(i-t+1) <= num_nodes:
+                        self.add_clause(-ld[i][t], -self.left[i][2*(i-t+1)])
+                    if 2*(i-t+1)+1 <= num_nodes:
+                        self.add_clause(-ld[i][t], -self.right[i][2*(i-t+1)+1])
+
+        tau = [None]
+        for i in range(1, num_nodes+1):
+            tau.append([])
+            for t in range(0, i+1):
+                tau[i].append(self.add_var())
+                if t == 0:
+                    self.add_clause(tau[i][t])
+                else:
+                    if i > 1:
+                        # Increment
+                        self.add_clause(-tau[i - 1][t - 1], self.v[i], -tau[i][t])
+                        if t < len(tau[i-1]):
+                            # Carry over
+                            self.add_clause(-tau[i-1][t], tau[i][t])
+
+                            # Reverse equivalence
+                            self.add_clause(-tau[i][t], tau[i-1][t], tau[i-1][t-1])
+                            self.add_clause(-tau[i][t], tau[i-1][t], -self.v[i])
+                        else:
+                            # Reverse equivalence
+                            self.add_clause(-tau[i][t], tau[i - 1][t - 1])
+                            self.add_clause(-tau[i][t], -self.v[i])
+
+                if t > (i//2) + (i % 2): # i/2 rounded up
+                    # Use bound
+                    if num_nodes >= 2*(t - 1) > i:
+                        self.add_clause(-tau[i][t], -self.left[i][2*(t-1)])
+                    if i < 2*t-1 <= num_nodes:
+                        self.add_clause(-tau[i][t], -self.right[i][2*t-1])
+
+        # root is the first non-leaf
+        #self.add_clause(tau[1][1])
+
+    def encode(self, instance, num_nodes, improve=False):
         self.init_vars(instance, num_nodes)
         self.encode_tree_structure(instance, num_nodes)
         self.encode_discriminating(instance, num_nodes)
         self.encode_feature(instance, num_nodes)
         self.encode_examples(instance, num_nodes)
+        if improve:
+            self.improve(num_nodes)
         self.write_header(instance)
 
     def decode(self, model, instance, num_nodes):

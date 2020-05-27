@@ -163,7 +163,7 @@ class SatRunner:
             # print(f"Running with limit {c_bound}")
             with open(enc_file, "w") as f:
                 inst_encoding = self.encoder(f)
-                inst_encoding.encode(instance, c_bound)
+                inst_encoding.encode(instance, c_bound,  improve=True)
             enc_size = max(enc_size, os.path.getsize(enc_file))
             p1 = self.solver.run(enc_file, model_file, memlimit)
 

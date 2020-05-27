@@ -11,7 +11,7 @@ from tree_depth_encoding import TreeDepthEncoding
 from diagram_depth import DiagramDepthEncoding
 from aaai_encoding import AAAIEncoding
 
-instance = parser.parse_nonbinary(sys.argv[1])
+instance = parser.parse(sys.argv[1])
 test_instance = instance
 if sys.argv[1].endswith("_training.csv"):
     test_instance = parser.parse(sys.argv[1][0:-1 * len("_training.csv")] + "_test.csv")
@@ -44,11 +44,11 @@ tree = None
 while l_bound < u_bound:
     with open(enc_file, "w") as f:
         #encoding = DecisionDiagramEncoding(f)
-        #encoding = TreeEncoding(f)
-        encoding = TreeDepthEncoding(f)
+        encoding = TreeEncoding(f)
+       # encoding = TreeDepthEncoding(f)
         #encoding = DiagramDepthEncoding(f)
         #encoding = AAAIEncoding(f)
-        encoding.encode(instance, c_bound)
+        encoding.encode(instance, c_bound, improve=True)
 
     print(f"Num clauses: {encoding.clauses}")
 

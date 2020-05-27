@@ -4,8 +4,8 @@ import sys
 
 for r, d, f in os.walk(sys.argv[1]):
     for fl in f:
-        if fl.endswith(".csv") and fl != "shuttleM-un.csv":
-            inst = parser.parse(os.path.join(r, fl))
+        if fl.endswith(".csv") and fl != "shuttleM.csv":
+            inst = parser.parse_nonbinary(os.path.join(r, fl))
             rm = set()
 
             for i, e1 in enumerate(inst.examples):
@@ -37,7 +37,7 @@ for r, d, f in os.walk(sys.argv[1]):
 
                     for ce in inst.examples:
                         for f in range(1, inst.num_features+1):
-                            inst_file.write(f"{'1' if ce.features[f] else '0'},")
-                        inst_file.write(f"{'1' if ce.cls else '0'}{os.linesep}")
+                            inst_file.write(f"{ce.features[f]},")
+                        inst_file.write(f"{ce.cls}{os.linesep}")
 
                 print(f"Adapted {fl}")
