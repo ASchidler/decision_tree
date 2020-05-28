@@ -173,6 +173,16 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
                 for _, e in grp:
                     if e.cls != cls:
                         print(f"Error, double cls in leaf group {cls}, {e.cls}")
+
+                # This is the edge case, where all samples have the same class, we reached the leaf without splitting
+                if parent is None:
+                    p_f = find_feature(grp[0][0], 0)
+                    tree.set_root(p_f)
+                    parent = tree.nodes[1]
+
+                    o_val = not grp[0][1].features[parent.feature]
+                    tree.add_leaf(2 * parent.id + (0 if o_val else 1), parent.id, o_val, cls)
+
                 val = grp[0][1].features[parent.feature]
                 tree.add_leaf(2 * parent.id + (0 if val else 1), parent.id, val, cls)
                 return
