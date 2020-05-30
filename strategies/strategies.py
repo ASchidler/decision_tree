@@ -366,7 +366,8 @@ class NewNewStrategy:
     def __init__(self, instance):
         self.instance = instance
         # self.default_strategy = InitialStrategy(instance)
-        self.default_strategy = RandomStrategy(instance)
+        #self.default_strategy = RandomStrategy(instance)
+        self.default_strategy = InitialStrategy2(instance)
         self.points = {x.id: 0 for x in instance.examples}
 
     def initialize(self, target):
@@ -436,7 +437,7 @@ class NewNewStrategy:
         fillers = []
 
         for idx, e in enumerate(self.instance.examples):  # last_instance.examples:
-            pth = best_tree.get_path(e.features)[-1] # Leaf identifies the whole path
+            pth = best_tree.get_path(e.features)[-1].id
             result = best_tree.decide(e.features)
 
             if result != e.cls:
@@ -451,6 +452,23 @@ class NewNewStrategy:
                 tree_features.add(n.feature)
 
         print(f"Found {len(path_partition_correct)} correct paths and {len(path_partition_incorrect)} incorrect paths")
+
+        # Find out which features are non-characteristic
+        non_characteristic = {}
+        for k, v in path_partition_correct.items():
+            c_characteristic = set()
+            for f in range(1, self.instance.num_features + 1):
+                val = None
+                different = False
+                for c_idx in v:
+                    if val is None:
+                        val = self.instance.examples[c_idx].features[f]
+                    elif val != self.instance.examples[c_idx].features[f]:
+                        different = True
+                        break
+                if not different:
+                    c_characteristic.add(f)
+            non_characteristic[k] = c_characteristic
 
         # Select path representatives
         for k, v in path_partition_correct.items():
@@ -467,7 +485,7 @@ class NewNewStrategy:
                                 dist += 1
 
                 # The modifier tries to avoid using the same examples over and over
-                modifier = -10 if ce.id in ignore else 0
+                modifier = -100 if ce.id in ignore else 0
                 # Minimize the distance of non-tree features, i.e. localize the variance on the tree features
                 dists.append((self.points[ce.id] + modifier, -1 * dist, c_idx))
 
@@ -485,21 +503,51 @@ class NewNewStrategy:
                 representative_id = path_partition_correct[k].pop()
                 rep = self.instance.examples[representative_id]
 
-                path_partition_incorrect[k] = [
-                    (self.points[self.instance.examples[ce].id],
-                        -1 * rep.dist(self.instance.examples[ce], self.instance.num_features), ce) for
-                    ce in v]
-                path_partition_incorrect[k].sort()
+                new_l = []
+                for ce in v:
+                    dist = 0
+                    ce_obj = self.instance.examples[ce]
+                    different = set()
+                    for f in range(1, self.instance.num_features + 1):
+                        if f not in non_characteristic[k]:
+                            if rep.features[f] != ce_obj.features[f]:
+                                dist += 1
+                                different.add(f)
+                    #new_l.append((self.points[ce_obj.id], -1 * dist, ce))
+                    new_l.append([self.points[ce_obj.id], different, dist, ce])
+                path_partition_incorrect[k] = new_l
+                #path_partition_incorrect[k].sort()
+                path_partition_incorrect[k].sort(key=lambda x: (x[0], x[2]))
             else:
-                path_partition_incorrect[k] = [(self.points[self.instance.examples[ce].id], 0, ce) for ce in v]
-                path_partition_incorrect[k].sort()
+                path_partition_incorrect[k] = [[self.points[self.instance.examples[ce].id], [], 0, ce] for ce in v]
+                #path_partition_incorrect[k] = [(self.points[self.instance.examples[ce].id], 0, ce) for ce in v]
+                #path_partition_incorrect[k].sort()
 
         # Select negative representative
         while len(new_instance.examples) < target:
             found_any = False
             for k, v in path_partition_incorrect.items():
                 if v:
-                    _, _, c_idx = v.pop()
+                    # Find minimum with length over 1
+                    c_min = None
+                    for itm in v:
+                        if len(itm[1]) > 0:
+                            # if c_min is None or (len(itm[1]) > 0 and
+                            #                          (len(itm[1]) < len(c_min[1]) or
+                            #                           (len(itm[1]) == len(c_min[1]) and itm[0] > c_min[0]))):
+                            if c_min is None or (len(itm[1]) > 0 and
+                                                                           (itm[0] > c_min[0] or
+                                                                           (itm[0] == c_min[0] and len(itm[1]) < len(c_min[1])))):
+                                c_min = itm
+                    if c_min is None:
+                        _, _, _, c_idx = v.pop()
+                    else:
+                        c_idx = c_min[3]
+                        v.remove(c_min)
+                        for ce in v:
+                            ce[1] -= c_min[1]
+
+                    #_, _, c_idx = v.pop()
                     new_instance.add_example(self.instance.examples[c_idx].copy())
                     found_any = True
 
