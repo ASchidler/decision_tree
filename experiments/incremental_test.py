@@ -16,6 +16,7 @@ import sat_tools
 from collections import defaultdict
 import strategies.strategies as strat
 from aaai_encoding import AAAIEncoding
+from switching_encoding import SwitchingEncoding
 
 timeout = 1000
 memlimit = 2048 * 5
@@ -34,7 +35,8 @@ encodings = [
     DiagramDepthEncoding,
     TreeDepthEncoding,
     TreeEncoding,
-    AAAIEncoding
+    AAAIEncoding,
+    SwitchingEncoding
 ]
 
 solvers = [
