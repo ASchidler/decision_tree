@@ -103,6 +103,7 @@ class IncrementalStrategy:
         self.instance = instance
         #self.default_strategy = InitialStrategy(instance)
         self.default_strategy = RandomStrategy(instance)
+        #self.default_strategy = NewNewStrategy(instance)
         self.hit_count = {x.id: 0 for x in instance.examples}
 
     def find_next(self, c_tree, last_tree, last_instance, target, improved, best_instance):
@@ -122,7 +123,7 @@ class IncrementalStrategy:
         fillers = []
 
         for e in self.instance.examples:  # last_instance.examples:
-            pth = tuple(last_tree.get_path(e.features))
+            pth = tuple(c_tree.get_path(e.features))
             #result = last_tree.decide(e.features)
             result = c_tree.decide(e.features)
 
@@ -134,12 +135,17 @@ class IncrementalStrategy:
         print(f"Found {len(path_partition_correct)} correct paths and {len(path_partition_incorrect)} incorrect paths")
         # Select path representatives
         for k, v in path_partition_correct.items():
-            v.sort(key=lambda x: -1 * self.hit_count[x.id])
+            if len(new_instance.examples) > 0:
+                v.sort(key=lambda x: (sum(x.dist(ce, self.instance.num_features) for ce in new_instance.examples), -1 * self.hit_count[x.id]))
+            else:
+                v.sort(key=lambda x: -1 * self.hit_count[x.id])
+
             c_experiment = v.pop()
             fillers.extend(v)
             v.clear()
             v.append(c_experiment)
             new_instance.add_example(c_experiment.copy())
+            self.hit_count[c_experiment.id] += 1
 
         for k, v in path_partition_incorrect.items():
             if k in path_partition_correct:
@@ -165,7 +171,7 @@ class IncrementalStrategy:
             if not found_any:
                 break
 
-        # Fill up with other examples
+        # Fill up with other examples, if not enough negative examples exist
         if len(new_instance.examples) < target:
             fillers.sort(key=lambda x: -1 * self.hit_count[x.id])
             for i in range(0, min(len(fillers), target - len(new_instance.examples))):
@@ -210,13 +216,13 @@ class RetainingStrategy:
                 new_instance.add_example(e.copy())
             return new_instance
 
-        if last_instance is not None:
+        if best_instance is not None:
             standins = set()
             for r in self.retain:
                 standins.add(tuple(last_tree.get_path(r.features)))
                 new_instance.add_example(r.copy())
 
-            for e in last_instance.examples:
+            for e in best_instance.examples:
                 pth = tuple(last_tree.get_path(e.features))
                 if pth not in standins:
                     standins.add(pth)
@@ -250,19 +256,18 @@ class UpdatedRetainingStrategy:
     def __init__(self, instance):
         self.instance = instance
         self.retain = []
-        self.default_strategy = InitialStrategy2(instance) #InitialStrategy(instance) #RandomStrategy(instance)
+        self.default_strategy = NewNewStrategy(instance) # InitialStrategy2(instance) #InitialStrategy(instance) #RandomStrategy(instance)
         self.points = [0 for _ in range(0, max(x.id for x in self.instance.examples) + 1)]
 
     def find_next(self, c_tree, last_tree, last_instance, target, improved, best_instance):
         if c_tree is None:
             return self.default_strategy.find_next(c_tree, last_tree, last_instance, target, improved, best_instance)
 
-        for e in last_instance.examples:
-            self.points[e.id] += 1 if improved else -1
-
-        if last_tree is not None and not improved:
-            for e in best_instance.examples:
-                self.points[e.id] += 1
+        if last_instance is not None:
+            for e in last_instance.examples:
+                self.points[e.id] -= 1
+        for e in best_instance.examples:
+            self.points[e.id] += 1
 
         new_instance = BddInstance()
         new_instance.num_features = self.instance.num_features
@@ -353,5 +358,161 @@ class AAAI:
                 self.retain.append(e.copy())
                 new_instance.add_example(e.copy())
                 return new_instance
+
+        return new_instance
+
+
+class NewNewStrategy:
+    def __init__(self, instance):
+        self.instance = instance
+        # self.default_strategy = InitialStrategy(instance)
+        self.default_strategy = RandomStrategy(instance)
+        self.points = {x.id: 0 for x in instance.examples}
+
+    def initialize(self, target):
+        new_instance = BddInstance()
+        new_instance.num_features = self.instance.num_features
+
+        # Randomize features
+        target_features = list(range(1, self.instance.num_features+1))
+        for i in range(0, len(target_features)):
+            idx = random.randint(0, len(target_features)-1)
+            target_features[i], target_features[idx] = target_features[idx], target_features[i]
+
+        c_f = 0
+        new_instance.add_example(self.instance.examples[random.randint(0, len(self.instance.examples)-1)].copy())
+        added = {new_instance.examples[0].id}
+        while len(new_instance.examples) < target and c_f < len(target_features):
+            vals = set()
+            # Check if value difference exists within sample set
+            for e in new_instance.examples:
+                vals.add((e.cls, e.features[c_f]))
+                if len(vals) == 4:  # All possible combinations added
+                    break
+
+            if len(vals) < 3:  # 3 means that one class has both values, and the other has one
+                if not(((False, True) in vals and (True, False) in vals) or ((False, False) in vals and (True, True) in vals)):
+                    # Pick one (of possible more) value/class combinations that contrasts what we already have
+                    target_val = False if (False, True) in vals or (True, True) in vals else True
+                    target_cls = False if (True, True) in vals or (True, False) in vals else True
+                    cand = []
+                    for e in self.instance.examples:
+
+                        if e.cls == target_cls and e.features[c_f] == target_val and e.id not in added:
+                            cand.append(e)
+
+                    cand.sort(reverse=True, key=lambda x: sum(x.dist(e2, self.instance.num_features) for e2 in cand))
+            c_f += 1
+        if len(new_instance.examples) < target:
+            strat = RandomStrategy(self.instance)
+            for e in strat.find_next(None, None, None, target - len(new_instance.examples), False, None).examples:
+                new_instance.add_example(e)
+
+        return new_instance
+
+    def find_next(self, best_tree, worse_tree, worse_instance, target, improved, best_instance):
+        if best_tree is None:
+            return self.default_strategy.find_next(best_tree, worse_tree, worse_instance, target, improved, best_instance) # self.initialize(target)
+
+        if worse_instance is not None:
+            for e in worse_instance.examples:
+                self.points[e.id] -= 1
+
+        for e in best_instance.examples:
+            self.points[e.id] += 1
+
+        ignore = set(e.id for e in worse_instance.examples) & set(e.id for e in best_instance.examples) if worse_instance is not None else set()
+
+        new_instance = BddInstance()
+        new_instance.num_features = self.instance.num_features
+
+        if len(self.instance.examples) <= target:
+            for e in self.instance.examples:
+                new_instance.add_example(e.copy())
+            return new_instance
+
+        path_partition_correct = defaultdict(set)
+        path_partition_incorrect = defaultdict(list)
+        fillers = []
+
+        for idx, e in enumerate(self.instance.examples):  # last_instance.examples:
+            pth = best_tree.get_path(e.features)[-1] # Leaf identifies the whole path
+            result = best_tree.decide(e.features)
+
+            if result != e.cls:
+                path_partition_incorrect[pth].append(idx)
+            else:
+                path_partition_correct[pth].add(idx)
+
+        # Check the features in the tree
+        tree_features = set()
+        for n in best_tree.nodes:
+            if n is not None and not n.is_leaf:
+                tree_features.add(n.feature)
+
+        print(f"Found {len(path_partition_correct)} correct paths and {len(path_partition_incorrect)} incorrect paths")
+
+        # Select path representatives
+        for k, v in path_partition_correct.items():
+            dists = []
+            # Calculate distance to previous examples
+            for c_idx in v:
+                ce = self.instance.examples[c_idx]
+                dist = 0
+                for te in best_instance.examples:
+                    if te.id not in v:
+                        #for cf in tree_features:
+                        for cf in (x for x in range(1, self.instance.num_features + 1) if x not in tree_features):
+                            if ce.features[cf] != te.features[cf]:
+                                dist += 1
+
+                # The modifier tries to avoid using the same examples over and over
+                modifier = -10 if ce.id in ignore else 0
+                # Minimize the distance of non-tree features, i.e. localize the variance on the tree features
+                dists.append((self.points[ce.id] + modifier, -1 * dist, c_idx))
+
+            # Put the element with the greatest distance and lowest hit count at the end
+            _, _, te = max(dists)
+            fillers.extend(dists)
+            v.clear()
+            v.add(te)
+            ce = self.instance.examples[te]
+
+            new_instance.add_example(ce.copy())
+
+        for k, v in path_partition_incorrect.items():
+            if k in path_partition_correct:
+                representative_id = path_partition_correct[k].pop()
+                rep = self.instance.examples[representative_id]
+
+                path_partition_incorrect[k] = [
+                    (self.points[self.instance.examples[ce].id],
+                        -1 * rep.dist(self.instance.examples[ce], self.instance.num_features), ce) for
+                    ce in v]
+                path_partition_incorrect[k].sort()
+            else:
+                path_partition_incorrect[k] = [(self.points[self.instance.examples[ce].id], 0, ce) for ce in v]
+                path_partition_incorrect[k].sort()
+
+        # Select negative representative
+        while len(new_instance.examples) < target:
+            found_any = False
+            for k, v in path_partition_incorrect.items():
+                if v:
+                    _, _, c_idx = v.pop()
+                    new_instance.add_example(self.instance.examples[c_idx].copy())
+                    found_any = True
+
+                    if len(new_instance.examples) >= target:
+                        break
+            if not found_any:
+                break
+
+        # Fill up with other examples
+        if len(new_instance.examples) < target:
+            fillers.sort()
+            while len(new_instance.examples) < target and fillers:
+                _, _, c_idx = fillers.pop()
+                new_instance.add_example(self.instance.examples[c_idx].copy())
 
         return new_instance
