@@ -433,6 +433,11 @@ class NewNewStrategy:
         new_instance = BddInstance()
         new_instance.num_features = self.instance.num_features
 
+        if len(self.instance.examples) <= target:
+            for e in self.instance.examples:
+                new_instance.add_example(e.copy())
+            return new_instance
+
         tree = DecisionTree(self.instance.num_features, 1)
 
         NewNewStrategy.split(self.instance.examples, None, False, tree, self.instance)
