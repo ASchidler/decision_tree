@@ -20,6 +20,23 @@ class DecisionTree:
         self.root = None
         self.nodes = [None for _ in range(0, num_nodes + 1)] # Indexing starts at 1
 
+    def copy(self):
+        new_tree = DecisionTree(self.num_features, len(self.nodes)-1)
+
+        def deep_copy(cn, parent, polarity):
+            if parent is None:
+                new_tree.set_root(cn.feature)
+            elif cn.is_leaf:
+                new_tree.add_leaf(cn.id, parent, polarity, cn.cls)
+                return
+            else:
+                new_tree.add_node(cn.id, parent, cn.feature, polarity)
+            deep_copy(cn.left, cn.id, True)
+            deep_copy(cn.right, cn.id, False)
+
+        deep_copy(self.root, None, None)
+        return new_tree
+
     def check_consistency(self):
         q = [self.root]
         cnt = 0
