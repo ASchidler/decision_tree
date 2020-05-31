@@ -526,62 +526,51 @@ class NewNewStrategy:
             new_instance.add_example(ce.copy())
 
         for k, v in path_partition_incorrect.items():
+            grp = []
+            rep = None
             if k in path_partition_correct:
-                representative_id = path_partition_correct[k].pop()
-                rep = self.instance.examples[representative_id]
+                ce = self.instance.examples[path_partition_correct[k].pop()]
+                rep = ce
+                grp.append(ce)
 
-                new_l = []
-                for ce in v:
-                    dist = 0
-                    ce_obj = self.instance.examples[ce]
-                    different = set()
-                    for f in range(1, self.instance.num_features + 1):
-                        if f not in non_characteristic[k]:
-                            if rep.features[f] != ce_obj.features[f]:
-                                dist += 1
-                                different.add(f)
-                    #new_l.append((self.points[ce_obj.id], -1 * dist, ce))
-                    new_l.append([self.points[ce_obj.id], different, dist, ce])
-                path_partition_incorrect[k] = new_l
-                #path_partition_incorrect[k].sort()
-                path_partition_incorrect[k].sort(key=lambda x: (x[0], x[2]))
-            else:
-                path_partition_incorrect[k] = [[self.points[self.instance.examples[ce].id], [], 0, ce] for ce in v]
-                #path_partition_incorrect[k] = [(self.points[self.instance.examples[ce].id], 0, ce) for ce in v]
-                #path_partition_incorrect[k].sort()
+            for cv in v:
+                grp.append(self.instance.examples[cv])
+
+            tree = DecisionTree(self.instance.num_features, 1)
+            NewNewStrategy.split(grp, None, None, tree, self.instance)
+
+            paths = defaultdict(list)
+            for cv in v:
+                cve = self.instance.examples[cv]
+                dist = 0 if rep is None else rep.dist(cve, self.instance.num_features)
+                paths[tree.get_path(self.instance.examples[cv].features)[-1].id].append((self.points[cve.id], -1 * dist, cv))
+            path_items = list(paths.values())
+
+            # Prioritize paths with lots of items
+            path_items.sort(key=lambda x: len(x), reverse=True)
+
+            # Prioritize examples per points
+            for cp in path_items:
+                cp.sort()
+
+            path_partition_incorrect[k] = []
+            found = True
+            while found:
+                found = False
+                for cp in path_items:
+                    if cp:
+                        path_partition_incorrect[k].append(cp.pop())
+                        found = True
 
         # Select negative representative
-        while len(new_instance.examples) < target:
-            found_any = False
-            for k, v in path_partition_incorrect.items():
-                if v:
-                    # Find minimum with length over 1
-                    c_min = None
-                    for itm in v:
-                        if len(itm[1]) > 0:
-                            # if c_min is None or (len(itm[1]) > 0 and
-                            #                          (len(itm[1]) < len(c_min[1]) or
-                            #                           (len(itm[1]) == len(c_min[1]) and itm[0] > c_min[0]))):
-                            if c_min is None or (len(itm[1]) > 0 and
-                                                                           (itm[0] > c_min[0] or
-                                                                           (itm[0] == c_min[0] and len(itm[1]) < len(c_min[1])))):
-                                c_min = itm
-                    if c_min is None:
-                        _, _, _, c_idx = v.pop()
-                    else:
-                        c_idx = c_min[3]
-                        v.remove(c_min)
-                        for ce in v:
-                            ce[1] -= c_min[1]
-
-                    #_, _, c_idx = v.pop()
-                    new_instance.add_example(self.instance.examples[c_idx].copy())
-                    found_any = True
-
-                    if len(new_instance.examples) >= target:
-                        break
-            if not found_any:
-                break
+        while len(new_instance.examples) < target and path_partition_incorrect:
+            for k, v in list(path_partition_incorrect.items()):
+                _, _, cv = v.pop()
+                new_instance.examples.append(self.instance.examples[cv].copy())
+                if len(new_instance.examples) >= target:
+                    break
+                if not v:
+                    path_partition_incorrect.pop(k)
 
         # Fill up with other examples
         if len(new_instance.examples) < target:
