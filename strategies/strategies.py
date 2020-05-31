@@ -2,6 +2,7 @@ from collections import defaultdict
 from bdd_instance import BddInstance
 import random
 import sys
+from decision_tree import DecisionTree
 
 # TODO: Choose k minimal distance sets of l elements, where the distance between the k sets is maximal
 # TODO: Award point if better or new is worse
@@ -370,50 +371,76 @@ class NewNewStrategy:
         self.default_strategy = InitialStrategy2(instance)
         self.points = {x.id: 0 for x in instance.examples}
 
+    @staticmethod
+    def split(grp, parent, polarity, tree, instance):
+        vals = [sys.maxsize]
+        c_cls = grp[0].cls
+        all_same = True
+        for ce in grp:
+            if ce.cls != c_cls:
+                all_same = False
+                break
+
+        if all_same:
+            tree.nodes.append(None)
+            tree.add_leaf(len(tree.nodes) - 1, parent, polarity, c_cls)
+            return
+
+        for f in range(1, instance.num_features + 1):
+            c_val = 0
+            for ce in grp:
+                c_val += 1 if ce.features[f] else -1
+            vals.append(abs(c_val))
+
+        new_f, _ = min(enumerate(vals), key=lambda x: x[1])
+        if tree.nodes[1] is None:
+            tree.set_root(new_f)
+        else:
+            tree.nodes.append(None)
+            tree.add_node(len(tree.nodes) - 1, parent, new_f, polarity)
+
+        # Split groups
+        t_grp = []
+        f_grp = []
+        for ce in grp:
+            if ce.features[new_f]:
+                t_grp.append(ce)
+            else:
+                f_grp.append(ce)
+
+        node_id = len(tree.nodes) - 1
+        NewNewStrategy.split(t_grp, node_id, True, tree, instance)
+        NewNewStrategy.split(f_grp, node_id, False, tree, instance)
+
     def initialize(self, target):
         new_instance = BddInstance()
         new_instance.num_features = self.instance.num_features
 
+        tree = DecisionTree(self.instance.num_features, 1)
+
+        NewNewStrategy.split(self.instance.examples, None, False, tree, self.instance)
+
         # Randomize features
-        target_features = list(range(1, self.instance.num_features+1))
-        for i in range(0, len(target_features)):
-            idx = random.randint(0, len(target_features)-1)
-            target_features[i], target_features[idx] = target_features[idx], target_features[i]
+        paths = defaultdict(list)
+        for e in self.instance.examples:
+            paths[tree.get_path(e.features)[-1].id].append(e)
 
-        c_f = 0
-        new_instance.add_example(self.instance.examples[random.randint(0, len(self.instance.examples)-1)].copy())
-        added = {new_instance.examples[0].id}
-        while len(new_instance.examples) < target and c_f < len(target_features):
-            vals = set()
-            # Check if value difference exists within sample set
-            for e in new_instance.examples:
-                vals.add((e.cls, e.features[c_f]))
-                if len(vals) == 4:  # All possible combinations added
-                    break
+        path_keys = list(paths.keys())
+        path_keys.sort(key=lambda x: x % 11)
 
-            if len(vals) < 3:  # 3 means that one class has both values, and the other has one
-                if not(((False, True) in vals and (True, False) in vals) or ((False, False) in vals and (True, True) in vals)):
-                    # Pick one (of possible more) value/class combinations that contrasts what we already have
-                    target_val = False if (False, True) in vals or (True, True) in vals else True
-                    target_cls = False if (True, True) in vals or (True, False) in vals else True
-                    cand = []
-                    for e in self.instance.examples:
-
-                        if e.cls == target_cls and e.features[c_f] == target_val and e.id not in added:
-                            cand.append(e)
-
-                    cand.sort(reverse=True, key=lambda x: sum(x.dist(e2, self.instance.num_features) for e2 in cand))
-            c_f += 1
-        if len(new_instance.examples) < target:
-            strat = RandomStrategy(self.instance)
-            for e in strat.find_next(None, None, None, target - len(new_instance.examples), False, None).examples:
-                new_instance.add_example(e)
+        while len(new_instance.examples) < target:
+            for k in path_keys:
+                if paths[k]:
+                    new_instance.add_example(paths[k].pop().copy())
+                    if len(new_instance.examples) >= target:
+                        break
 
         return new_instance
 
     def find_next(self, best_tree, worse_tree, worse_instance, target, improved, best_instance):
         if best_tree is None:
-            return self.default_strategy.find_next(best_tree, worse_tree, worse_instance, target, improved, best_instance) # self.initialize(target)
+            return self.initialize(target)
+            #return self.default_strategy.find_next(best_tree, worse_tree, worse_instance, target, improved, best_instance) # self.initialize(target)
 
         if worse_instance is not None:
             for e in worse_instance.examples:
