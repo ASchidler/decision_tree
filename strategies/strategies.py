@@ -209,6 +209,9 @@ class RetainingStrategy:
         if c_tree is None:
             return self.default_strategy.find_next(c_tree, last_tree, last_instance, target, improved, best_instance)
 
+        if improved:
+            last_tree = c_tree
+
         new_instance = BddInstance()
         new_instance.num_features = self.instance.num_features
 
@@ -269,6 +272,9 @@ class UpdatedRetainingStrategy:
                 self.points[e.id] -= 1
         for e in best_instance.examples:
             self.points[e.id] += 1
+
+        if improved:
+            last_tree = c_tree
 
         new_instance = BddInstance()
         new_instance.num_features = self.instance.num_features
