@@ -17,6 +17,7 @@ from collections import defaultdict
 import strategies.strategies as strat
 from aaai_encoding import AAAIEncoding
 from switching_encoding import SwitchingEncoding
+from decision_tree import DecisionTree
 
 timeout = 1000
 memlimit = 2048 * 5
@@ -71,7 +72,7 @@ out_file = os.path.join(result_dir, out_file)
 
 if not os.path.exists(out_file):
     with open(out_file, "w") as of:
-        of.write("Instance;Training Acc.;Test Acc.;Nodes;Depth")
+        of.write("Instance;Training Acc.;Test Acc.;Nodes;Depth;Extended")
         of.write(os.linesep)
 
 with open(out_file, "r+") as of:
@@ -81,7 +82,7 @@ with open(out_file, "r+") as of:
             done.add(lnc[0])
 
     for fl in os.listdir(input_path):
-        if fl.endswith(".csv") and fl.startswith("haberman"):
+        if fl.endswith(".csv"):
             if fl.endswith("_training.csv"):
                 instance_name = fl[0:-1 * len("_training.csv")]
                 training_instance = fl
@@ -101,6 +102,7 @@ with open(out_file, "r+") as of:
             best_tree = None
             best_instance = None
             best_acc = 0
+            best_extended = sys.maxsize
 
             last_tree = None
             last_instance = None
@@ -136,7 +138,74 @@ with open(out_file, "r+") as of:
                     test_acc = last_tree.get_accuracy(new_instance.examples)
                     acc = last_tree.get_accuracy(instance.examples)
                     tree_cnt += 1
-                    print(f"Tree found: {acc} Accuracy,  Nodes: {last_tree.get_nodes()}, Depth: {last_tree.get_depth()}, {test_acc} Sanity")
+
+                    # Compute extended tree
+                    extended_depth = 0
+                    extended_sanity = 0
+                    if acc > 0.999999:
+                        extended_depth = last_tree.get_depth()
+                        extended_sanity = acc
+                        best_extended = min(best_extended, extended_depth)
+                    else:
+                        extended_tree = last_tree.copy()
+                        leafs = defaultdict(list)
+                        for e in instance.examples:
+                            # get leaf
+                            pth = extended_tree.get_path(e.features)[-1]
+                            leafs[pth.id].append(e)
+
+                        for lf, st in leafs.items():
+                            failed = False
+                            # Check for any wrong classifications
+                            c_lf = extended_tree.nodes[lf]
+                            for e in st:
+                                if e.cls != c_lf.cls:
+                                    failed = True
+                                    break
+
+                            if failed:
+                                extension = DecisionTree(extended_tree.num_features, 1)
+                                strat.NewNewStrategy.split(st, None, None, extension, instance)
+                                # Extend tree
+
+                                def apply_extension(cn, parent, polarity, n_id):
+                                    if n_id is None:
+                                        extended_tree.nodes.append(None)
+                                        n_id = len(extended_tree.nodes) - 1
+                                    if cn.is_leaf:
+                                        extended_tree.nodes.append(None)
+                                        extended_tree.add_leaf(n_id, parent, polarity, cn.cls)
+                                    else:
+                                        extended_tree.add_node(n_id, parent, cn.feature, polarity)
+                                        apply_extension(cn.left, n_id, True, None)
+                                        apply_extension(cn.right, n_id, False, None)
+
+                                # Find parent:
+                                c_parent = None
+                                c_polarity = None
+                                extended_tree.nodes[lf] = None
+
+                                # Find parent
+                                for ci in range(1, c_lf.id):
+                                    if extended_tree.nodes[ci] and not extended_tree.nodes[ci].is_leaf:
+                                        if extended_tree.nodes[ci].left.id == c_lf.id:
+                                            extended_tree.nodes[ci].left = None
+                                            c_parent = ci
+                                            c_polarity = True
+                                            break
+                                        elif extended_tree.nodes[ci].right.id == c_lf.id:
+                                            extended_tree.nodes[ci].right = None
+                                            c_parent = ci
+                                            c_polarity = False
+                                            break
+                                apply_extension(extension.root, c_parent, c_polarity, c_lf.id)
+                        extended_sanity = extended_tree.get_accuracy(instance.examples)
+                        extended_depth = extended_tree.get_depth()
+                        best_extended = min(best_extended, extended_depth)
+
+                    print(
+                        f"Tree found: {acc} Accuracy,  Nodes: {last_tree.get_nodes()}, Depth: {last_tree.get_depth()}, {test_acc} Sanity,"
+                        f"{extended_depth} Extended, {extended_sanity} Extended Sanity")
 
                     if acc > best_acc:
                         best_acc = acc
@@ -146,12 +215,12 @@ with open(out_file, "r+") as of:
                         improved = True
 
             if best_tree is None:
-                of.write(f"{instance_name};None")
+                of.write(f"{instance_name};None{os.linesep}")
                 print(
                     f"Finished {instance_name}, No tree found")
             else:
                 of.write(f"{instance_name};{best_acc};{best_tree.get_accuracy(test_instance.examples)};"
-                         f"{best_tree.get_nodes()};{best_tree.get_depth()}{os.linesep}")
+                         f"{best_tree.get_nodes()};{best_tree.get_depth()};{best_extended}{os.linesep}")
                 print(
                     f"Finished {instance_name}, Training accuracy: {best_acc}, Test accuracy: {best_tree.get_accuracy(test_instance.examples)}")
             of.flush()
