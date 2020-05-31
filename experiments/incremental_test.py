@@ -50,7 +50,8 @@ strategies = [
     strat.IncrementalStrategy,
     strat.RetainingStrategy,
     strat.UpdatedRetainingStrategy,
-    strat.AAAI
+    strat.AAAI,
+    strat.NewNewStrategy
 ]
 
 selected_strategy = strategies[strat_idx]
@@ -114,7 +115,7 @@ with open(out_file, "r+") as of:
                     bdd_instance.reduce(new_instance)
                     new_instance.check_consistency()
 
-                last_tree,_ = runner.run(new_instance, encoding.new_bound(last_tree, new_instance),
+                last_tree, _ = runner.run(new_instance, encoding.new_bound(last_tree, new_instance),
                                        timeout=timeout - (time.time() - start_time), memlimit=memlimit)
 
                 improved = False
@@ -131,8 +132,8 @@ with open(out_file, "r+") as of:
 
                     if acc > best_acc:
                         best_acc = acc
-                        best_tree = last_tree
-                        best_instance = new_instance
+                        best_tree, last_tree = last_tree, best_tree
+                        best_instance, last_instance = last_instance, best_instance
                         last_accuracy = acc
                         improved = True
 

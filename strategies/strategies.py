@@ -382,15 +382,26 @@ class NewNewStrategy:
                 break
 
         if all_same:
-            tree.nodes.append(None)
-            tree.add_leaf(len(tree.nodes) - 1, parent, polarity, c_cls)
+            if parent is not None:
+                tree.nodes.append(None)
+                tree.add_leaf(len(tree.nodes) - 1, parent, polarity, c_cls)
+            else:
+                tree.set_root(1)
+                tree.nodes.append(None)
+                tree.nodes.append(None)
+                tree.add_leaf(2, 1, True, True)
+                tree.add_leaf(3, 1, False, False)
             return
 
         for f in range(1, instance.num_features + 1):
-            c_val = 0
+            t_val = 0
+            f_val = 0
             for ce in grp:
-                c_val += 1 if ce.features[f] else -1
-            vals.append(abs(c_val))
+                if ce.cls:
+                    t_val += 1 if ce.features[f] else -1
+                else:
+                    f_val += 1 if ce.features[f] else -1
+            vals.append(abs(f_val * abs(f_val) + t_val * abs(t_val)))
 
         new_f, _ = min(enumerate(vals), key=lambda x: x[1])
         if tree.nodes[1] is None:
@@ -426,7 +437,7 @@ class NewNewStrategy:
             paths[tree.get_path(e.features)[-1].id].append(e)
 
         path_keys = list(paths.keys())
-        path_keys.sort(key=lambda x: x % 11)
+        path_keys.sort(key=lambda x: x % target)
 
         while len(new_instance.examples) < target:
             for k in path_keys:
@@ -440,7 +451,6 @@ class NewNewStrategy:
     def find_next(self, best_tree, worse_tree, worse_instance, target, improved, best_instance):
         if best_tree is None:
             return self.initialize(target)
-            #return self.default_strategy.find_next(best_tree, worse_tree, worse_instance, target, improved, best_instance) # self.initialize(target)
 
         if worse_instance is not None:
             for e in worse_instance.examples:
@@ -480,23 +490,6 @@ class NewNewStrategy:
 
         print(f"Found {len(path_partition_correct)} correct paths and {len(path_partition_incorrect)} incorrect paths")
 
-        # Find out which features are non-characteristic
-        non_characteristic = {}
-        for k, v in path_partition_correct.items():
-            c_characteristic = set()
-            for f in range(1, self.instance.num_features + 1):
-                val = None
-                different = False
-                for c_idx in v:
-                    if val is None:
-                        val = self.instance.examples[c_idx].features[f]
-                    elif val != self.instance.examples[c_idx].features[f]:
-                        different = True
-                        break
-                if not different:
-                    c_characteristic.add(f)
-            non_characteristic[k] = c_characteristic
-
         # Select path representatives
         for k, v in path_partition_correct.items():
             dists = []
@@ -514,7 +507,7 @@ class NewNewStrategy:
                 # The modifier tries to avoid using the same examples over and over
                 modifier = -100 if ce.id in ignore else 0
                 # Minimize the distance of non-tree features, i.e. localize the variance on the tree features
-                dists.append((self.points[ce.id] + modifier, -1 * dist, c_idx))
+                dists.append((self.points[ce.id], -1 * dist, c_idx))
 
             # Put the element with the greatest distance and lowest hit count at the end
             _, _, te = max(dists)
