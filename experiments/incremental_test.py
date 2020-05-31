@@ -81,14 +81,22 @@ with open(out_file, "r+") as of:
             done.add(lnc[0])
 
     for fl in os.listdir(input_path):
-        if fl.endswith("_training.csv"):
-            instance_name = fl[0:-1 * len("_training.csv")]
+        if fl.endswith(".csv") and fl.startswith("haberman"):
+            if fl.endswith("_training.csv"):
+                instance_name = fl[0:-1 * len("_training.csv")]
+                training_instance = fl
+                test_instance_name = instance_name + "_test.csv"
+            else:
+                instance_name = fl[0:-4]
+                training_instance = fl
+                test_instance_name = fl
+
             if instance_name in done:
                 continue
 
             print("Starting "+instance_name)
-            instance = parser.parse(os.path.join(input_path, fl))
-            test_instance = parser.parse(os.path.join(input_path, instance_name + "_test.csv"))
+            instance = parser.parse(os.path.join(input_path, training_instance))
+            test_instance = parser.parse(os.path.join(input_path, test_instance_name))
 
             best_tree = None
             best_instance = None
