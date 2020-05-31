@@ -23,11 +23,11 @@ class SwitchingEncoding(BaseEncoding):
 
     @staticmethod
     def max_instances(num_features, limit):
-        if num_features < 50:
-            return 100
-        if num_features < 100:
-            return 70
-        return 50
+        if num_features < 20:
+            return 50
+        if num_features < 35:
+            return 40
+        return 25
 
     @staticmethod
     def new_bound(tree, instance):
