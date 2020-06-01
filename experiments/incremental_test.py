@@ -29,8 +29,8 @@ strat_idx = int(sys.argv[4])
 enable_red = True if sys.argv[5] == "1" else False
 enable_init_red = True if sys.argv[6] == "1" else False
 
-tmp_dir = "." if len(sys.argv) == 7 else sys.argv[6]
-result_dir = "." if len(sys.argv) == 7 else sys.argv[7]
+tmp_dir = "." if len(sys.argv) == 7 else sys.argv[7]
+result_dir = "." if len(sys.argv) == 7 else sys.argv[8]
 
 encodings = [
     DecisionDiagramEncoding,
@@ -166,8 +166,10 @@ with open(out_file, "r+") as of:
                         best_extended = min(best_extended, extended_depth)
                     else:
                         extended_tree = last_tree.copy()
+                        if enable_init_red:
+                            instance.unreduce_instance(extended_tree)
                         leafs = defaultdict(list)
-                        for e in instance.examples:
+                        for e in test_instance.examples:
                             # get leaf
                             pth = extended_tree.get_path(e.features)[-1]
                             leafs[pth.id].append(e)
@@ -217,7 +219,7 @@ with open(out_file, "r+") as of:
                                             c_polarity = False
                                             break
                                 apply_extension(extension.root, c_parent, c_polarity, c_lf.id)
-                        extended_sanity = extended_tree.get_accuracy(instance.examples)
+                        extended_sanity = extended_tree.get_accuracy(test_instance.examples)
                         extended_depth = extended_tree.get_depth()
                         best_extended = min(best_extended, extended_depth)
 
