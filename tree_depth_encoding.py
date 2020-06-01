@@ -152,7 +152,7 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
         if not instance.is_binary():
             return self.decode_nonbinary(model, instance, depth)
 
-        tree = DecisionTree(instance.num_features, 2**(depth+1) - 1)
+        tree = DecisionTree(instance.num_features, 1)
 
         # Root
         def find_feature(ce, cdl):
@@ -181,10 +181,13 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
                     parent = tree.nodes[1]
 
                     o_val = not grp[0][1].features[parent.feature]
-                    tree.add_leaf(2 * parent.id + (0 if o_val else 1), parent.id, o_val, cls)
+                    tree.nodes.append(None)
+                    tree.add_leaf(len(tree.nodes) - 1, parent.id, o_val, cls)
 
+                tree.nodes.append(None)
                 val = grp[0][1].features[parent.feature]
-                tree.add_leaf(2 * parent.id + (0 if val else 1), parent.id, val, cls)
+                tree.add_leaf(len(tree.nodes) - 1, parent.id, val, cls)
+
                 return
 
             # Find feature
@@ -225,7 +228,8 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
                     n_n = tree.nodes[1]
                 else:
                     val = grp[0][1].features[parent.feature]
-                    n_n = tree.add_node(2 * parent.id + (0 if val else 1), parent.id, f, val)
+                    tree.nodes.append(None)
+                    n_n = tree.add_node(len(tree.nodes) - 1, parent.id, f, val)
                 for ng in new_grps:
                     df_tree(ng, n_n, d+1)
             else:
