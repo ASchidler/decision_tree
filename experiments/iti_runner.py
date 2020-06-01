@@ -13,6 +13,9 @@ class Node:
 iti_path = "/home/asc/bin/iti"
 targets = list(os.listdir(sys.argv[1]))
 targets.sort()
+sum_test_acc = 0
+cnt = 0
+
 for fl in targets:
     if os.path.isdir(os.path.join(sys.argv[1], fl)):
         process = subprocess.Popen([iti_path, fl, "-ltraining", "-qtest", "-f", "-t", "-w"], stdout=subprocess.PIPE)
@@ -48,7 +51,10 @@ for fl in targets:
             if l.startswith("Leaves"):
                 stats = l.split()
                 leaves = int(stats[1][0:-1])
-                acc = stats[7][0:-1]
+                acc = float(stats[7][0:-1])
                 done = True
-
+        sum_test_acc += acc
+        cnt += 1
         print(f"{fl};{node_cnt};{max_depth//3};{acc}")
+
+

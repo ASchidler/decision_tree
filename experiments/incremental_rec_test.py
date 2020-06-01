@@ -94,7 +94,7 @@ with open(out_file, "r+") as of:
             done.add(lnc[0])
 
     for fl in os.listdir(input_path):
-        if fl.endswith(".csv") and fl.startswith("new-t"):
+        if fl.endswith(".csv"):
             if fl.endswith("_training.csv"):
                 instance_name = fl[0:-1 * len("_training.csv")]
                 training_instance = fl

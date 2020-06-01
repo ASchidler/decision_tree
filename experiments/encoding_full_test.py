@@ -9,6 +9,7 @@ import os
 import parser
 import sat_tools
 import aaai_encoding
+import bdd_instance
 
 sample_path = sys.argv[1]
 timeout = 1000
@@ -35,6 +36,21 @@ solvers = [
     sat_tools.GlucoseSolver,
     sat_tools.CadicalSolver
 ]
+
+keys = {}
+for fl in os.listdir("."):
+    full_name = f"./{fl}"
+    if os.path.isfile(full_name) and fl.startswith("keys_"):
+        with open(full_name) as key_file:
+            for ln in key_file:
+                cols = ln.split(";")
+                key = cols[1].split(",")[0:-1]
+
+                if cols[0] not in keys or len(keys[cols[0]]) > len(key):
+                    keys[cols[0]] = key
+
+        print(f"Processed {fl}")
+keys = {k: [int(cv) for cv in v] for k, v in keys.items()}
 
 runner = sat_tools.SatRunner(encoding, solvers[slv_idx](), base_path=tmpdir)
 
@@ -66,6 +82,7 @@ with open(fln_name, "r+") as out_file:
 
             print(f"Starting {project_name}")
             new_instance = parser.parse(os.path.join(sample_path, project))
+            bdd_instance.reduce(new_instance, min_key=keys[project])
             test_instance = parser.parse(os.path.join(sample_path, test_instance))
 
             start = time.time()
@@ -76,6 +93,7 @@ with open(fln_name, "r+") as out_file:
             elapsed = time.time() - start
 
             if tree is not None:
+                new_instance.unreduce_instance(tree)
                 print(
                     f"Tree found, Nodes {tree.get_nodes()}, Depth {tree.get_depth()}, Time {elapsed}")
                 out_file.write(f"{project_name};{tree.get_nodes()};{tree.get_depth()};{elapsed};{enc_size};{tree.get_accuracy(test_instance.examples)}{os.linesep}")

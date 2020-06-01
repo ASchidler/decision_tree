@@ -5,10 +5,15 @@ import parser
 pth = sys.argv[1]
 
 for fl in list(os.listdir(pth)):
-    if os.path.isfile(os.path.join(pth, fl)) and fl.endswith("test.csv"):
-        test = os.path.join(pth, fl)
-        training = os.path.join(pth, fl.replace("test.csv", "training.csv"))
-        out_path = os.path.join(pth, fl[0:-1 * len("-un_test.csv")])
+    if os.path.isfile(os.path.join(pth, fl)) and fl.endswith(".csv"):
+        if fl.endswith("test.csv"):
+            test = os.path.join(pth, fl)
+            training = os.path.join(pth, fl.replace("test.csv", "training.csv"))
+            out_path = os.path.join(pth, fl[0:-1 * len("-un_test.csv")])
+        else:
+            test = os.path.join(pth, fl)
+            training = test
+            out_path = os.path.join(pth, fl[0:-1 * len("-un.csv")] + "-full")
         os.mkdir(os.path.join(pth, out_path))
 
         # Header and names file
@@ -29,5 +34,6 @@ for fl in list(os.listdir(pth)):
                     out_file.write(f"{ex.cls}{os.linesep}")
 
         os.remove(test)
-        os.remove(training)
+        if test != training:
+            os.remove(training)
 

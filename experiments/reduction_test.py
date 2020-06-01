@@ -62,7 +62,7 @@ with open(outp, "r+") as out_file:
                         worst_time = max(worst_time, time.time() - start_time)
                         sum_result += len(key)
                         sum_time += time.time() - start_time
-                        if best_key is None or len(best_key) < len(key):
+                        if best_key is None or len(best_key) > len(key):
                             best_key = key
 
                         print(f"{fl}, finished run, key {len(key)} in {time.time() - start_time}")
