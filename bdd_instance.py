@@ -27,10 +27,9 @@ class BddInstance:
         self.reduce_map = []
 
     def add_example(self, example):
-        if self.num_features is None:
-            self.num_features = len(example.features)
-
         if example.features[0] is not None:
+            if self.num_features is None:
+                self.num_features = len(example.features)
             # if len(example.features) != self.num_features:
             #     print(f"Example should have {self.num_features} features, but has {len(example.features)}")
 
@@ -38,6 +37,8 @@ class BddInstance:
             example.features.insert(0, None)
             self.examples.append(example)
         else:
+            if self.num_features is None:
+                self.num_features = len(example.features) - 1
             # if len(example.features) != self.num_features + 1:
             #     print(f"Example should have {self.num_features} features, but has {len(example.features) - 1}")
 
