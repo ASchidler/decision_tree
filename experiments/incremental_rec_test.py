@@ -56,6 +56,8 @@ strategies = [
     strat.NewNewStrategy
 ]
 
+substrat = strat.NewNewStrategy
+
 keys = {}
 for fl in os.listdir("."):
     full_name = f"./{fl}"
@@ -125,7 +127,7 @@ with open(out_file, "r+") as of:
                 last_tree = None
                 last_instance = None
                 improved = False
-                strategy = selected_strategy(c_instance)
+                strategy = selected_strategy(c_instance) if run_infinite else substrat(c_instance)
                 tree_cnt = 0
 
                 target = encoding.max_instances(c_instance.num_features, 1)
@@ -167,6 +169,7 @@ with open(out_file, "r+") as of:
 
                         if enable_init_red and run_infinite:
                             c_instance.unreduce_instance(last_tree)
+                            c_instance = test_instance
 
                         last_tree.check_consistency()
                         tree_cnt += 1
@@ -178,6 +181,10 @@ with open(out_file, "r+") as of:
                             pth = last_tree.get_path(e.features)[-1]
                             leafs[pth.id].append(e)
 
+                        extension_failed = False
+                        extended_sanity = -1
+                        extended_depth = -1
+
                         for lf, st in leafs.items():
                             failed = False
                             # Check for any wrong classifications
@@ -185,12 +192,18 @@ with open(out_file, "r+") as of:
                             for e in st:
                                 if e.cls != c_lf.cls:
                                     failed = True
+                                    if len(st) == len(c_instance.examples):
+                                        # In this case the subtree does not subdivide anymore, prevent infinite recursion
+                                        return None, None, None
                                     break
 
                             if failed:
                                 sub_instance = BddInstance()
                                 [sub_instance.add_example(e.copy()) for e in st]
                                 extension, _, _ = find_tree(sub_instance, False)
+                                if extension is None:
+                                    extension_failed = True
+                                    break
 
                                 def apply_extension(cn, parent, polarity, n_id):
                                     if n_id is None:
@@ -224,11 +237,12 @@ with open(out_file, "r+") as of:
                                             break
                                 apply_extension(extension.root, c_parent, c_polarity, c_lf.id)
 
-                        extended_sanity = last_tree.get_accuracy(test_instance.examples)
-                        extended_depth = last_tree.get_depth()
-                        if extended_depth < best_extended:
-                            best_tree = last_tree
-                            best_extended = extended_depth
+                        if not extension_failed:
+                            extended_sanity = last_tree.get_accuracy(test_instance.examples)
+                            extended_depth = last_tree.get_depth()
+                            if extended_depth < best_extended:
+                                best_tree = last_tree
+                                best_extended = extended_depth
 
                         if run_infinite:
                             print(
