@@ -204,6 +204,7 @@ class RetainingStrategy:
         self.instance = instance
         self.retain = []
         self.default_strategy = InitialStrategy(instance) #RandomStrategy(instance)
+        self.added = set()
 
     def find_next(self, c_tree, last_tree, last_instance, target, improved, best_instance):
         if c_tree is None:
@@ -228,9 +229,10 @@ class RetainingStrategy:
 
             for e in best_instance.examples:
                 pth = tuple(last_tree.get_path(e.features))
-                if pth not in standins:
+                if pth not in standins and e.id not in self.added:
                     standins.add(pth)
                     self.retain.append(e.copy())
+                    self.added.add(e.id)
                     new_instance.add_example(e.copy())
 
             print(f"Retained {len(new_instance.examples)} examples")
@@ -241,7 +243,7 @@ class RetainingStrategy:
 
         neg_examples = defaultdict(list)
         for e in self.instance.examples:
-            if c_tree.decide(e.features) != e.cls:
+            if c_tree.decide(e.features) != e.cls and e.id not in self.added:
                 neg_examples[tuple(last_tree.get_path(e.features))].append(e)
 
         for _ in range(0, target - len(new_instance.examples)):
@@ -342,15 +344,17 @@ class AAAI:
     def __init__(self, instance):
         self.instance = instance
         self.retain = []
+        self.added = set()
 
     def find_next(self, c_tree, last_tree, last_instance, target, improved, best_instance):
         new_instance = BddInstance()
         new_instance.num_features = self.instance.num_features
         if c_tree is None:
-            for _ in range(0, 5):
-                new_instance.add_example(self.instance.examples[random.randint(0, len(self.instance.examples)-1)].copy())
+            for i in range(0, min(5, len(self.instance.examples))):
+                new_instance.add_example(self.instance.examples[i].copy())
 
             [self.retain.append(e.copy()) for e in new_instance.examples]
+            [self.added.add(e.id) for e in new_instance.examples]
 
             return new_instance
 
@@ -361,9 +365,10 @@ class AAAI:
             new_instance.add_example(e.copy())
 
         for e in self.instance.examples:
-            if c_tree.decide(e.features) != e.cls:
+            if c_tree.decide(e.features) != e.cls and e.id not in self.added:
                 self.retain.append(e.copy())
                 new_instance.add_example(e.copy())
+                self.added.add(e.id)
                 return new_instance
 
         return new_instance
