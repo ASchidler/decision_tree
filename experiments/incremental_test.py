@@ -27,9 +27,10 @@ enc_idx = int(sys.argv[2])
 solver_idx = int(sys.argv[3])
 strat_idx = int(sys.argv[4])
 enable_red = True if sys.argv[5] == "1" else False
+enable_init_red = True if sys.argv[6] == "1" else False
 
-tmp_dir = "." if len(sys.argv) == 6 else sys.argv[6]
-result_dir = "." if len(sys.argv) == 6 else sys.argv[7]
+tmp_dir = "." if len(sys.argv) == 7 else sys.argv[6]
+result_dir = "." if len(sys.argv) == 7 else sys.argv[7]
 
 encodings = [
     DecisionDiagramEncoding,
@@ -55,6 +56,21 @@ strategies = [
     strat.NewNewStrategy
 ]
 
+keys = {}
+for fl in os.listdir("."):
+    full_name = f"./{fl}"
+    if os.path.isfile(full_name) and fl.startswith("keys_"):
+        with open(full_name) as key_file:
+            for ln in key_file:
+                cols = ln.split(";")
+                key = cols[1].split(",")[0:-1]
+
+                if cols[0] not in keys or len(keys[cols[0]]) > len(key):
+                    keys[cols[0]] = key
+
+        print(f"Processed {fl}")
+keys = {k: [int(cv) for cv in v] for k, v in keys.items()}
+
 selected_strategy = strategies[strat_idx]
 solver = solvers[solver_idx]
 encoding = encodings[enc_idx]
@@ -67,7 +83,7 @@ runner = sat_tools.SatRunner(encoding, solver(), base_path=tmp_dir)
 
 done = set()
 test = os.path.split(os.path.normpath(input_path))
-out_file = f"results_incremental_{os.path.split(os.path.normpath(input_path))[-1]}_{enc_idx}_{solver_idx}_{enable_red}_{strat_idx}.csv"
+out_file = f"results_incremental_{os.path.split(os.path.normpath(input_path))[-1]}_{enc_idx}_{solver_idx}_{enable_red}_{strat_idx}_{enable_init_red}.csv"
 out_file = os.path.join(result_dir, out_file)
 
 if not os.path.exists(out_file):
@@ -98,6 +114,8 @@ with open(out_file, "r+") as of:
             print("Starting "+instance_name)
             instance = parser.parse(os.path.join(input_path, training_instance))
             test_instance = parser.parse(os.path.join(input_path, test_instance_name))
+            if enable_init_red:
+                bdd_instance.reduce(instance, min_key=keys[training_instance])
 
             best_tree = None
             best_instance = None
@@ -219,6 +237,8 @@ with open(out_file, "r+") as of:
                 print(
                     f"Finished {instance_name}, No tree found")
             else:
+                if enable_init_red:
+                    instance.unreduce_instance(best_tree)
                 of.write(f"{instance_name};{best_acc};{best_tree.get_accuracy(test_instance.examples)};"
                          f"{best_tree.get_nodes()};{best_tree.get_depth()};{best_extended}{os.linesep}")
                 print(
