@@ -63,7 +63,7 @@ class BddInstance:
 
         return unnecessary
 
-    def unreduce_instance(self, tree):
+    def unreduce_instance(self, tree, only_tree=False):
         self.reduce_map.reverse()
         for v1, v2 in self.reduce_map:
             if tree is not None:
@@ -71,9 +71,11 @@ class BddInstance:
                     if n is not None and not n.is_leaf:
                         if n.feature == v1:
                             n.feature = v2
-            for e in self.examples:
-                e.features[v1], e.features[v2] = e.features[v2], e.features[v1]
-        self.num_features = len(self.examples[0].features) - 1
+            if not only_tree:
+                for e in self.examples:
+                    e.features[v1], e.features[v2] = e.features[v2], e.features[v1]
+        if not only_tree:
+            self.num_features = len(self.examples[0].features) - 1
 
     def functional_dependencies(self):
         fd = 0
