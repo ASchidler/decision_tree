@@ -19,7 +19,7 @@ from aaai_encoding import AAAIEncoding
 from switching_encoding import SwitchingEncoding
 from decision_tree import DecisionTree
 
-timeout = 1000
+timeout = 3600
 memlimit = 2048 * 5
 
 input_path = sys.argv[1]
@@ -154,7 +154,7 @@ with open(out_file, "r+") as of:
 
                     if last_tree is not None:
                         if enable_red:
-                            new_instance.unreduce_instance(last_tree)
+                            new_instance.unreduce_instance(last_tree, only_tree=True)
                         acc = 0
                         if run_infinite:
                             acc = last_tree.get_accuracy(instance.examples)
@@ -176,7 +176,7 @@ with open(out_file, "r+") as of:
 
                         # Compute extended tree
                         leafs = defaultdict(list)
-                        for e in c_instance.examples:
+                        for e in (c_instance.examples if not run_infinite else test_instance.examples):
                             # get leaf
                             pth = last_tree.get_path(e.features)[-1]
                             leafs[pth.id].append(e)

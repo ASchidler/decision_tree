@@ -167,7 +167,7 @@ with open(out_file, "r+") as of:
                     else:
                         extended_tree = last_tree.copy()
                         if enable_init_red:
-                            instance.unreduce_instance(extended_tree)
+                            instance.unreduce_instance(extended_tree, only_tree=True)
                         leafs = defaultdict(list)
                         for e in test_instance.examples:
                             # get leaf
@@ -185,7 +185,7 @@ with open(out_file, "r+") as of:
 
                             if failed:
                                 extension = DecisionTree(extended_tree.num_features, 1)
-                                strat.NewNewStrategy.split(st, None, None, extension, instance)
+                                strat.NewNewStrategy.split(st, None, None, extension, test_instance)
                                 # Extend tree
 
                                 def apply_extension(cn, parent, polarity, n_id):

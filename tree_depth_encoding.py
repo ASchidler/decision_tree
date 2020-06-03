@@ -75,8 +75,8 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
                 clause = []
                 for f in range(1, instance.num_features + 1):
                     clause.append(self.d[i][dl][f])
-                    for f2 in range(f + 1, instance.num_features + 1):
-                        self.add_clause(-self.d[i][dl][f], -self.d[i][dl][f2])
+                    # for f2 in range(f + 1, instance.num_features + 1):
+                    #     self.add_clause(-self.d[i][dl][f], -self.d[i][dl][f2])
                 self.add_clause(*clause)
 
         self.write_header(instance)
@@ -90,8 +90,8 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
                 if model[self.d[ce][cdl][cf]]:
                     if ce_feature is None:
                         ce_feature = cf
-                    else:
-                        print(f"ERROR double feature {cf} and {ce_feature} for experiment {ce}, at level {cdl}.")
+                    # else:
+                    #     print(f"ERROR double feature {cf} and {ce_feature} for experiment {ce}, at level {cdl}.")
             if ce_feature is None:
                 print(f"ERROR no feature for {ce} at level {cdl}.")
             return ce_feature
@@ -161,8 +161,8 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
                 if model[self.d[ce][cdl][cf]]:
                     if ce_feature is None:
                         ce_feature = cf
-                    else:
-                        print(f"ERROR double feature {cf} and {ce_feature} for experiment {ce}, at level {cdl}.")
+                    # else:
+                    #     print(f"ERROR double feature {cf} and {ce_feature} for experiment {ce}, at level {cdl}.")
             if ce_feature is None:
                 print(f"ERROR no feature for {ce} at level {cdl}.")
             return ce_feature
