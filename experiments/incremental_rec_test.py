@@ -154,7 +154,7 @@ with open(out_file, "r+") as of:
 
                     if last_tree is not None:
                         if enable_red:
-                            new_instance.unreduce_instance(last_tree, only_tree=True)
+                            new_instance.unreduce_instance(last_tree)
                         acc = 0
                         if run_infinite:
                             acc = last_tree.get_accuracy(instance.examples)
@@ -168,7 +168,7 @@ with open(out_file, "r+") as of:
                                 improved = True
 
                         if enable_init_red and run_infinite:
-                            c_instance.unreduce_instance(last_tree)
+                            c_instance.unreduce_instance(last_tree, only_tree=True)
                             c_instance = test_instance
 
                         last_tree.check_consistency()
