@@ -167,16 +167,16 @@ with open(out_file, "r+") as of:
                                 best_instance, last_instance = last_instance, best_instance
                                 improved = True
 
-                        if enable_init_red and run_infinite:
-                            c_instance.unreduce_instance(last_tree, only_tree=True)
-                            c_instance = test_instance
+                        # if enable_init_red and run_infinite:
+                        #     c_instance.unreduce_instance(last_tree, only_tree=True)
+                        #     c_instance = test_instance
 
                         last_tree.check_consistency()
                         tree_cnt += 1
 
                         # Compute extended tree
                         leafs = defaultdict(list)
-                        for e in (c_instance.examples if not run_infinite else test_instance.examples):
+                        for e in c_instance.examples:
                             # get leaf
                             pth = last_tree.get_path(e.features)[-1]
                             leafs[pth.id].append(e)
@@ -238,7 +238,7 @@ with open(out_file, "r+") as of:
                                 apply_extension(extension.root, c_parent, c_polarity, c_lf.id)
 
                         if not extension_failed:
-                            extended_sanity = last_tree.get_accuracy(test_instance.examples)
+                            extended_sanity = last_tree.get_accuracy(instance.examples)
                             extended_depth = last_tree.get_depth()
                             if extended_depth < best_extended:
                                 best_tree = last_tree
@@ -257,6 +257,8 @@ with open(out_file, "r+") as of:
                 print(
                     f"Finished {instance_name}, No tree found")
             else:
+                if enable_init_red:
+                    instance.unreduce_instance(final_tree)
                 of.write(f"{instance_name};{final_acc};{final_tree.get_accuracy(test_instance.examples)};"
                          f"{final_tree.get_nodes()};{final_tree.get_depth()};{final_extended}{os.linesep}")
                 print(
