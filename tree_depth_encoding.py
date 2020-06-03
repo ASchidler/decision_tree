@@ -75,8 +75,8 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
                 clause = []
                 for f in range(1, instance.num_features + 1):
                     clause.append(self.d[i][dl][f])
-                    # for f2 in range(f + 1, instance.num_features + 1):
-                    #     self.add_clause(-self.d[i][dl][f], -self.d[i][dl][f2])
+                    for f2 in range(f + 1, instance.num_features + 1):
+                        self.add_clause(-self.d[i][dl][f], -self.d[i][dl][f2])
                 self.add_clause(*clause)
 
         self.write_header(instance)
