@@ -19,7 +19,7 @@ from aaai_encoding import AAAIEncoding
 from switching_encoding import SwitchingEncoding
 from decision_tree import DecisionTree
 
-timeout = 3600
+timeout = 1000
 memlimit = 2048 * 5
 
 input_path = sys.argv[1]
@@ -199,6 +199,7 @@ with open(out_file, "r+") as of:
 
                             if failed:
                                 sub_instance = BddInstance()
+                                sub_instance.num_features = c_instance.num_features
                                 [sub_instance.add_example(e.copy()) for e in st]
                                 extension, _, _ = find_tree(sub_instance, False)
                                 if extension is None:
@@ -252,6 +253,7 @@ with open(out_file, "r+") as of:
                 return best_tree, best_acc, best_extended
 
             final_tree, final_acc, final_extended = find_tree(instance, True)
+
             if final_tree is None:
                 of.write(f"{instance_name};None{os.linesep}")
                 print(
@@ -259,6 +261,7 @@ with open(out_file, "r+") as of:
             else:
                 if enable_init_red:
                     instance.unreduce_instance(final_tree)
+
                 of.write(f"{instance_name};{final_acc};{final_tree.get_accuracy(test_instance.examples)};"
                          f"{final_tree.get_nodes()};{final_tree.get_depth()};{final_extended}{os.linesep}")
                 print(
