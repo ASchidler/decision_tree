@@ -32,7 +32,7 @@ encoding = encodings[enc_idx]
 solver = sat_tools.GlucoseSolver
 runner = sat_tools.SatRunner(encoding, solver(), base_path=tmpdir)
 
-for d in range(1, 10000000, 100):
+for d in range(6000, 10000000, 100):
     start = time.time()
     new_instance = BddInstance()
 
