@@ -1,0 +1,55 @@
+This is the source code used for the experiments in our submission.
+The code will be refactored, but for the submission we leave it as it was used in the experiments.
+
+
+DEPENDENCIES
+
+The code requires python 3 and should run without any libaries.
+
+For the experiments we used the glucose solver (https://www.labri.fr/perso/lsimon/glucose/) and the UWrMaxSat solver (
+https://github.com/marekpiotrow/UWrMaxSat). The MaxSAT solver is only required for re-running the feature reduction experiment.
+The paths to the solvers must be adapted in the sat_tools.py file unless they are in the PATH.
+If the ITI scripts are used, iti_runner.py contains a path to ITI (https://www-lrn.cs.umass.edu/iti/index.html)
+
+
+DATA
+
+data contains the instances
+data/non_bn contains the instances without binarization
+data/full_red contains the feature reduced instances
+data/full contains the full, non-feature reduced, instances
+
+
+EXPERIMENTS
+
+All scripts that run experiments are in the experiments folder. Descriptions of the files follows
+- nonbinary_test.py, creates decision trees for the non-binary versions ("python nonbinary_test.py data/non_bn 1")
+
+- encoding_full_test.py, tests the encoding against the full instances ("python encoding_full_test.py {data/full, data/full_red} 5 1")
+
+- full_tree_test.py, tests the theoretical depth limit of the encodings ("python full_tree_test.py {2,4}",
+ 2 for DT_pb and 4 for DT_depth)
+
+- incremental_test.py, tests the encoding using incremental solving ("python incremental_test.py data/full/ 5 1 {0,3,4} {0,1} {0,1}")
+- incremental_rec_test.py, tests the encoding using recursive solving ("python incremental_rec_test.py data/full/ 5 1 {0,3,4} {0,1} {0,1}")
+  For both command, the parameters are as follows:
+  - First set 0 for RandSelect, 3 for LeafSelect, 4 for MonotonicSelect
+  - Second set 0 for no sub-instance reduction, 1 for sub-instance reduction (r in Algorithm 1)
+  - Third set 0 for no instance feature reduction, 1 for instance feature reduction, this is the separation in Table 2
+
+- reduction_test.py, tests the feature reduction ("python reduction_test.py {0,1,2,3}" where the parameter determines the method back, rand, greedy or maxsat)
+
+- iti_converter.py, expects the instances to be copied to the ITI data path, it then converts them to an iti compatible format ("python iti_converter.py path/to/iti/data")
+- iti_runner.py, runs iti for all instances in the iti data folder ("python iti_runner.py path/to/iti/data")
+
+
+OTHER FILES
+
+Other files of interest
+- aaai_encoding - Contains the DT_depth encoding
+- tree_depth_encoding - Contains the DT_pb encoding
+- maxsat_feature - Contains the MaxSAT encoding for minimal support sets
+- bdd_encoding - Contains the heuristic code for support sets (min_key functions)
+- strategies/strategies - Contains the code for RandSelect (RandomStrategy), LeafSelect (UpdatedRetainingStrategy) and MonotonicSelect (AAAI).
+  The files also contains code from other tries (non-exhaustive)
+- tree_node_encoding.py - Contains the DT_1 encoding.
