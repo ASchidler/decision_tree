@@ -45,7 +45,7 @@ class MiniSatSolver(BaseSolver):
 class GlucoseSolver(BaseSolver):
     def run(self, input_file, model_file, mem_limit=0):
         FNULL = open(os.devnull, 'w')
-        return subprocess.Popen(['/home/asc/bin/glucose', '-verb=0', f'-mem-lim={mem_limit}', input_file, model_file], stdout=FNULL,
+        return subprocess.Popen(['glucose', '-verb=0', f'-mem-lim={mem_limit}', input_file, model_file], stdout=FNULL,
                                       stderr=subprocess.STDOUT, preexec_fn=lambda: limit_memory(mem_limit))
 
     def parse(self, f):
@@ -66,7 +66,7 @@ class GlucoseSolver(BaseSolver):
 class CadicalSolver(BaseSolver):
     def run(self, input_file, model_file, mem_limit=0):
         out_file = open(model_file, "w")
-        return subprocess.Popen(['/home/asc/Downloads/cadical-1.0.0-c861e12/build/cadical', '-q', input_file], stdout=out_file,
+        return subprocess.Popen(['cadical', '-q', input_file], stdout=out_file,
                                       stderr=subprocess.STDOUT, preexec_fn=lambda: limit_memory(mem_limit))
 
     def parse(self, f):
@@ -92,9 +92,9 @@ class WrMaxsatSolver(BaseSolver):
     def run(self, input_file, model_file, timeout=0):
         with open(model_file, "w") as mf:
             if timeout == 0:
-                return subprocess.Popen(['/home/asc/Dev/uwrmaxsat/build/release/bin/uwrmaxsat', input_file, '-m'], stdout=mf)
+                return subprocess.Popen(['uwrmaxsat', input_file, '-m'], stdout=mf)
             else:
-                return subprocess.Popen(['/home/asc/Dev/uwrmaxsat/build/release/bin/uwrmaxsat', input_file, '-m', f'-cpu-lim={timeout}'],
+                return subprocess.Popen(['uwrmaxsat', input_file, '-m', f'-cpu-lim={timeout}'],
                                         stdout=mf)
 
     def parse(self, f):

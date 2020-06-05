@@ -10,7 +10,7 @@ class Node:
         self.rn = None
 
 
-iti_path = "/home/asc/bin/iti"
+iti_path = "iti"
 targets = list(os.listdir(sys.argv[1]))
 targets.sort()
 sum_test_acc = 0
