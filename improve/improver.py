@@ -1,4 +1,7 @@
 import bdd_instance
+import sat_tools
+from tree_depth_encoding import TreeDepthEncoding
+
 
 def assign_samples(tree, instance):
     assigned_samples = [[] for _ in tree.nodes]
@@ -32,7 +35,42 @@ def find_structure(tree):
     return nodes
 
 
+def replace(old_tree, new_tree, root):
+    # Clean tree
+    q = [root]
+    ids = []
+    while q:
+        c_q = q.pop()
+
+        if not c_q.is_leaf:
+            q.append(c_q.left)
+            q.append(c_q.right)
+            c_q.right = None
+
+        if c_q.id != root.id:
+            old_tree.nodes[c_q.id] = None
+            c_q.left = None
+            ids.append(c_q.id)
+
+    # Add other tree
+    root.feature = new_tree.root.feature
+    q = [(new_tree.root, root)]
+    while q:
+        c_q, c_r = q.pop()
+
+        cs = [(c_q.left, True), (c_q.right, False)]
+        for cn, cp in cs:
+            if cn.is_leaf:
+                old_tree.add_leaf(ids.pop(), c_r, cp, cn.cls)
+            else:
+                n_r = old_tree.add_node(ids.pop(), c_r, c_q.feature, cp)
+                q.append((cn, n_r))
+
+    # Sub-tree is now been added in place of the old sub-tree
+
+
 def leaf_improve(tree, instance, limit=15):
+    runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=".")
     assigned = assign_samples(tree, instance)
     structure = find_structure(tree)
 
@@ -74,11 +112,34 @@ def leaf_improve(tree, instance, limit=15):
             feature_map[i] = c_features[i]
 
         new_instance = bdd_instance.BddInstance()
+        added = set()
         for s in c_samples[c_parent[0].id]:
             values = [None for _ in range(0, len(feature_map))]
             for k, v in feature_map.items():
                 values[k] = instance.examples[s].examples[v]
 
             tp = tuple(values)
-            if tp not in
-            new_instance.add_example()
+            if tp not in added:
+                added.add(tp)
+                new_instance.add_example(values)
+
+        # Solve instance
+        new_tree, _ = runner.run(new_instance, max_node[1] - 1, u_bound=max_node[1] - 1)
+
+        # Either the branch is done, or
+        if new_tree is None:
+            done.update(c_leafs)
+        else:
+            # Correct features
+            q = [new_tree.root]
+            while q:
+                c_q = q.pop()
+                if not c_q.is_leaf:
+                    c_q.feature = feature_map[c_q.feature]
+                    q.append(c_q.left)
+                    q.append(c_q.right)
+
+            # Clean tree
+            replace(tree, new_tree, c_parent[0])
+            structure = find_structure(tree)
+
