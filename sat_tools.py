@@ -149,9 +149,8 @@ class SatRunner:
         self.solver = solver
         self.encoder = encoder
 
-    def run(self, instance, starting_bound, timeout=0, memlimit=0):
+    def run(self, instance, starting_bound, timeout=0, memlimit=0, u_bound=sys.maxsize):
         l_bound = self.encoder.lb()
-        u_bound = sys.maxsize
         c_bound = starting_bound
         enc_size = 0
 
