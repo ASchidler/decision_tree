@@ -22,7 +22,7 @@ def assign_samples(tree, instance):
 
 def find_structure(tree):
     nodes = {}
-    q = [(tree.root, 0, None)]
+    q = [(tree.root, -1, None)]
 
     while q:
         cnode, d, p = q.pop()
@@ -56,38 +56,38 @@ def replace(old_tree, new_tree, root):
     q = [root]
     ids = []
     while q:
-        c_q = q.pop()
+        r_n = q.pop()
 
-        if not c_q.is_leaf:
-            q.append(c_q.left)
-            q.append(c_q.right)
-            c_q.right = None
-            c_q.left = None
+        if not r_n.is_leaf:
+            q.append(r_n.left)
+            q.append(r_n.right)
+            r_n.right = None
+            r_n.left = None
 
-        if c_q.id != root.id:
-            old_tree.nodes[c_q.id] = None
-            ids.append(c_q.id)
+        if r_n.id != root.id:
+            old_tree.nodes[r_n.id] = None
+            ids.append(r_n.id)
 
     # Add other tree
     root.feature = new_tree.root.feature
     q = [(new_tree.root, root)]
 
     while q:
-        c_q, c_r = q.pop()
+        r_n, r_o = q.pop()
 
-        cs = [(c_q.left, True), (c_q.right, False)]
-        if not ids:
+        if not ids:  # Lower max. depth may still have more nodes
             ids.append(len(old_tree.nodes))
             ids.append(len(old_tree.nodes) + 1)
             old_tree.nodes.append(None)
             old_tree.nodes.append(None)
 
-        for cn, cp in cs:
-            if cn.is_leaf:
-                old_tree.add_leaf(ids.pop(), c_r.id, cp, cn.cls)
+        cs = [(r_n.left, True), (r_n.right, False)]
+        for nn, pol in cs:
+            if nn.is_leaf:
+                old_tree.add_leaf(ids.pop(), r_o.id, pol, nn.cls)
             else:
-                n_r = old_tree.add_node(ids.pop(), c_r.id, c_q.feature, cp)
-                q.append((cn, n_r))
+                n_r = old_tree.add_node(ids.pop(), r_o.id, nn.feature, pol)
+                q.append((nn, n_r))
 
     # Sub-tree is now been added in place of the old sub-tree
 
@@ -166,7 +166,7 @@ def leaf_rearrange(tree, instance, limit=15):
             # Clean tree
             replace(tree, new_tree, c_parent[0])
             structure = find_structure(tree)
-            print("Finished sub-tree, improvement")
+            print(f"Finished sub-tree, improvement, acc {tree.get_accuracy(instance.examples)}")
 
 
 def leaf_select(tree, instance, sample_limit=50, depth_limit=12):
