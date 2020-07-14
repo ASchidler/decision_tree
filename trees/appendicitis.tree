@@ -1,0 +1,40 @@
+att234 = False
+   True (3) 
+   att68 = False
+      True (3) 
+      att223 = False
+         att112 = False
+         |  True (1) 
+         |  att124 = False
+         |     True (1) 
+         |     att202 = False
+         |        True (1) 
+         |        False (5) 
+         att129 = False
+            True (2) 
+            att228 = False
+               att110 = False
+               |  False (1) 
+               |  att130 = False
+               |     False (1) 
+               |     True (2) 
+               att232 = False
+                  att111 = False
+                  |  True (1) 
+                  |  att113 = False
+                  |     True (1) 
+                  |     att146 = False
+                  |        True (1) 
+                  |        att159 = False
+                  |           True (1) 
+                  |           att201 = False
+                  |              True (1) 
+                  |              att280 = False
+                  |                 True (1) 
+                  |                 False (75) 
+                  att17 = False
+                     att204 = False
+                     |  True (1) 
+                     |  False (3) 
+                     True (1) 
+

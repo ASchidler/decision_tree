@@ -1,0 +1,108 @@
+att156 = False
+   att232 = False
+   |  True (1) 
+   |  False (17) 
+   att158 = False
+      False (12) 
+      att157 = False
+         att10 = False
+         |  True (1) 
+         |  False (14) 
+         att161 = False
+            att14 = False
+            |  True (1) 
+            |  False (11) 
+            att179 = False
+               att16 = False
+               |  True (1) 
+               |  False (10) 
+               att183 = False
+                  False (8) 
+                  att176 = False
+                     False (7) 
+                     att165 = False
+                        att214 = False
+                        |  False (3) 
+                        |  att204 = False
+                        |     False (2) 
+                        |     att256 = False
+                        |        False (2) 
+                        |        att135 = False
+                        |           True (1) 
+                        |           att139 = False
+                        |              True (1) 
+                        |              att146 = False
+                        |                 True (1) 
+                        |                 att150 = False
+                        |                    True (1) 
+                        |                    att212 = False
+                        |                       True (1) 
+                        |                       att22 = False
+                        |                          True (1) 
+                        |                          False (7) 
+                        att166 = False
+                           att149 = False
+                           |  True (1) 
+                           |  att151 = False
+                           |     True (1) 
+                           |     False (8) 
+                           att155 = False
+                              att134 = False
+                              |  True (1) 
+                              |  att136 = False
+                              |     True (1) 
+                              |     False (7) 
+                              att162 = False
+                                 att113 = False
+                                 |  True (1) 
+                                 |  att147 = False
+                                 |     True (1) 
+                                 |     False (7) 
+                                 att178 = False
+                                    att202 = False
+                                    |  True (1) 
+                                    |  att229 = False
+                                    |     True (1) 
+                                    |     False (7) 
+                                    att159 = False
+                                       False (5) 
+                                       att177 = False
+                                          False (5) 
+                                          att160 = False
+                                             att180 = False
+                                             |  att105 = False
+                                             |  |  True (1) 
+                                             |  |  att144 = False
+                                             |  |     True (1) 
+                                             |  |     att210 = False
+                                             |  |        True (1) 
+                                             |  |        False (3) 
+                                             |  att233 = False
+                                             |     att52 = False
+                                             |     |  True (2) 
+                                             |     |  att173 = False
+                                             |     |     True (1) 
+                                             |     |     False (3) 
+                                             |     att171 = False
+                                             |        False (2) 
+                                             |        att111 = False
+                                             |           False (1) 
+                                             |           att114 = False
+                                             |              False (1) 
+                                             |              att120 = False
+                                             |                 False (1) 
+                                             |                 att14 = False
+                                             |                    False (1) 
+                                             |                    att145 = False
+                                             |                       False (1) 
+                                             |                       True (36) 
+                                             att44 = False
+                                                att135 = False
+                                                |  True (1) 
+                                                |  att139 = False
+                                                |     True (1) 
+                                                |     att228 = False
+                                                |        True (1) 
+                                                |        False (5) 
+                                                True (2) 
+

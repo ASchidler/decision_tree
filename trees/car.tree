@@ -1,0 +1,96 @@
+att14 = False
+   att20 = False
+   |  att3 = False
+   |  |  att0 = False
+   |  |  |  att7 = False
+   |  |  |  |  att17 = False
+   |  |  |  |  |  att15 = False
+   |  |  |  |  |  |  att18 = False
+   |  |  |  |  |  |  |  att11 = False
+   |  |  |  |  |  |  |  |  att8 = False
+   |  |  |  |  |  |  |  |  |  att12 = False
+   |  |  |  |  |  |  |  |  |  |  True (3) 
+   |  |  |  |  |  |  |  |  |  |  False (3) 
+   |  |  |  |  |  |  |  |  |  False (12) 
+   |  |  |  |  |  |  |  |  True (6) 
+   |  |  |  |  |  |  |  False (24) 
+   |  |  |  |  |  |  False (48) 
+   |  |  |  |  |  att18 = False
+   |  |  |  |  |     True (24) 
+   |  |  |  |  |     att11 = False
+   |  |  |  |  |        False (18) 
+   |  |  |  |  |        att12 = False
+   |  |  |  |  |           False (3) 
+   |  |  |  |  |           True (3) 
+   |  |  |  |  True (48) 
+   |  |  |  att17 = False
+   |  |  |     att15 = False
+   |  |  |     |  att18 = False
+   |  |  |     |  |  att11 = False
+   |  |  |     |  |  |  att8 = False
+   |  |  |     |  |  |  |  att12 = False
+   |  |  |     |  |  |  |  |  att7 = False
+   |  |  |     |  |  |  |  |  |  att4 = False
+   |  |  |     |  |  |  |  |  |  |  att1 = False
+   |  |  |     |  |  |  |  |  |  |  |  True (1) 
+   |  |  |     |  |  |  |  |  |  |  |  False (1) 
+   |  |  |     |  |  |  |  |  |  |  False (4) 
+   |  |  |     |  |  |  |  |  |  True (2) 
+   |  |  |     |  |  |  |  |  False (8) 
+   |  |  |     |  |  |  |  False (32) 
+   |  |  |     |  |  |  att7 = False
+   |  |  |     |  |  |     att4 = False
+   |  |  |     |  |  |     |  att1 = False
+   |  |  |     |  |  |     |  |  True (2) 
+   |  |  |     |  |  |     |  |  False (2) 
+   |  |  |     |  |  |     |  False (8) 
+   |  |  |     |  |  |     True (4) 
+   |  |  |     |  |  False (64) 
+   |  |  |     |  False (128) 
+   |  |  |     att18 = False
+   |  |  |        att7 = False
+   |  |  |        |  att4 = False
+   |  |  |        |  |  att1 = False
+   |  |  |        |  |  |  True (8) 
+   |  |  |        |  |  |  att11 = False
+   |  |  |        |  |  |     False (6) 
+   |  |  |        |  |  |     att12 = False
+   |  |  |        |  |  |        False (1) 
+   |  |  |        |  |  |        True (1) 
+   |  |  |        |  |  att11 = False
+   |  |  |        |  |     False (24) 
+   |  |  |        |  |     att12 = False
+   |  |  |        |  |        False (4) 
+   |  |  |        |  |        True (4) 
+   |  |  |        |  True (16) 
+   |  |  |        att11 = False
+   |  |  |           False (48) 
+   |  |  |           att12 = False
+   |  |  |              False (8) 
+   |  |  |              True (8) 
+   |  |  att4 = False
+   |  |     True (48) 
+   |  |     att7 = False
+   |  |        att17 = False
+   |  |        |  att15 = False
+   |  |        |  |  att18 = False
+   |  |        |  |  |  att11 = False
+   |  |        |  |  |  |  att8 = False
+   |  |        |  |  |  |  |  att12 = False
+   |  |        |  |  |  |  |  |  True (2) 
+   |  |        |  |  |  |  |  |  False (2) 
+   |  |        |  |  |  |  |  False (8) 
+   |  |        |  |  |  |  True (4) 
+   |  |        |  |  |  False (16) 
+   |  |        |  |  False (32) 
+   |  |        |  att18 = False
+   |  |        |     True (16) 
+   |  |        |     att11 = False
+   |  |        |        False (12) 
+   |  |        |        att12 = False
+   |  |        |           False (2) 
+   |  |        |           True (2) 
+   |  |        True (48) 
+   |  True (384) 
+   True (576) 
+
