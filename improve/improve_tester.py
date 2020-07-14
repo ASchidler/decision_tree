@@ -4,8 +4,8 @@ import os
 import decision_tree
 import improve.improver
 
-tree_path = "/home/aschidler/Code/bdd/trees"
-instance_path = "/home/aschidler/Code/bdd/experiments/data/full"
+tree_path = "/home/asc/Dev/bdd/trees"
+instance_path = "/home/asc/Dev/bdd/experiments/data/full"
 
 instances = [
     "appendicitis",
