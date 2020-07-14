@@ -35,6 +35,22 @@ def find_structure(tree):
     return nodes
 
 
+def depth_from(root):
+    d = 0
+    q = [(root, 0)]
+
+    while q:
+        c_q, c_d = q.pop()
+
+        if c_q.is_leaf:
+            d = max(d, c_d)
+        else:
+            q.append((c_q.left, c_d+1))
+            q.append((c_q.right, c_d + 1))
+
+    return d
+
+
 def replace(old_tree, new_tree, root):
     # Clean tree
     q = [root]
@@ -46,30 +62,37 @@ def replace(old_tree, new_tree, root):
             q.append(c_q.left)
             q.append(c_q.right)
             c_q.right = None
+            c_q.left = None
 
         if c_q.id != root.id:
             old_tree.nodes[c_q.id] = None
-            c_q.left = None
             ids.append(c_q.id)
 
     # Add other tree
     root.feature = new_tree.root.feature
     q = [(new_tree.root, root)]
+
     while q:
         c_q, c_r = q.pop()
 
         cs = [(c_q.left, True), (c_q.right, False)]
+        if not ids:
+            ids.append(len(old_tree.nodes))
+            ids.append(len(old_tree.nodes) + 1)
+            old_tree.nodes.append(None)
+            old_tree.nodes.append(None)
+
         for cn, cp in cs:
             if cn.is_leaf:
-                old_tree.add_leaf(ids.pop(), c_r, cp, cn.cls)
+                old_tree.add_leaf(ids.pop(), c_r.id, cp, cn.cls)
             else:
-                n_r = old_tree.add_node(ids.pop(), c_r, c_q.feature, cp)
+                n_r = old_tree.add_node(ids.pop(), c_r.id, c_q.feature, cp)
                 q.append((cn, n_r))
 
     # Sub-tree is now been added in place of the old sub-tree
 
 
-def leaf_improve(tree, instance, limit=15):
+def leaf_rearrange(tree, instance, limit=15):
     runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=".")
     assigned = assign_samples(tree, instance)
     structure = find_structure(tree)
@@ -145,3 +168,35 @@ def leaf_improve(tree, instance, limit=15):
             structure = find_structure(tree)
             print("Finished sub-tree, improvement")
 
+
+def leaf_select(tree, instance, sample_limit=50, depth_limit=12):
+    runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=".")
+    assigned = assign_samples(tree, instance)
+
+    q = [tree.root]
+    roots = []
+
+    # Find all subtree roots that assign fewer samples than the limit
+    while q:
+        c_q = q.pop()
+        if not c_q.is_leaf:
+            if len(assigned[c_q.id]) <= sample_limit and depth_from(c_q) <= depth_limit:
+                roots.append(c_q)
+            else:
+                q.append(c_q.left)
+                q.append(c_q.right)
+
+    for c_r in roots:
+        new_instance = bdd_instance.BddInstance()
+        for s in assigned[c_r.id]:
+            new_instance.add_example(instance.examples[s].copy())
+
+        c_d = depth_from(c_r)
+        new_tree, _ = runner.run(new_instance, c_d, u_bound=c_d)
+        if new_tree is None:
+            print("Finished sub-tree, no improvement")
+        else:
+            replace(tree, new_tree, c_r)
+            print("Finished sub-tree, improved!")
+
+        # No need to retry, as the number of assigned samples stayed the same

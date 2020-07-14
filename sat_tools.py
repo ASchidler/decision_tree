@@ -45,7 +45,8 @@ class MiniSatSolver(BaseSolver):
 class GlucoseSolver(BaseSolver):
     def run(self, input_file, model_file, mem_limit=0):
         FNULL = open(os.devnull, 'w')
-        return subprocess.Popen(['/home/aschidler/Downloads/glucose-syrup-4.1/simp/glucose', '-verb=0', f'-mem-lim={mem_limit}', input_file, model_file], stdout=FNULL,
+        # , f'-mem-lim={mem_limit}'
+        return subprocess.Popen(['/home/aschidler/Downloads/glucose-syrup-4.1/simp/glucose', '-model', '-verb=0', input_file, model_file], stdout=FNULL,
                                       stderr=subprocess.STDOUT, preexec_fn=lambda: limit_memory(mem_limit))
 
     def parse(self, f):
@@ -84,6 +85,7 @@ class CadicalSolver(BaseSolver):
                     model[abs(val)] = val > 0
 
         return model
+
 
 class WrMaxsatSolver(BaseSolver):
     def supports_timeout(self):
@@ -158,6 +160,7 @@ class SatRunner:
         model_file = os.path.join(self.base_path, f"{self.tmp_file}.model")
 
         start = time.time()
+        tree = None
         while l_bound < u_bound:
             # print(f"Running with limit {c_bound}")
             with open(enc_file, "w") as f:
