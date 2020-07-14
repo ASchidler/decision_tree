@@ -1,5 +1,4 @@
 import random
-import feature_encoding
 import maxsat.maxsat_feature as maxsat_feature
 
 

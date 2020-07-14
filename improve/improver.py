@@ -8,14 +8,14 @@ def assign_samples(tree, instance):
 
     for s in instance.examples:
         cnode = tree.root
-        assigned_samples[cnode.id].append(s.id)
+        assigned_samples[cnode.id].append(s.id - 1)
 
         while not cnode.is_leaf:
             if s.features[cnode.feature]:
                 cnode = cnode.left
             else:
                 cnode = cnode.right
-            assigned_samples[cnode.id].append(s.id)
+            assigned_samples[cnode.id].append(s.id - 1)
 
     return assigned_samples
 
@@ -101,33 +101,34 @@ def leaf_improve(tree, instance, limit=15):
             if not c_q.is_leaf:
                 q.append(c_q.left)
                 q.append(c_q.right)
-                c_features.add(c_q[0].feature)
+                c_features.add(c_q.feature)
             else:
-                c_leafs.append(c_q[0].id)
+                c_leafs.append(c_q.id)
 
         # Now create a new instance
         feature_map = {}
         c_features = list(c_features)
-        for i in range(0, len(c_features)):
-            feature_map[i] = c_features[i]
+        for i in range(1, len(c_features)+1):
+            feature_map[i] = c_features[i-1]
 
         new_instance = bdd_instance.BddInstance()
         added = set()
-        for s in c_samples[c_parent[0].id]:
-            values = [None for _ in range(0, len(feature_map))]
+        for s in c_samples:
+            values = [None for _ in range(0, len(feature_map) + 1)]
             for k, v in feature_map.items():
-                values[k] = instance.examples[s].examples[v]
+                values[k] = instance.examples[s].features[v]
 
             tp = tuple(values)
             if tp not in added:
                 added.add(tp)
-                new_instance.add_example(values)
+                new_instance.add_example(bdd_instance.BddExamples(values, instance.examples[s].cls, len(new_instance.examples)))
 
         # Solve instance
         new_tree, _ = runner.run(new_instance, max_node[1] - 1, u_bound=max_node[1] - 1)
 
         # Either the branch is done, or
         if new_tree is None:
+            print("Finished sub-tree, no improvement")
             done.update(c_leafs)
         else:
             # Correct features
@@ -142,4 +143,5 @@ def leaf_improve(tree, instance, limit=15):
             # Clean tree
             replace(tree, new_tree, c_parent[0])
             structure = find_structure(tree)
+            print("Finished sub-tree, improvement")
 

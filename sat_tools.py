@@ -45,7 +45,7 @@ class MiniSatSolver(BaseSolver):
 class GlucoseSolver(BaseSolver):
     def run(self, input_file, model_file, mem_limit=0):
         FNULL = open(os.devnull, 'w')
-        return subprocess.Popen(['glucose', '-verb=0', f'-mem-lim={mem_limit}', input_file, model_file], stdout=FNULL,
+        return subprocess.Popen(['/home/aschidler/Downloads/glucose-syrup-4.1/simp/glucose', '-verb=0', f'-mem-lim={mem_limit}', input_file, model_file], stdout=FNULL,
                                       stderr=subprocess.STDOUT, preexec_fn=lambda: limit_memory(mem_limit))
 
     def parse(self, f):
