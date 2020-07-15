@@ -115,6 +115,7 @@ def leaf_rearrange(tree, instance, limit=15):
 
         # Now traverse and find involved leaves as well as features
         c_samples = assigned[c_parent[0].id]
+        c_depth = limit - climit
         c_features = set()
         c_leafs = []
 
@@ -147,7 +148,7 @@ def leaf_rearrange(tree, instance, limit=15):
                 new_instance.add_example(bdd_instance.BddExamples(values, instance.examples[s].cls, len(new_instance.examples)))
 
         # Solve instance
-        new_tree, _ = runner.run(new_instance, max_node[1] - 1, u_bound=max_node[1] - 1)
+        new_tree, _ = runner.run(new_instance, c_depth - 1, u_bound=c_depth - 1)
 
         # Either the branch is done, or
         if new_tree is None:
@@ -166,7 +167,8 @@ def leaf_rearrange(tree, instance, limit=15):
             # Clean tree
             replace(tree, new_tree, c_parent[0])
             structure = find_structure(tree)
-            print(f"Finished sub-tree, improvement, acc {tree.get_accuracy(instance.examples)}")
+            print(f"New tree: {new_tree.get_depth()} / {limit}")
+            print(f"Finished sub-tree, improvement, acc {tree.get_accuracy(instance.examples)}, depth {tree.get_depth()}, root {c_parent[0].id}")
 
 
 def leaf_select(tree, instance, sample_limit=50, depth_limit=12):
@@ -192,11 +194,13 @@ def leaf_select(tree, instance, sample_limit=50, depth_limit=12):
             new_instance.add_example(instance.examples[s].copy())
 
         c_d = depth_from(c_r)
-        new_tree, _ = runner.run(new_instance, c_d, u_bound=c_d)
-        if new_tree is None:
-            print("Finished sub-tree, no improvement")
-        else:
-            replace(tree, new_tree, c_r)
-            print("Finished sub-tree, improved!")
+        if c_d > 1:
+            new_tree, _ = runner.run(new_instance, c_d-1, u_bound=c_d-1)
+            if new_tree is None:
+                print(f"Finished sub-tree, no improvement, root {c_r.id}")
+            else:
+                replace(tree, new_tree, c_r)
+                print(
+                    f"Finished sub-tree, improvement, acc {tree.get_accuracy(instance.examples)}, depth {tree.get_depth()}, root {c_r.id}")
 
         # No need to retry, as the number of assigned samples stayed the same
