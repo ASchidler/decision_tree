@@ -115,6 +115,9 @@ class DecisionTree:
             total += 1
             if decision == e.cls:
                 correct += 1
+            else:
+                print("e")
+                pass
 
         return correct / total
 

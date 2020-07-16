@@ -4,7 +4,7 @@ from collections import defaultdict
 import bdd_instance
 import sat_tools
 from tree_depth_encoding import TreeDepthEncoding
-
+from decision_tree import DecisionTreeNode, DecisionTreeLeaf
 
 def assign_samples(tree, instance):
     assigned_samples = [[] for _ in tree.nodes]
@@ -78,7 +78,7 @@ def replace(old_tree, new_tree, root):
     while q:
         r_n, r_o = q.pop()
 
-        if not ids:  # Lower max. depth may still have more nodes
+        if len(ids) < 2:  # Lower max. depth may still have more nodes
             ids.append(len(old_tree.nodes))
             ids.append(len(old_tree.nodes) + 1)
             old_tree.nodes.append(None)
@@ -95,24 +95,107 @@ def replace(old_tree, new_tree, root):
     # Sub-tree is now been added in place of the old sub-tree
 
 
+def stitch(old_tree, new_tree, root):
+    # Remove unnecessary
+
+    # find leaves in new node
+    q = [new_tree.nodes[0]]
+    leaves = []
+    hit_count = defaultdict(list)
+    while q:
+        c_q = q.pop()
+        if c_q.is_leaf:
+            leaves.append(c_q)
+            hit_count[c_q.cls].append(c_q)
+        else:
+            q.extend(c_q.children.values())
+
+    original_ids = set(x.cls for x in leaves)
+
+    # Duplicate structures for leaves used multiple times
+    for k, v in hit_count.items():
+        if len(v) > 1:
+            # copy
+            for c_l in v[1:]:
+                n_id = len(old_tree.nodes)
+                if old_tree.nodes[k].is_leaf:
+                    old_tree.nodes.append(DecisionTreeLeaf(old_tree.nodes[k].cls, n_id))
+                else:
+                    old_tree.nodes.append(DecisionTreeNode(old_tree.nodes[k].feature, n_id))
+                c_l.cls = n_id
+
+                if not old_tree.nodes[k].is_leaf:
+                    q = [(old_tree.nodes[k], old_tree.nodes[-1])]
+
+                    while q:
+                        o_r, n_r = q.pop()
+                        for c_c, c_p in [(o_r.left, True), (o_r.right, False)]:
+                            n_id = len(old_tree.nodes)
+                            old_tree.nodes.append(None)
+
+                            if c_c.is_leaf:
+                                old_tree.add_leaf(n_id, n_r.id, c_p, c_c.cls)
+                            else:
+                                nn = old_tree.add_node(n_id, n_r.id, c_c.feature, c_p)
+                                q.append((c_c, nn))
+
+    # Eliminate old nodes
+    ids = []
+    q = [root]
+    while q:
+        c_q = q.pop()
+
+        if c_q.id not in original_ids:
+            if not c_q.is_leaf:
+                q.append(c_q.left)
+                q.append(c_q.right)
+            if c_q.id != root.id:
+                old_tree.nodes[c_q.id] = None
+                ids.append(c_q.id)
+
+    # Stitch in new tree
+    q = [(root, new_tree.nodes[0])]
+    root.feature = new_tree.nodes[0].feature
+    root.left = None
+    root.right = None
+
+    while q:
+        o_r, n_r = q.pop()
+
+        if len(ids) < 2:  # Lower max. depth may still have more nodes
+            ids.append(len(old_tree.nodes))
+            ids.append(len(old_tree.nodes) + 1)
+            old_tree.nodes.append(None)
+            old_tree.nodes.append(None)
+
+        for c_p, c_c in [(True, n_r.children[True]), (False, n_r.children[False])]:
+            if c_c.is_leaf:
+                if c_p:
+                    o_r.left = old_tree.nodes[c_c.cls]
+                else:
+                    o_r.right = old_tree.nodes[c_c.cls]
+            else:
+                n_r = old_tree.add_node(ids.pop(), o_r.id, c_c.feature, c_p)
+                q.append((n_r, c_c))
+
+
 def build_unique_set(root, samples, examples, limit=sys.maxsize):
     c_features = set()
     c_leafs = []
 
     q = [(root, 0)]
-    climit = limit
     depth = 0
 
-    while q and climit >= 0:
+    while q:
         c_q, d = q.pop()
         depth = max(depth, d)
-        climit -= 1
-        if not c_q.is_leaf and climit > 0:
-            q.append((c_q.left, d+1))
-            q.append((c_q.right, d+1))
-            c_features.add(c_q.feature)
-        else:
+
+        if c_q.is_leaf or d >= limit:
             c_leafs.append(c_q.id)
+        else:
+            q.append((c_q.left, d + 1))
+            q.append((c_q.right, d + 1))
+            c_features.add(c_q.feature)
 
     feature_map = {}
     c_features = list(c_features)
@@ -253,11 +336,9 @@ def mid_rearrange(tree, instance, sample_limit=50, depth_limit=12):
             continue
 
         class_mapping = {}
-        reverse_mapping = defaultdict(list)
         for cl in last_instance[2]:
             for al in assigned[cl]:
-                class_mapping[al] = cl
-                reverse_mapping[cl].append(al)
+                class_mapping[al + 1] = cl
 
         for ex in last_instance[0].examples:
             ex.cls = class_mapping[ex.id]
@@ -265,7 +346,18 @@ def mid_rearrange(tree, instance, sample_limit=50, depth_limit=12):
         new_tree, _ = runner.run(last_instance[0], last_instance[3] - 1, u_bound=last_instance[3] - 1)
 
         if new_tree is not None:
-            print(f"Found one {new_tree.get_depth()}/{last_instance[3]}, root {c_parent.id}")
+            q = [new_tree.nodes[0]]
+            while q:
+                c_q = q.pop()
+                if not c_q.is_leaf:
+                    c_q.feature = last_instance[1][c_q.feature]
+                    q.append(c_q.children[True])
+                    q.append(c_q.children[False])
+            # Stitch the new tree in the middle
+            stitch(tree, new_tree, c_parent)
+            print(
+                f"Found one {new_tree.get_depth()}/{last_instance[3]}, root {c_parent.id}, acc {tree.get_accuracy(instance.examples)}")
+            assigned = assign_samples(tree, instance)
         else:
             print(f"Not found {last_instance[3]}, root {c_parent.id}")
 
