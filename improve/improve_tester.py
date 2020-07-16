@@ -58,15 +58,23 @@ for ll in lines:
 print(f"Tree accuracy: {tree.get_accuracy(instance.examples)}")
 print(f"Tree depth: {tree.get_depth()}")
 print(f"Tree nodes: {tree.get_nodes()}")
+#
+improve.improver.mid_rearrange(tree, instance, )
+print(f"Tree depth: {tree.get_depth()}")
+print(f"Tree nodes: {tree.get_nodes()}")
+print(f"Tree accuracy: {tree.get_accuracy(instance.examples)}")
+#
+improve.improver.leaf_select(tree, instance, sample_limit=50)
+print(f"Tree depth: {tree.get_depth()}")
+print(f"Tree nodes: {tree.get_nodes()}")
+print(f"Tree accuracy: {tree.get_accuracy(instance.examples)}")
 
-improve.improver.mid_rearrange(tree, instance)
+improve.improver.reduced_leaf(tree, instance)
+print(f"Tree depth: {tree.get_depth()}")
+print(f"Tree nodes: {tree.get_nodes()}")
+print(f"Tree accuracy: {tree.get_accuracy(instance.examples)}")
 
-# improve.improver.leaf_select(tree, instance, sample_limit=30)
-# print(f"Tree depth: {tree.get_depth()}")
-# print(f"Tree nodes: {tree.get_nodes()}")
-# print(f"Tree accuracy: {tree.get_accuracy(instance.examples)}")
-
-improve.improver.leaf_rearrange(tree, instance, 10)
+improve.improver.leaf_rearrange(tree, instance, 10, sample_limit=100)
 print(f"Tree depth: {tree.get_depth()}")
 print(f"Tree nodes: {tree.get_nodes()}")
 print(f"Tree accuracy: {tree.get_accuracy(instance.examples)}")
