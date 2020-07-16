@@ -5,6 +5,7 @@ import bdd_instance
 import sat_tools
 from tree_depth_encoding import TreeDepthEncoding
 from decision_tree import DecisionTreeNode, DecisionTreeLeaf
+import heapq
 
 def assign_samples(tree, instance):
     assigned_samples = [[] for _ in tree.nodes]
@@ -258,7 +259,7 @@ def leaf_rearrange(tree, instance, depth_limit=15, sample_limit=200):
 
         # Either the branch is done, or
         if new_tree is None:
-            print("Finished sub-tree, no improvement")
+            print(f"Finished sub-tree, no improvement {c_depth}")
             done.update(c_leafs)
         else:
             # Correct features
@@ -362,3 +363,34 @@ def mid_rearrange(tree, instance, sample_limit=50, depth_limit=12):
             print(f"Not found {last_instance[3]}, root {c_parent.id}")
 
     # TODO: Do the same thing with feature reduction?
+
+
+def reduced_leaf(tree, instance, sample_limit=50, depth_limit=15):
+    assigned = assign_samples(tree, instance)
+    done = set()
+    runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=".")
+
+    for i in range(0, len(tree.nodes)):
+        if tree.nodes[i] is None or tree.nodes[i].is_leaf or depth_from(tree.nodes[i]) > depth_limit:
+            continue
+
+        new_instance = bdd_instance.BddInstance()
+        for s in assigned[i]:
+            new_instance.add_example(instance.examples[s].copy())
+
+        bdd_instance.reduce(new_instance)
+
+        if len(new_instance.examples) <= sample_limit:
+            nd = depth_from(tree.nodes[i])
+            new_tree, _ = runner.run(new_instance,  nd-1, u_bound=nd - 1)
+
+            if new_tree is not None:
+                new_instance.unreduce_instance(new_tree)
+                replace(tree, new_tree, tree.nodes[i])
+                assigned = assign_samples(tree, instance)
+                print(
+                    f"Finished sub-tree, improvement, acc {tree.get_accuracy(instance.examples)}, depth {tree.get_depth()}, root {tree.nodes[i].id}")
+            else:
+                print("No improvement")
+        else:
+            print("Too big")

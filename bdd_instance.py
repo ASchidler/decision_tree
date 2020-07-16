@@ -282,13 +282,15 @@ class BddInstance:
 
         return True
 
+
 def reduce(instance, randomized_runs=5, remove=False, optimal=False, min_key=None):
     # print(f"Before: {instance.num_features} Features, {len(instance.examples)} examples")
 
     unnecessary = []
     if min_key is None:
         if not optimal:
-            keys = [instance.min_key(randomize=True) for _ in range(0, randomized_runs-1)]
+            keys = []
+            keys.extend([instance.min_key(randomize=True) for _ in range(0, randomized_runs-1)])
             keys.append(instance.min_key(randomize=False))
             keys.extend([instance.min_key3() for _ in range(0, randomized_runs)])
             if len(instance.examples) < 5000:
