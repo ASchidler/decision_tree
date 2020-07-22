@@ -6,12 +6,21 @@ class DecisionTreeNode:
         self.right = None
         self.id = id
 
+    def get_children(self):
+        return {True: self.left, False: self.right}
+
+    def __lt__(self, other):
+        return self.id < other.id
+
 
 class DecisionTreeLeaf:
     def __init__(self, cls, id):
         self.is_leaf = True
         self.cls = cls
         self.id = id
+
+    def __lt__(self, other):
+        return self.id < other.id
 
 
 class DecisionTree:
@@ -145,6 +154,10 @@ class NonBinaryNode:
         self.feature = None
         self.parent = None
         self.id = id
+        self.is_binary = False
+
+    def get_children(self):
+        return self.children
 
 
 class NonBinaryTree:

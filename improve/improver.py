@@ -109,7 +109,7 @@ def stitch(old_tree, new_tree, root):
             leaves.append(c_q)
             hit_count[c_q.cls].append(c_q)
         else:
-            q.extend(c_q.children.values())
+            q.extend(c_q.get_children().values())
 
     original_ids = set(x.cls for x in leaves)
 
@@ -171,10 +171,13 @@ def stitch(old_tree, new_tree, root):
 
         for c_p, c_c in [(True, n_r.children[True]), (False, n_r.children[False])]:
             if c_c.is_leaf:
-                if c_p:
-                    o_r.left = old_tree.nodes[c_c.cls]
+                if c_c.cls < 0:
+                    old_tree.add_leaf(ids.pop(), o_r.id, c_p, True if c_c.cls == -2 else False)
                 else:
-                    o_r.right = old_tree.nodes[c_c.cls]
+                    if c_p:
+                        o_r.left = old_tree.nodes[c_c.cls]
+                    else:
+                        o_r.right = old_tree.nodes[c_c.cls]
             else:
                 n_r = old_tree.add_node(ids.pop(), o_r.id, c_c.feature, c_p)
                 q.append((n_r, c_c))
@@ -217,6 +220,70 @@ def build_unique_set(root, samples, examples, limit=sys.maxsize):
                 bdd_instance.BddExamples(values, examples[s].cls, examples[s].id))
 
     return new_instance, feature_map, c_leafs, depth
+
+
+def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit, reduce):
+    q = [(0, 0, root)]
+
+    features = set()
+    last_instance = None
+    cnt = 0
+    frontier = {root.id}
+    max_depth = 0
+
+    while q:
+        remaining, depth, new_root = heapq.heappop(q)
+        cnt += 1
+
+        if depth > depth_limit:
+            continue
+
+        max_depth = max(max_depth, depth + 1)
+
+        if not new_root.is_leaf:
+            features.add(new_root.feature)
+            frontier.remove(new_root.id)
+            frontier.add(new_root.left.id)
+            frontier.add(new_root.right.id)
+
+        if cnt >= 3:
+            class_mapping = {}
+            cnt_internal = 0
+            for c_leaf in frontier:
+                for s in assigned[c_leaf]:
+                    if tree.nodes[c_leaf].is_leaf:
+                        class_mapping[s] = -2 if tree.nodes[c_leaf].cls else -1
+                    else:
+                        cnt_internal += 1
+                        class_mapping[s] = c_leaf
+
+            # If all "leaves" are leaves, this method is not required, as it will be handled by separate improvements
+            if cnt_internal > 0:
+                new_instance = bdd_instance.BddInstance()
+                for s in assigned[root.id]:
+                    new_instance.add_example(bdd_instance.BddExamples(examples[s].features, class_mapping[s], examples[s].id))
+
+                if reduce:
+                    key = new_instance.min_key(randomize=True)
+                    bdd_instance.reduce(new_instance, min_key=key)
+                else:
+                    bdd_instance.reduce(new_instance, min_key=features)
+
+                # TODO: This leads to adding as many nodes as possible. To emphasize the remaining depth more,
+                #  one should stop when the node with the highest remaining depth fails due to too high depth
+                #  or too many samples
+                if len(new_instance.examples) <= sample_limit:
+                    last_instance = new_instance
+
+                    if not new_root.is_leaf:
+                        heapq.heappush(q, (depth_from(new_root.left) * -1, depth + 1, new_root.left))
+                        heapq.heappush(q, (depth_from(new_root.right) * -1, depth + 1, new_root.right))
+        else:
+            if not new_root.is_leaf:
+                heapq.heappush(q, (depth_from(new_root.left) * -1, depth + 1, new_root.left))
+                heapq.heappush(q, (depth_from(new_root.right) * -1, depth + 1, new_root.right))
+
+    return last_instance, max_depth
 
 
 def leaf_rearrange(tree, instance, depth_limit=15, sample_limit=200):
@@ -367,7 +434,6 @@ def mid_rearrange(tree, instance, sample_limit=50, depth_limit=12):
 
 def reduced_leaf(tree, instance, sample_limit=50, depth_limit=15):
     assigned = assign_samples(tree, instance)
-    done = set()
     runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=".")
 
     for i in range(0, len(tree.nodes)):
@@ -394,3 +460,32 @@ def reduced_leaf(tree, instance, sample_limit=50, depth_limit=15):
                 print("No improvement")
         else:
             print("Too big")
+
+
+def mid_reduced(tree, in_instance, sample_limit=50, depth_limit=12):
+    assigned = assign_samples(tree, in_instance)
+    runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=".")
+
+    for i in range(0, len(tree.nodes)):
+        # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
+        if tree.nodes[i] is None or tree.nodes[i].is_leaf or len(assigned[tree.nodes[i].id]) < sample_limit:
+            continue
+
+        c_parent = tree.nodes[i]
+        instance, i_depth = build_reduced_set(c_parent, tree, in_instance.examples, assigned, depth_limit, sample_limit, True)
+
+        if instance is None:
+            continue
+
+        new_tree, _ = runner.run(instance, i_depth - 1, u_bound=i_depth-1)
+
+        if new_tree is not None:
+            instance.unreduce_instance(new_tree)
+
+            # Stitch the new tree in the middle
+            stitch(tree, new_tree, c_parent)
+            print(
+                f"Found one {new_tree.get_depth()}/{i_depth}, root {c_parent.id}, acc {tree.get_accuracy(instance.examples)}")
+            assigned = assign_samples(tree, in_instance)
+        else:
+            print(f"Not found {i_depth}, root {c_parent.id}")
