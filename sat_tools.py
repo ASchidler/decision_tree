@@ -46,7 +46,7 @@ class GlucoseSolver(BaseSolver):
     def run(self, input_file, model_file, mem_limit=0):
         FNULL = open(os.devnull, 'w')
         # , f'-mem-lim={mem_limit}'
-        return subprocess.Popen(['/home/aschidler/Downloads/glucose-syrup-4.1/simp/glucose', '-model', '-verb=0', input_file, model_file], stdout=FNULL,
+        return subprocess.Popen(['/home/asc/Dev/frasmt_pace/glucose', '-model', '-verb=0', input_file, model_file], stdout=FNULL,
                                       stderr=subprocess.STDOUT, preexec_fn=lambda: limit_memory(mem_limit))
 
     def parse(self, f):

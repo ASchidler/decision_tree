@@ -242,20 +242,17 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
 
         if not new_root.is_leaf:
             features.add(new_root.feature)
-            frontier.remove(new_root.id)
-            frontier.add(new_root.left.id)
-            frontier.add(new_root.right.id)
 
         if cnt >= 3:
             class_mapping = {}
             cnt_internal = 0
             for c_leaf in frontier:
                 for s in assigned[c_leaf]:
-                    if tree.nodes[c_leaf].is_leaf:
-                        class_mapping[s] = -2 if tree.nodes[c_leaf].cls else -1
-                    else:
-                        cnt_internal += 1
-                        class_mapping[s] = c_leaf
+                    # if tree.nodes[c_leaf].is_leaf:
+                    #     class_mapping[s] = -2 if tree.nodes[c_leaf].cls else -1
+                    # else:
+                    cnt_internal += 1
+                    class_mapping[s] = c_leaf
 
             # If all "leaves" are leaves, this method is not required, as it will be handled by separate improvements
             if cnt_internal > 0:
@@ -278,10 +275,18 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
                     if not new_root.is_leaf:
                         heapq.heappush(q, (depth_from(new_root.left) * -1, depth + 1, new_root.left))
                         heapq.heappush(q, (depth_from(new_root.right) * -1, depth + 1, new_root.right))
+                        frontier.remove(new_root.id)
+                        frontier.add(new_root.left.id)
+                        frontier.add(new_root.right.id)
+                elif not new_root.is_leaf:
+                    features.remove(new_root.feature)
         else:
             if not new_root.is_leaf:
                 heapq.heappush(q, (depth_from(new_root.left) * -1, depth + 1, new_root.left))
                 heapq.heappush(q, (depth_from(new_root.right) * -1, depth + 1, new_root.right))
+                frontier.remove(new_root.id)
+                frontier.add(new_root.left.id)
+                frontier.add(new_root.right.id)
 
     return last_instance, max_depth
 
@@ -485,7 +490,7 @@ def mid_reduced(tree, in_instance, sample_limit=50, depth_limit=12):
             # Stitch the new tree in the middle
             stitch(tree, new_tree, c_parent)
             print(
-                f"Found one {new_tree.get_depth()}/{i_depth}, root {c_parent.id}, acc {tree.get_accuracy(instance.examples)}")
+                f"Found one {new_tree.get_depth()}/{i_depth}, root {c_parent.id}, acc {tree.get_accuracy(in_instance.examples)}")
             assigned = assign_samples(tree, in_instance)
         else:
             print(f"Not found {i_depth}, root {c_parent.id}")
