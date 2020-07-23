@@ -65,6 +65,9 @@ class DecisionTree:
         self.root = DecisionTreeNode(feature, 1)
         self.nodes[1] = self.root
 
+    def get_root(self):
+        return self.root
+
     def _add_node(self, id, parent, polarity, node):
         if self.nodes[id] is not None:
             print(f"Node {id} already added")
@@ -163,6 +166,9 @@ class NonBinaryNode:
 class NonBinaryTree:
     def __init__(self):
         self.nodes = []
+
+    def get_root(self):
+        return self.nodes[0]
 
     def _add_node(self, parent, n, value):
         if parent is None:

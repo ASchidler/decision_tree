@@ -7,6 +7,7 @@ from tree_depth_encoding import TreeDepthEncoding
 from decision_tree import DecisionTreeNode, DecisionTreeLeaf
 import heapq
 
+
 def assign_samples(tree, instance):
     assigned_samples = [[] for _ in tree.nodes]
 
@@ -100,14 +101,15 @@ def stitch(old_tree, new_tree, root):
     # Remove unnecessary
 
     # find leaves in new node
-    q = [new_tree.nodes[0]]
+    q = [new_tree.get_root()]
     leaves = []
     hit_count = defaultdict(list)
     while q:
         c_q = q.pop()
         if c_q.is_leaf:
-            leaves.append(c_q)
-            hit_count[c_q.cls].append(c_q)
+            if c_q.cls >= 0:
+                leaves.append(c_q)
+                hit_count[c_q.cls].append(c_q)
         else:
             q.extend(c_q.get_children().values())
 
@@ -155,8 +157,8 @@ def stitch(old_tree, new_tree, root):
                 ids.append(c_q.id)
 
     # Stitch in new tree
-    q = [(root, new_tree.nodes[0])]
-    root.feature = new_tree.nodes[0].feature
+    q = [(root, new_tree.get_root())]
+    root.feature = new_tree.get_root().feature
     root.left = None
     root.right = None
 
@@ -169,7 +171,7 @@ def stitch(old_tree, new_tree, root):
             old_tree.nodes.append(None)
             old_tree.nodes.append(None)
 
-        for c_p, c_c in [(True, n_r.children[True]), (False, n_r.children[False])]:
+        for c_p, c_c in [(True, n_r.get_children()[True]), (False, n_r.get_children()[False])]:
             if c_c.is_leaf:
                 if c_c.cls < 0:
                     old_tree.add_leaf(ids.pop(), o_r.id, c_p, True if c_c.cls == -2 else False)
@@ -223,15 +225,23 @@ def build_unique_set(root, samples, examples, limit=sys.maxsize):
 
 
 def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit, reduce):
+    max_dist = depth_from(root)
+    # q = [[] for _ in range(0, max_dist+1)]
+    # q[max_dist].append((0, root))
     q = [(0, 0, root)]
-
+    c_dist = max_dist
     features = set()
     last_instance = None
     cnt = 0
     frontier = {root.id}
     max_depth = 0
 
-    while q:
+    while q: #c_dist >= 0:
+        # while c_dist >= 0 and not q[c_dist]:
+        #     c_dist -= 1
+        # if c_dist < 0:
+        #     break
+
         remaining, depth, new_root = heapq.heappop(q)
         cnt += 1
 
@@ -248,11 +258,11 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
             cnt_internal = 0
             for c_leaf in frontier:
                 for s in assigned[c_leaf]:
-                    # if tree.nodes[c_leaf].is_leaf:
-                    #     class_mapping[s] = -2 if tree.nodes[c_leaf].cls else -1
-                    # else:
-                    cnt_internal += 1
-                    class_mapping[s] = c_leaf
+                    if tree.nodes[c_leaf].is_leaf:
+                        class_mapping[s] = -2 if tree.nodes[c_leaf].cls else -1
+                    else:
+                        cnt_internal += 1
+                        class_mapping[s] = c_leaf
 
             # If all "leaves" are leaves, this method is not required, as it will be handled by separate improvements
             if cnt_internal > 0:
