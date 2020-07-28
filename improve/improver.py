@@ -226,32 +226,38 @@ def build_unique_set(root, samples, examples, limit=sys.maxsize):
 
 def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit, reduce):
     max_dist = depth_from(root)
-    # q = [[] for _ in range(0, max_dist+1)]
-    # q[max_dist].append((0, root))
-    q = [(0, 0, root)]
-    c_dist = max_dist
+    q = [[] for _ in range(0, max_dist+1)]
+    q[max_dist].append((0, root))
+
     features = set()
     last_instance = None
     cnt = 0
     frontier = {root.id}
     max_depth = 0
 
-    while q: #c_dist >= 0:
-        # while c_dist >= 0 and not q[c_dist]:
-        #     c_dist -= 1
-        # if c_dist < 0:
-        #     break
+    while q:
+        while not q[-1]:
+            q.pop()
 
-        remaining, depth, new_root = heapq.heappop(q)
-        cnt += 1
+        if not q:
+            break
 
-        if depth > depth_limit:
-            continue
+        new_nodes = q.pop()
+        for c_depth, new_root in new_nodes:
+            c_max_depth = max(max_depth, c_depth + 1)
+            cnt += 1
 
-        max_depth = max(max_depth, depth + 1)
+            if not new_root.is_leaf:
+                features.add(new_root.feature)
+                q[depth_from(new_root.left)].append((c_depth + 1, new_root.left))
+                q[depth_from(new_root.right)].append((c_depth + 1, new_root.right))
 
-        if not new_root.is_leaf:
-            features.add(new_root.feature)
+                frontier.remove(new_root.id)
+                frontier.add(new_root.left.id)
+                frontier.add(new_root.right.id)
+
+        if c_max_depth > depth_limit:
+            break
 
         if cnt >= 3:
             class_mapping = {}
@@ -281,22 +287,9 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
                 #  or too many samples
                 if len(new_instance.examples) <= sample_limit:
                     last_instance = new_instance
-
-                    if not new_root.is_leaf:
-                        heapq.heappush(q, (depth_from(new_root.left) * -1, depth + 1, new_root.left))
-                        heapq.heappush(q, (depth_from(new_root.right) * -1, depth + 1, new_root.right))
-                        frontier.remove(new_root.id)
-                        frontier.add(new_root.left.id)
-                        frontier.add(new_root.right.id)
-                elif not new_root.is_leaf:
-                    features.remove(new_root.feature)
-        else:
-            if not new_root.is_leaf:
-                heapq.heappush(q, (depth_from(new_root.left) * -1, depth + 1, new_root.left))
-                heapq.heappush(q, (depth_from(new_root.right) * -1, depth + 1, new_root.right))
-                frontier.remove(new_root.id)
-                frontier.add(new_root.left.id)
-                frontier.add(new_root.right.id)
+                    max_depth = c_max_depth
+                else:
+                    q = None
 
     return last_instance, max_depth
 
@@ -477,7 +470,7 @@ def reduced_leaf(tree, instance, sample_limit=50, depth_limit=15):
             print("Too big")
 
 
-def mid_reduced(tree, in_instance, sample_limit=50, depth_limit=12):
+def mid_reduced(tree, in_instance, reduce, sample_limit=50, depth_limit=12):
     assigned = assign_samples(tree, in_instance)
     runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=".")
 
@@ -487,7 +480,7 @@ def mid_reduced(tree, in_instance, sample_limit=50, depth_limit=12):
             continue
 
         c_parent = tree.nodes[i]
-        instance, i_depth = build_reduced_set(c_parent, tree, in_instance.examples, assigned, depth_limit, sample_limit, True)
+        instance, i_depth = build_reduced_set(c_parent, tree, in_instance.examples, assigned, depth_limit, sample_limit, reduce)
 
         if instance is None:
             continue
