@@ -139,6 +139,18 @@ class DecisionTree:
 
         return dfs_find(self.root, 0)
 
+    def get_avg_depth(self):
+        def dfs_find(node, level):
+            if node.is_leaf:
+                return level, 1
+            else:
+                l_d, l_c = dfs_find(node.left, level + 1)
+                r_d, r_c = dfs_find(node.right, level + 1)
+                return l_d + r_d, l_c + r_c
+
+        t_d, t_c = dfs_find(self.root, 0)
+        return t_d / t_c
+
     def get_nodes(self):
         def dfs_find(node, cnt):
             if node.is_leaf:
