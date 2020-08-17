@@ -1,11 +1,11 @@
 from bdd_instance import BddInstance, BddExamples
 
 
-def parse(filename):
+def parse(filename, has_header=True):
     instance = BddInstance()
     id = 1
     mappings = {}
-    first_line = True
+    first_line = has_header
 
     with open(filename, "r") as f:
         for ln in f:
@@ -37,8 +37,18 @@ def parse(filename):
 
             cls = example.pop()
             instance.add_example(BddExamples(example, cls, id))
+
             id += 1
 
+    # Map binary to correct T/F values
+    for ce in instance.examples:
+        for cf in range(1, len(ce.features)):
+            if len(mappings[cf-1]) == 2 and mappings[cf-1][0] == "0" and mappings[cf-1][1] == "1":
+                ce.features[cf] = True if not ce.features[cf] else False
+        if len(mappings[len(ce.features)-1]) == 2 \
+                and mappings[len(ce.features)-1][0] == "0" \
+                and mappings[len(ce.features)-1][1] == "1":
+            ce.cls = True if not ce.cls else False
     return instance
 
 

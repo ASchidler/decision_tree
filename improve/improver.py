@@ -329,6 +329,9 @@ def leaf_rearrange(tree, instance, depth_limit=15, sample_limit=200):
 
         new_instance, feature_map, c_leafs, _ = last_instance
 
+        if len(new_instance.examples) == 0:
+            continue
+
         # Solve instance
         new_tree, _ = runner.run(new_instance, c_depth - 1, u_bound=c_depth - 1)
 
@@ -376,6 +379,9 @@ def leaf_select(tree, instance, sample_limit=50, depth_limit=12):
         for s in assigned[c_r.id]:
             new_instance.add_example(instance.examples[s].copy())
 
+        if len(new_instance.examples) == 0:
+            continue
+
         c_d = depth_from(c_r)
         if c_d > 1:
             new_tree, _ = runner.run(new_instance, c_d-1, u_bound=c_d-1)
@@ -419,6 +425,9 @@ def mid_rearrange(tree, instance, sample_limit=50, depth_limit=12):
         for ex in last_instance[0].examples:
             ex.cls = class_mapping[ex.id]
 
+        if len(last_instance[0].examples) == 0:
+            continue
+
         new_tree, _ = runner.run(last_instance[0], last_instance[3] - 1, u_bound=last_instance[3] - 1)
 
         if new_tree is not None:
@@ -452,6 +461,9 @@ def reduced_leaf(tree, instance, sample_limit=50, depth_limit=15):
         for s in assigned[i]:
             new_instance.add_example(instance.examples[s].copy())
 
+        if len(new_instance.examples) == 0:
+            continue
+
         bdd_instance.reduce(new_instance)
 
         if len(new_instance.examples) <= sample_limit:
@@ -483,6 +495,9 @@ def mid_reduced(tree, in_instance, reduce, sample_limit=50, depth_limit=12):
         instance, i_depth = build_reduced_set(c_parent, tree, in_instance.examples, assigned, depth_limit, sample_limit, reduce)
 
         if instance is None:
+            continue
+
+        if len(instance.examples) == 0:
             continue
 
         new_tree, _ = runner.run(instance, i_depth - 1, u_bound=i_depth-1)
