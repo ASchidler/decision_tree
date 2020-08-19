@@ -2,29 +2,15 @@ import sys
 import parser
 import os
 import decision_tree
-import improve.improver
+import improve.improve_depth_first as df
 
-tree_path = "trees"
-instance_path = "datasets/binary"
+tree_path = "datasets/trees"
+instance_path = "datasets/split"
 
-instances = [
-    "appendicitis",
-    "australian",
-    "car",
-    "haberman",
-    "new-thyroid",
-    "musk1_bin",
-    "mushroom_bin",
-    "objectivity_bin",
-    "monks-1_bin",
-    "ccdefault_bin",
-    "hiv_schilling_bin",
-    "mammographic_masses_bin",
-    "tic-tac-toe_bin"
-]
+target_instance = sys.argv[1]
 
 
-def parse_weka_tree(tree_path):
+def parse_weka_tree(tree_path, instance):
     with open(tree_path) as tf:
         lines = []
         for _, l in enumerate(tf):
@@ -72,7 +58,7 @@ def parse_weka_tree(tree_path):
     return wtree
 
 
-def parse_iti_tree(tree_path):
+def parse_iti_tree(tree_path, instance):
     with open(tree_path) as tf:
         lines = []
         for _, l in enumerate(tf):
@@ -110,44 +96,22 @@ def parse_iti_tree(tree_path):
                 break
     return itree
 
-target_instance = instances[int(sys.argv[1])]
-instance = parser.parse(os.path.join(instance_path, target_instance + ".data"), has_header=False)
 
-tree = parse_weka_tree(os.path.join(tree_path, target_instance+".tree"))
+training_instance = parser.parse(os.path.join(instance_path, target_instance + ".data"), has_header=False)
+test_instance = parser.parse(os.path.join(instance_path, target_instance + ".test"), has_header=False)
+
+tree = parse_weka_tree(os.path.join(tree_path, target_instance+".tree"), training_instance)
 # Parse tree
 
 
-print(f"Tree accuracy: {tree.get_accuracy(instance.examples)}")
+print(f"Tree training accuracy: {tree.get_accuracy(training_instance.examples)}")
+print(f"Tree test accuracy: {tree.get_accuracy(test_instance.examples)}")
 print(f"Tree depth: {tree.get_depth()}")
 print(f"Tree nodes: {tree.get_nodes()}")
 #
-improve.improver.mid_reduced(tree, instance, True)
-print(f"Tree depth: {tree.get_depth()}")
-print(f"Tree nodes: {tree.get_nodes()}")
-print(f"Tree accuracy: {tree.get_accuracy(instance.examples)}")
-#
-improve.improver.mid_reduced(tree, instance, False)
-print(f"Tree depth: {tree.get_depth()}")
-print(f"Tree nodes: {tree.get_nodes()}")
-print(f"Tree accuracy: {tree.get_accuracy(instance.examples)}")
-#
-# improve.improver.mid_rearrange(tree, instance, )
-# print(f"Tree depth: {tree.get_depth()}")
-# print(f"Tree nodes: {tree.get_nodes()}")
-# print(f"Tree accuracy: {tree.get_accuracy(instance.examples)}")
-# #
+df.run(tree, training_instance, test_instance)
 
-improve.improver.reduced_leaf(tree, instance)
+print(f"Tree training accuracy: {tree.get_accuracy(training_instance.examples)}")
+print(f"Tree test accuracy: {tree.get_accuracy(test_instance.examples)}")
 print(f"Tree depth: {tree.get_depth()}")
 print(f"Tree nodes: {tree.get_nodes()}")
-print(f"Tree accuracy: {tree.get_accuracy(instance.examples)}")
-
-improve.improver.leaf_rearrange(tree, instance, 10, sample_limit=75)
-print(f"Tree depth: {tree.get_depth()}")
-print(f"Tree nodes: {tree.get_nodes()}")
-print(f"Tree accuracy: {tree.get_accuracy(instance.examples)}")
-
-improve.improver.leaf_select(tree, instance, sample_limit=50)
-print(f"Tree depth: {tree.get_depth()}")
-print(f"Tree nodes: {tree.get_nodes()}")
-print(f"Tree accuracy: {tree.get_accuracy(instance.examples)}")
