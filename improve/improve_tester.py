@@ -107,6 +107,7 @@ tree = parse_weka_tree(os.path.join(tree_path, target_instance+".tree"), trainin
 print(f"Tree training accuracy: {tree.get_accuracy(training_instance.examples)}")
 print(f"Tree test accuracy: {tree.get_accuracy(test_instance.examples)}")
 print(f"Tree depth: {tree.get_depth()}")
+print(f"Avg depth: {tree.get_avg_depth()}")
 print(f"Tree nodes: {tree.get_nodes()}")
 #
 df.run(tree, training_instance, test_instance)
@@ -114,4 +115,5 @@ df.run(tree, training_instance, test_instance)
 print(f"Tree training accuracy: {tree.get_accuracy(training_instance.examples)}")
 print(f"Tree test accuracy: {tree.get_accuracy(test_instance.examples)}")
 print(f"Tree depth: {tree.get_depth()}")
+print(f"Avg depth: {tree.get_avg_depth()}")
 print(f"Tree nodes: {tree.get_nodes()}")

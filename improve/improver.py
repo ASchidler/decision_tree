@@ -365,56 +365,52 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit=15, sample
         return True, last_idx
 
 
-def mid_rearrange(tree, instance, sample_limit=50, depth_limit=12):
-    assigned = assign_samples(tree, instance)
+def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit=15, sample_limit=200):
     runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=".")
 
-    for i in range(0, len(tree.nodes)):
-        if tree.nodes[i] is None or tree.nodes[i].is_leaf:
-            continue
+    if path[path_idx].is_leaf:
+        return False, path_idx
 
-        c_parent = tree.nodes[i]
-        last_instance = None
+    c_parent = path[path_idx]
+    last_instance = None
 
-        for r in range(1, depth_limit+1):
-            c_instance = build_unique_set(c_parent, assigned[c_parent.id], instance.examples, r)
+    for r in range(1, depth_limit+1):
+        c_instance = build_unique_set(c_parent, assigned[c_parent.id], instance.examples, r)
 
-            if len(c_instance[0].examples) > sample_limit:
-                break
+        if len(c_instance[0].examples) > sample_limit:
+            break
 
-            last_instance = c_instance
+        last_instance = c_instance
 
-        if last_instance[3] <= 1:
-            continue
+    if last_instance[3] <= 1:
+        return False, path_idx
 
-        class_mapping = {}
-        for cl in last_instance[2]:
-            for al in assigned[cl]:
-                class_mapping[al + 1] = cl
+    class_mapping = {}
+    for cl in last_instance[2]:
+        for al in assigned[cl]:
+            class_mapping[al + 1] = cl
 
-        for ex in last_instance[0].examples:
-            ex.cls = class_mapping[ex.id]
+    for ex in last_instance[0].examples:
+        ex.cls = class_mapping[ex.id]
 
-        if len(last_instance[0].examples) == 0:
-            continue
+    if len(last_instance[0].examples) == 0:
+        return False, path_idx
 
-        new_tree, _ = runner.run(last_instance[0], last_instance[3] - 1, u_bound=last_instance[3] - 1)
+    new_tree, _ = runner.run(last_instance[0], last_instance[3] - 1, u_bound=last_instance[3] - 1)
 
-        if new_tree is not None:
-            q = [new_tree.nodes[0]]
-            while q:
-                c_q = q.pop()
-                if not c_q.is_leaf:
-                    c_q.feature = last_instance[1][c_q.feature]
-                    q.append(c_q.children[True])
-                    q.append(c_q.children[False])
-            # Stitch the new tree in the middle
-            stitch(tree, new_tree, c_parent)
-            print(
-                f"Found one {new_tree.get_depth()}/{last_instance[3]}, root {c_parent.id}, acc {tree.get_accuracy(instance.examples)}")
-            assigned = assign_samples(tree, instance)
-        else:
-            print(f"Not found {last_instance[3]}, root {c_parent.id}")
+    if new_tree is not None:
+        q = [new_tree.nodes[0]]
+        while q:
+            c_q = q.pop()
+            if not c_q.is_leaf:
+                c_q.feature = last_instance[1][c_q.feature]
+                q.append(c_q.children[True])
+                q.append(c_q.children[False])
+        # Stitch the new tree in the middle
+        stitch(tree, new_tree, c_parent)
+        return True, path_idx
+
+    return False, path_idx
 
 
 def reduced_leaf(tree, instance, path_idx, path, assigned, sample_limit=50, depth_limit=15):
@@ -457,33 +453,26 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, sample_limit=50, dept
     return False, prev_idx
 
 
-def mid_reduced(tree, in_instance, reduce, sample_limit=50, depth_limit=12):
-    assigned = assign_samples(tree, in_instance)
+def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit=50, depth_limit=15):
     runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=".")
 
-    for i in range(0, len(tree.nodes)):
-        # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
-        if tree.nodes[i] is None or tree.nodes[i].is_leaf or len(assigned[tree.nodes[i].id]) < sample_limit:
-            continue
+    # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
+    if path[path_idx].is_leaf:
+        return False, path_idx
 
-        c_parent = tree.nodes[i]
-        instance, i_depth = build_reduced_set(c_parent, tree, in_instance.examples, assigned, depth_limit, sample_limit, reduce)
+    c_parent = path[path_idx]
+    instance, i_depth = build_reduced_set(c_parent, tree, instance.examples, assigned, depth_limit, sample_limit, reduce)
 
-        if instance is None:
-            continue
+    if instance is None or len(instance.examples) == 0:
+        return False, path_idx
 
-        if len(instance.examples) == 0:
-            continue
+    new_tree, _ = runner.run(instance, i_depth - 1, u_bound=i_depth-1)
 
-        new_tree, _ = runner.run(instance, i_depth - 1, u_bound=i_depth-1)
+    if new_tree is not None:
+        instance.unreduce_instance(new_tree)
 
-        if new_tree is not None:
-            instance.unreduce_instance(new_tree)
+        # Stitch the new tree in the middle
+        stitch(tree, new_tree, c_parent)
+        return True, path_idx
 
-            # Stitch the new tree in the middle
-            stitch(tree, new_tree, c_parent)
-            print(
-                f"Found one {new_tree.get_depth()}/{i_depth}, root {c_parent.id}, acc {tree.get_accuracy(in_instance.examples)}")
-            assigned = assign_samples(tree, in_instance)
-        else:
-            print(f"Not found {i_depth}, root {c_parent.id}")
+    return False, path_idx
