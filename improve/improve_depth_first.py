@@ -67,8 +67,8 @@ def run(tree, instance, test):
         print(f"Time: {time.time() - start_time:.4f}\t"
               f"Training {tree.get_accuracy(instance.examples):.4f}\t"
               f"Test {tree.get_accuracy(test.examples):.4f}\t"
-              f"Depth {tree.get_depth()}\t"
-              f"Avg {tree.get_avg_depth():.4f}\t"
+              f"Depth {tree.get_depth():03}\t"
+              f"Avg {tree.get_avg_depth():03.4f}\t"
               f"Nodes {tree.get_nodes()}")
 
         for c_n in c_path:
@@ -82,32 +82,57 @@ def run(tree, instance, test):
             break
 
         assigned = assign_samples(tree, instance)
-        done_idx = []
+        done = False
 
         # First try to find root
         result, select_idx = improver.leaf_select(tree, instance, 0, new_max_p, assigned, depth_limit, sample_limit)
-        done_idx.append(select_idx)
         if result:
             process_change(c_ignore, new_max_p)
             continue
 
+        max_leaf_idx = 0
         result, idx = improver.leaf_rearrange(tree, instance, select_idx, new_max_p, assigned, depth_limit, sample_limit)
-        done_idx.append(idx)
+        max_leaf_idx = max(max_leaf_idx, idx)
         if result:
             process_change(c_ignore, new_max_p)
             continue
 
         for _ in range(0, reduce_runs):
             result, idx = improver.reduced_leaf(tree, instance, select_idx, new_max_p, assigned, depth_limit, sample_limit)
-            done_idx.append(idx)
+            max_leaf_idx = max(max_leaf_idx, idx)
             if result:
                 process_change(c_ignore, new_max_p)
-                continue
+                done = True
+                break
+        if done:
+            continue
+
+        # Try reducing starting from the root
+        for i in range(len(new_max_p)-1, max_leaf_idx, -1):
+            result, idx = improver.mid_rearrange(tree, instance, i, new_max_p, assigned, depth_limit, sample_limit)
+            if result:
+                process_change(c_ignore, new_max_p)
+                done = True
+                break
+            # result, idx = improver.mid_reduced(tree, instance, i, new_max_p, assigned, False, depth_limit, sample_limit)
+            # if result:
+            #     process_change(c_ignore, new_max_p)
+            #     done = True
+            #     break
+
+            for _ in range(0, reduce_runs):
+                result, idx = improver.mid_reduced(tree, instance, i, new_max_p, assigned, True, depth_limit,
+                                                   sample_limit)
+                if result:
+                    process_change(c_ignore, new_max_p)
+                    done = True
+                    break
+            if done:
+                break
+        if done:
+            continue
 
         # Could not improve, ignore tried nodes for future tries
         #print(f"None {new_max_n.id}")
-        done_idx.append(0)
-        for c_idx in done_idx:
-            if c_idx >= 0:
-                for i in range(0, c_idx + 1):
-                    c_ignore.add(new_max_p[i].id)
+        for c_n in new_max_p:
+            c_ignore.add(c_n.id)
