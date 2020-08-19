@@ -294,51 +294,32 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
     return last_instance, max_depth
 
 
-def leaf_rearrange(tree, instance, depth_limit=15, sample_limit=200):
+def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit=15, sample_limit=200):
     runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=".")
-    assigned = assign_samples(tree, instance)
-    structure = find_structure(tree)
 
-    done = set()
+    prev_instance = None
+    prev_idx = path_idx
 
-    while True:
-        try:
-            max_node = max((s for s in structure.values() if s[0].is_leaf and s[0].id not in done), key=lambda x: x[1])
-        except ValueError:
+    while depth_from(path[path_idx]) <= depth_limit and path_idx < len(path):
+        new_instance = build_unique_set(path[path_idx], assigned[path[path_idx].id], instance.examples)
+        if len(new_instance[0].examples) > sample_limit:
             break
 
-        climit = depth_limit
-        c_parent = max_node
-        c_depth = 0
-        last_instance = None
-        last_parent = None
+        prev_instance = new_instance
+        prev_idx = path_idx
+        path_idx += 1
 
-        # Find parent of the subtree
-        while climit > 0 and c_parent[2] is not None:
-            c_parent = structure[c_parent[2]]
-            c_instance = build_unique_set(c_parent[0], assigned[c_parent[0].id], instance.examples)
-            if len(c_instance[0].examples) > sample_limit:
-                break
-            last_parent = c_parent
-            last_instance = c_instance
-            climit -= 1
-            c_depth += 1
-
-        if last_instance is None or c_depth <= 1:
-            continue
-
-        new_instance, feature_map, c_leafs, _ = last_instance
-
-        if len(new_instance.examples) == 0:
-            continue
+    if prev_instance is not None and len(prev_instance[0].examples) > 0:
+        node = path[prev_idx]
+        new_instance, feature_map, c_leafs, _ = prev_instance
+        cd = depth_from(node)
 
         # Solve instance
-        new_tree, _ = runner.run(new_instance, c_depth - 1, u_bound=c_depth - 1)
+        new_tree, _ = runner.run(new_instance, cd - 1, u_bound=cd - 1)
 
         # Either the branch is done, or
         if new_tree is None:
-            print(f"Finished sub-tree, no improvement {c_depth}")
-            done.update(c_leafs)
+            return False, prev_idx
         else:
             # Correct features
             q = [new_tree.root]
@@ -350,49 +331,38 @@ def leaf_rearrange(tree, instance, depth_limit=15, sample_limit=200):
                     q.append(c_q.right)
 
             # Clean tree
-            replace(tree, new_tree, last_parent[0])
-            structure = find_structure(tree)
-            assigned = assign_samples(tree, instance)
-            print(f"New tree: {new_tree.get_depth()} / {c_depth}")
-            print(f"Finished sub-tree, improvement, acc {tree.get_accuracy(instance.examples)}, depth {tree.get_depth()}, root {last_parent[0].id}")
+            replace(tree, new_tree, node)
+            return True, prev_idx
+
+    return False, prev_idx
 
 
-def leaf_select(tree, instance, sample_limit=50, depth_limit=12):
+def leaf_select(tree, instance, path_idx, path, assigned, depth_limit=15, sample_limit=200):
+    last_idx = path_idx
+    while path_idx < len(path) and len(assigned[path[path_idx].id]) <= sample_limit and depth_from(path[path_idx]) <= depth_limit:
+        last_idx = path_idx
+        path_idx += 1
+
+    node = path[last_idx]
+    c_d = depth_from(node)
+    if not (2 < c_d <= depth_limit) or len(assigned[node.id]) > sample_limit:
+        return False, last_idx
+
     runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=".")
-    assigned = assign_samples(tree, instance)
 
-    q = [tree.root]
-    roots = []
+    new_instance = bdd_instance.BddInstance()
+    for s in assigned[node.id]:
+        new_instance.add_example(instance.examples[s].copy())
 
-    # Find all subtree roots that assign fewer samples than the limit
-    while q:
-        c_q = q.pop()
-        if not c_q.is_leaf:
-            if len(assigned[c_q.id]) <= sample_limit and depth_from(c_q) <= depth_limit:
-                roots.append(c_q)
-            else:
-                q.append(c_q.left)
-                q.append(c_q.right)
+    if len(new_instance.examples) == 0:
+        return False, last_idx
 
-    for c_r in roots:
-        new_instance = bdd_instance.BddInstance()
-        for s in assigned[c_r.id]:
-            new_instance.add_example(instance.examples[s].copy())
-
-        if len(new_instance.examples) == 0:
-            continue
-
-        c_d = depth_from(c_r)
-        if c_d > 1:
-            new_tree, _ = runner.run(new_instance, c_d-1, u_bound=c_d-1)
-            if new_tree is None:
-                print(f"Finished sub-tree, no improvement, root {c_r.id}")
-            else:
-                replace(tree, new_tree, c_r)
-                print(
-                    f"Finished sub-tree, improvement, acc {tree.get_accuracy(instance.examples)}, depth {tree.get_depth()}, root {c_r.id}")
-
-        # No need to retry, as the number of assigned samples stayed the same
+    new_tree, _ = runner.run(new_instance, c_d-1, u_bound=c_d-1)
+    if new_tree is None:
+        return False, last_idx
+    else:
+        replace(tree, new_tree, node)
+        return True, last_idx
 
 
 def mid_rearrange(tree, instance, sample_limit=50, depth_limit=12):
@@ -446,40 +416,45 @@ def mid_rearrange(tree, instance, sample_limit=50, depth_limit=12):
         else:
             print(f"Not found {last_instance[3]}, root {c_parent.id}")
 
-    # TODO: Do the same thing with feature reduction?
 
-
-def reduced_leaf(tree, instance, sample_limit=50, depth_limit=15):
-    assigned = assign_samples(tree, instance)
+def reduced_leaf(tree, instance, path_idx, path, assigned, sample_limit=50, depth_limit=15):
     runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=".")
 
-    for i in range(0, len(tree.nodes)):
-        if tree.nodes[i] is None or tree.nodes[i].is_leaf or depth_from(tree.nodes[i]) > depth_limit:
-            continue
+    prev_instance = None
+    prev_idx = path_idx
+
+    while True:
+        if depth_from(path[path_idx]) > depth_limit:
+            break
 
         new_instance = bdd_instance.BddInstance()
-        for s in assigned[i]:
+        for s in assigned[path[path_idx].id]:
             new_instance.add_example(instance.examples[s].copy())
 
         if len(new_instance.examples) == 0:
-            continue
+            break
 
         bdd_instance.reduce(new_instance)
 
-        if len(new_instance.examples) <= sample_limit:
-            nd = depth_from(tree.nodes[i])
-            new_tree, _ = runner.run(new_instance,  nd-1, u_bound=nd - 1)
+        if len(new_instance.examples) > sample_limit:
+            break
 
-            if new_tree is not None:
-                new_instance.unreduce_instance(new_tree)
-                replace(tree, new_tree, tree.nodes[i])
-                assigned = assign_samples(tree, instance)
-                print(
-                    f"Finished sub-tree, improvement, acc {tree.get_accuracy(instance.examples)}, depth {tree.get_depth()}, root {tree.nodes[i].id}")
-            else:
-                print("No improvement")
-        else:
-            print("Too big")
+        prev_instance = new_instance
+        prev_idx = path_idx
+        path_idx += 1
+
+    if prev_instance is not None:
+        node = path[prev_idx]
+        nd = depth_from(node)
+        new_tree, _ = runner.run(prev_instance,  nd-1, u_bound=nd-1)
+
+        if new_tree is not None:
+            prev_instance.unreduce_instance(new_tree)
+            replace(tree, new_tree, node)
+
+            return True, prev_idx
+
+    return False, prev_idx
 
 
 def mid_reduced(tree, in_instance, reduce, sample_limit=50, depth_limit=12):
