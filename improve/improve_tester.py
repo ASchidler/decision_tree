@@ -3,11 +3,12 @@ import parser
 import os
 import decision_tree
 import improve.improve_depth_first as df
+import improve.improve_leaf_first as lf
+import improve.improve_random as rf
 
 tree_path = "datasets/trees"
 instance_path = "datasets/split"
-
-target_instance = sys.argv[1]
+tmp_dir = "."
 
 
 def parse_weka_tree(tree_path, instance):
@@ -96,6 +97,18 @@ def parse_iti_tree(tree_path, instance):
                 break
     return itree
 
+fls = list(x for x in os.listdir(instance_path) if x.endswith(".data"))
+fls.sort()
+target_instance_idx = int(sys.argv[1])
+
+if target_instance_idx > len(fls):
+    print(f"Only {len(fls)} files are known.")
+    exit(1)
+
+target_instance = fls[target_instance_idx][:-5]
+
+if len(sys.argv) > 2:
+    tmp_dir = sys.argv[2]
 
 training_instance = parser.parse(os.path.join(instance_path, target_instance + ".data"), has_header=False)
 test_instance = parser.parse(os.path.join(instance_path, target_instance + ".test"), has_header=False)
@@ -103,17 +116,21 @@ test_instance = parser.parse(os.path.join(instance_path, target_instance + ".tes
 tree = parse_weka_tree(os.path.join(tree_path, target_instance+".tree"), training_instance)
 # Parse tree
 
+print(f"{target_instance}: Features {training_instance.num_features}\tExamples {len(training_instance.examples)}")
 
-print(f"Tree training accuracy: {tree.get_accuracy(training_instance.examples)}")
-print(f"Tree test accuracy: {tree.get_accuracy(test_instance.examples)}")
-print(f"Tree depth: {tree.get_depth()}")
-print(f"Avg depth: {tree.get_avg_depth()}")
-print(f"Tree nodes: {tree.get_nodes()}")
+print(f"Time: Start\t\t"
+      f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"
+      f"Test {tree.get_accuracy(test_instance.examples):.4f}\t"
+      f"Depth {tree.get_depth():03}\t"
+      f"Avg {tree.get_avg_depth():03.4f}\t"
+      f"Nodes {tree.get_nodes()}")
 #
-df.run(tree, training_instance, test_instance)
+df.run(tree, training_instance, test_instance, tmp_dir=tmp_dir)
+#rf.run(tree, training_instance, test_instance)
 
-print(f"Tree training accuracy: {tree.get_accuracy(training_instance.examples)}")
-print(f"Tree test accuracy: {tree.get_accuracy(test_instance.examples)}")
-print(f"Tree depth: {tree.get_depth()}")
-print(f"Avg depth: {tree.get_avg_depth()}")
-print(f"Tree nodes: {tree.get_nodes()}")
+print(f"Time: End\t\t"
+      f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"
+      f"Test {tree.get_accuracy(test_instance.examples):.4f}\t"
+      f"Depth {tree.get_depth():03}\t"
+      f"Avg {tree.get_avg_depth():03.4f}\t"
+      f"Nodes {tree.get_nodes()}")
