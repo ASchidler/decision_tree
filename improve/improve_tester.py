@@ -105,7 +105,7 @@ if target_instance_idx > len(fls):
     print(f"Only {len(fls)} files are known.")
     exit(1)
 
-target_instance = fls[target_instance_idx][:-5]
+target_instance = fls[target_instance_idx-1][:-5]
 
 if len(sys.argv) > 2:
     tmp_dir = sys.argv[2]
