@@ -171,17 +171,15 @@ class BddInstance:
 
     def min_key2(self):
         """This heuristic takes a different approach and adds the necessary features for distinction one by one"""
-        p_examples = [e for e in self.examples if e.cls]
-        n_examples = [e for e in self.examples if not e.cls]
-
         feats = {f: set() for f in range(1, self.num_features+1)}
         key = []
 
-        for e1 in p_examples:
-            for e2 in n_examples:
-                for f in range(1, self.num_features+1):
-                    if e1.features[f] != e2.features[f]:
-                        feats[f].add((e1.id, e2.id))
+        for e1 in self.examples:
+            for e2 in self.examples:
+                if e1.cls != e2.cls:
+                    for f in range(1, self.num_features+1):
+                        if e1.features[f] != e2.features[f]:
+                            feats[f].add((e1.id, e2.id))
 
         cont = True
         while cont:
@@ -217,24 +215,23 @@ class BddInstance:
 
     def min_key3(self):
         """As min_key2, not greedy but random"""
-        p_examples = [e for e in self.examples if e.cls]
-        n_examples = [e for e in self.examples if not e.cls]
 
         key = set()
-        for e1 in p_examples:
-            for e2 in n_examples:
-                done = False
-                c_diff = []
-                for f in range(1, self.num_features+1):
-                    if e1.features[f] != e2.features[f]:
-                        if f in key:
-                            done = True
-                            break
-                        c_diff.append(f)
-                # If no differing feature is yet in the key
-                if not done:
-                    # Add random feature
-                    key.add(c_diff[random.randint(0, len(c_diff) - 1)])
+        for e1 in self.examples:
+            for e2 in self.examples:
+                if e1.cls != e2.cls:
+                    done = False
+                    c_diff = []
+                    for f in range(1, self.num_features+1):
+                        if e1.features[f] != e2.features[f]:
+                            if f in key:
+                                done = True
+                                break
+                            c_diff.append(f)
+                    # If no differing feature is yet in the key
+                    if not done:
+                        # Add random feature
+                        key.add(c_diff[random.randint(0, len(c_diff) - 1)])
 
         seen = {}
 

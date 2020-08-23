@@ -276,8 +276,8 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
                     new_instance.add_example(bdd_instance.BddExamples(examples[s].features, class_mapping[s], examples[s].id))
 
                 if reduce:
-                    key = new_instance.min_key(randomize=True)
-                    bdd_instance.reduce(new_instance, min_key=key)
+                    # key = new_instance.min_key(randomize=True)
+                    bdd_instance.reduce(new_instance, randomized_runs=1)
                 else:
                     bdd_instance.reduce(new_instance, min_key=features)
 
@@ -429,7 +429,7 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, sample_limit=50, dept
         if len(new_instance.examples) == 0:
             break
 
-        bdd_instance.reduce(new_instance)
+        bdd_instance.reduce(new_instance, randomized_runs=1)
 
         if len(new_instance.examples) > sample_limit:
             break
