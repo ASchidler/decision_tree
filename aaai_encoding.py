@@ -1,6 +1,6 @@
 import base_encoding
-from decision_tree import DecisionTree
-
+from decision_tree import DecisionTree, NonBinaryTree
+import itertools
 
 class AAAIEncoding(base_encoding.BaseEncoding):
     def __init__(self, stream):
@@ -8,8 +8,9 @@ class AAAIEncoding(base_encoding.BaseEncoding):
         self.x = None
         self.f = None
         self.c = None
+        self.class_map = None
 
-    def init_var(self, instance, limit):
+    def init_var(self, instance, limit, class_map):
         self.x = [[] for _ in range(0, len(instance.examples))]
         for xl in self.x:
             for _ in range(0, limit):
@@ -21,10 +22,29 @@ class AAAIEncoding(base_encoding.BaseEncoding):
             for _ in range(1, instance.num_features + 1):
                 self.f[i].append(self.add_var())
 
-        self.c = [self.add_var() for _ in range(0, 2**limit)]
+        c_vars = len(next(iter(class_map.values())))
+        self.c = [[self.add_var() for _ in range(0, c_vars)] for _ in range(0, 2**limit)]
 
     def encode(self, instance, limit):
-        self.init_var(instance, limit)
+        classes = set()
+        for e in instance.examples:
+            classes.add(e.cls)
+        classes = list(classes) # Give classes an order
+        c_vars = len(bin(len(classes)-1)) - 2 # "easier" than log_2
+
+        self.class_map = {}
+        for i in range(0, len(classes)):
+            self.class_map[classes[i]] = []
+            for c_v in bin(i)[2:][::-1]:
+                if c_v == "1":
+                    self.class_map[classes[i]].append(True)
+                else:
+                    self.class_map[classes[i]].append(False)
+
+            while len(self.class_map[classes[i]]) < c_vars:
+                self.class_map[classes[i]].append(False)
+
+        self.init_var(instance, limit, self.class_map)
 
         # each node has a feature
         for i in range(1, 2**limit):
@@ -37,7 +57,29 @@ class AAAIEncoding(base_encoding.BaseEncoding):
 
         for i in range(0, len(instance.examples)):
             self.alg1(instance, i, limit, 0, 1, list())
-            self.alg2(instance, i, limit, 0, 1, list())
+            self.alg2(instance, i, limit, 0, 1, list(), self.class_map)
+
+        # Forbid non-existing classes
+        # Generate all class identifiers
+        for c_c in itertools.product([True, False], repeat=c_vars):
+            # Check if identifier is used
+            exists = False
+            for c_v in self.class_map.values():
+                all_match = True
+                for i in range(0, c_vars):
+                    if c_v[i] != c_c[i]:
+                        all_match = False
+                        break
+                if all_match:
+                    exists = True
+                    break
+            # If identifier is not used, prevent it from being used
+            if not exists:
+                for c_n in range(0, 2**limit):
+                    clause = []
+                    for i in range(0, c_vars):
+                        clause.append(self.c[c_n][i] if c_c[i] else -self.c[c_n][i])
+                    self.add_clause(*clause)
 
     def alg1(self, instance, e_idx, limit, lvl, q, clause):
         if lvl == limit:
@@ -58,19 +100,21 @@ class AAAIEncoding(base_encoding.BaseEncoding):
         n_cl2.append(self.x[e_idx][lvl])
         self.alg1(instance, e_idx, limit, lvl+1, 2*q, n_cl2)
 
-    def alg2(self, instance, e_idx, limit, lvl, q, clause):
+    def alg2(self, instance, e_idx, limit, lvl, q, clause, class_map):
         if lvl == limit:
-            if instance.examples[e_idx].cls:
-                self.add_clause(*clause, self.c[q - 2**limit])
-            else:
-                self.add_clause(*clause, -self.c[q - 2**limit])
+            c_vars = class_map[instance.examples[e_idx].cls]
+            for i in range(0, len(c_vars)):
+                if c_vars[i]:
+                    self.add_clause(*clause, self.c[q - 2 ** limit][i])
+                else:
+                    self.add_clause(*clause, -self.c[q - 2 ** limit][i])
         else:
             n_cl = list(clause)
             n_cl.append(self.x[e_idx][lvl])
             n_cl2 = list(clause)
             n_cl2.append(-self.x[e_idx][lvl])
-            self.alg2(instance, e_idx, limit, lvl+1, 2*q, n_cl)
-            self.alg2(instance, e_idx, limit, lvl+1, 2*q+1, n_cl2)
+            self.alg2(instance, e_idx, limit, lvl+1, 2*q, n_cl, class_map)
+            self.alg2(instance, e_idx, limit, lvl+1, 2*q+1, n_cl2, class_map)
 
     def decode(self, model, instance, limit):
         num_leafs = 2**limit
@@ -88,10 +132,71 @@ class AAAIEncoding(base_encoding.BaseEncoding):
                         else:
                             tree.add_node(i, i//2, f, i % 2 == 1)
 
-        for i in range(0, num_leafs):
-            tree.add_leaf(num_leafs + i, (num_leafs + i)//2, i % 2 == 1, model[self.c[i]])
+        for c_c, c_v in self.class_map.items():
+            for i in range(0, num_leafs):
+                all_right = True
+                for i_v in range(0, len(c_v)):
+                    if model[self.c[i][i_v]] != c_v[i_v]:
+                        all_right = False
+                        break
+                if all_right:
+                    tree.add_leaf(num_leafs + i, (num_leafs + i)//2, i % 2 == 1, c_c)
+
+        self.reduce_tree(tree, instance)
+
+        if len(next(iter(self.class_map.values()))) > 2:
+            return NonBinaryTree(tree)
 
         return tree
+
+    def reduce_tree(self, tree, instance):
+        assigned = {tree.root.id: list(instance.examples)}
+        q = [tree.root]
+        p = {tree.root.id: None}
+        leafs = []
+
+        while q:
+            c_n = q.pop()
+            examples = assigned[c_n.id]
+
+            if not c_n.is_leaf:
+                p[c_n.left.id] = c_n.id
+                p[c_n.right.id] = c_n.id
+                assigned[c_n.left.id] = []
+                assigned[c_n.right.id] = []
+
+                for e in examples:
+                    if e.features[c_n.feature]:
+                        assigned[c_n.left.id].append(e)
+                    else:
+                        assigned[c_n.right.id].append(e)
+
+                q.append(c_n.right)
+                q.append(c_n.left)
+            else:
+                leafs.append(c_n)
+
+        for lf in leafs:
+            # May already be deleted
+            if tree.nodes[lf.id] is None:
+                continue
+
+            if len(assigned[lf.id]) == 0:
+                c_p = tree.nodes[p[lf.id]]
+                o_n = c_p.right if c_p.left.id == lf.id else c_p.left
+                if p[c_p.id] is None:
+                    tree.root = o_n
+                    p[o_n.id] = None
+                else:
+                    c_pp = tree.nodes[p[c_p.id]]
+                    if c_pp.left.id == c_p.id:
+                        c_pp.left = o_n
+                    else:
+                        c_pp.right = o_n
+                    p[o_n.id] = c_pp.id
+
+                tree.nodes[lf.id] = None
+                tree.nodes[c_p.id] = None
 
     def check_consistency(self, model, instance, num_nodes, tree):
         pass
