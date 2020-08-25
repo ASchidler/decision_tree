@@ -64,13 +64,14 @@ def run(tree, instance, test, tmp_dir="."):
 
     start_time = time.time()
 
-    def process_change(ignore, c_path):
+    def process_change(ignore, c_path, mth):
         print(f"Time: {time.time() - start_time:.4f}\t"
               f"Training {tree.get_accuracy(instance.examples):.4f}\t"
               f"Test {tree.get_accuracy(test.examples):.4f}\t"
               f"Depth {tree.get_depth():03}\t"
               f"Avg {tree.get_avg_depth():03.4f}\t"
-              f"Nodes {tree.get_nodes()}")
+              f"Nodes {tree.get_nodes()}\t"
+              f"Method {mth}")
 
         for c_n in c_path:
             ignore.discard(c_n.id)
@@ -88,21 +89,21 @@ def run(tree, instance, test, tmp_dir="."):
         # First try to find root
         result, select_idx = improver.leaf_select(tree, instance, 0, new_max_p, assigned, depth_limit, sample_limit, tmp_dir=tmp_dir)
         if result:
-            process_change(c_ignore, new_max_p)
+            process_change(c_ignore, new_max_p, "ls")
             continue
 
         max_leaf_idx = 0
         result, idx = improver.leaf_rearrange(tree, instance, select_idx, new_max_p, assigned, depth_limit, sample_limit, tmp_dir=tmp_dir)
         max_leaf_idx = max(max_leaf_idx, idx)
         if result:
-            process_change(c_ignore, new_max_p)
+            process_change(c_ignore, new_max_p, "la")
             continue
 
         for _ in range(0, reduce_runs):
             result, idx = improver.reduced_leaf(tree, instance, select_idx, new_max_p, assigned, depth_limit, sample_limit, tmp_dir=tmp_dir)
             max_leaf_idx = max(max_leaf_idx, idx)
             if result:
-                process_change(c_ignore, new_max_p)
+                process_change(c_ignore, new_max_p, "lr")
                 done = True
                 break
         if done:
@@ -115,7 +116,7 @@ def run(tree, instance, test, tmp_dir="."):
 
             result, idx = improver.mid_rearrange(tree, instance, i, new_max_p, assigned, depth_limit, sample_limit, tmp_dir=tmp_dir)
             if result:
-                process_change(c_ignore, new_max_p)
+                process_change(c_ignore, new_max_p, "ma")
                 done = True
                 break
             # result, idx = improver.mid_reduced(tree, instance, i, new_max_p, assigned, False, depth_limit, sample_limit)
@@ -128,7 +129,7 @@ def run(tree, instance, test, tmp_dir="."):
                 result, idx = improver.mid_reduced(tree, instance, i, new_max_p, assigned, True, depth_limit,
                                                    sample_limit, tmp_dir=tmp_dir)
                 if result:
-                    process_change(c_ignore, new_max_p)
+                    process_change(c_ignore, new_max_p, "mr")
                     done = True
                     break
             if done:

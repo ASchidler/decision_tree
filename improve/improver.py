@@ -5,7 +5,8 @@ import bdd_instance
 import sat_tools
 from decision_tree import DecisionTreeNode, DecisionTreeLeaf
 from tree_depth_encoding import TreeDepthEncoding
-
+import aaai_encoding
+import switching_encoding
 
 def assign_samples(tree, instance):
     assigned_samples = [[] for _ in tree.nodes]
@@ -293,8 +294,14 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
     return last_instance, max_depth
 
 
+def build_runner(tmp_dir):
+    return sat_tools.SatRunner(switching_encoding.SwitchingEncoding, sat_tools.GlucoseSolver(), base_path=tmp_dir)
+    #return sat_tools.SatRunner(aaai_encoding.AAAIEncoding, sat_tools.GlucoseSolver(), base_path=tmp_dir)
+    #return sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=tmp_dir)
+
+
 def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit=15, sample_limit=200, tmp_dir="."):
-    runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=tmp_dir)
+    runner = build_runner(tmp_dir)
 
     prev_instance = None
     prev_idx = path_idx
@@ -347,7 +354,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit=15, sample
     if not (2 < c_d <= depth_limit) or len(assigned[node.id]) > sample_limit:
         return False, last_idx
 
-    runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=tmp_dir)
+    runner = build_runner(tmp_dir)
 
     new_instance = bdd_instance.BddInstance()
     for s in assigned[node.id]:
@@ -365,7 +372,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit=15, sample
 
 
 def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit=15, sample_limit=200, tmp_dir="."):
-    runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=tmp_dir)
+    runner = build_runner(tmp_dir)
 
     if path[path_idx].is_leaf:
         return False, path_idx
@@ -413,7 +420,7 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit=15, samp
 
 
 def reduced_leaf(tree, instance, path_idx, path, assigned, sample_limit=50, depth_limit=15, tmp_dir="."):
-    runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=tmp_dir)
+    runner = runner = build_runner(tmp_dir)
 
     prev_instance = None
     prev_idx = path_idx
@@ -453,7 +460,7 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, sample_limit=50, dept
 
 
 def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit=50, depth_limit=15, tmp_dir="."):
-    runner = sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=tmp_dir)
+    runner = build_runner(tmp_dir)
 
     # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
     if path[path_idx].is_leaf:

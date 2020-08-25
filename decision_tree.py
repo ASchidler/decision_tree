@@ -176,8 +176,20 @@ class NonBinaryNode:
 
 
 class NonBinaryTree:
-    def __init__(self):
+    def __init__(self, dt=None):
         self.nodes = []
+        if dt is None:
+            return
+
+        q = [(None, dt.root, None)]
+        while q:
+            c_p, c_n, c_v = q.pop()
+            if not c_n.is_leaf:
+                n_n = self.add_node(c_p, c_v, c_n.feature)
+                q.append((n_n, c_n.left, True))
+                q.append((n_n, c_n.right, False))
+            else:
+                self.add_leaf(c_p, c_v, c_n.cls)
 
     def get_root(self):
         return self.nodes[0]
