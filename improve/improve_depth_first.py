@@ -1,7 +1,7 @@
 import improve.improver as improver
 import time
 
-sample_limit = [400, 400, 400, 400, 400, 400, 200, 200, 200, 200, 200,
+sample_limit = [200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200,
                 200, 150, 100, 100, 100, 0]
 depth_limit = 15
 reduce_runs = 1
