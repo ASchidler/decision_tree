@@ -2,6 +2,7 @@ import base_encoding
 from decision_tree import DecisionTree, NonBinaryTree
 import math
 
+
 class TreeDepthEncoding(base_encoding.BaseEncoding):
     def __init__(self, stream):
         base_encoding.BaseEncoding.__init__(self, stream)

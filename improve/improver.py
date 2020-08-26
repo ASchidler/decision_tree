@@ -8,6 +8,7 @@ from tree_depth_encoding import TreeDepthEncoding
 import aaai_encoding
 import switching_encoding
 
+
 def assign_samples(tree, instance):
     assigned_samples = [[] for _ in tree.nodes]
 
@@ -285,7 +286,7 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
                 # TODO: This leads to adding as many nodes as possible. To emphasize the remaining depth more,
                 #  one should stop when the node with the highest remaining depth fails due to too high depth
                 #  or too many samples
-                if len(new_instance.examples) <= sample_limit:
+                if len(new_instance.examples) <= sample_limit[c_max_depth]:
                     last_instance = new_instance
                     max_depth = c_max_depth
                 else:
@@ -300,15 +301,18 @@ def build_runner(tmp_dir):
     #return sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=tmp_dir)
 
 
-def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit=15, sample_limit=200, tmp_dir="."):
+def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, tmp_dir="."):
     runner = build_runner(tmp_dir)
 
     prev_instance = None
     prev_idx = path_idx
 
-    while path_idx < len(path) and depth_from(path[path_idx]) <= depth_limit:
+    while path_idx < len(path):
+        c_d = depth_from(path[path_idx])
+        if c_d > depth_limit:
+            break
         new_instance = build_unique_set(path[path_idx], assigned[path[path_idx].id], instance.examples)
-        if len(new_instance[0].examples) > sample_limit:
+        if len(new_instance[0].examples) > sample_limit[c_d]:
             break
 
         prev_instance = new_instance
@@ -343,15 +347,18 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit=15, sam
     return False, prev_idx
 
 
-def leaf_select(tree, instance, path_idx, path, assigned, depth_limit=15, sample_limit=200, tmp_dir="."):
+def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, tmp_dir="."):
     last_idx = path_idx
-    while path_idx < len(path) and len(assigned[path[path_idx].id]) <= sample_limit and depth_from(path[path_idx]) <= depth_limit:
+    while path_idx < len(path):
+        c_d = depth_from(path[path_idx])
+        if c_d > depth_limit or len(assigned[path[path_idx].id]) > sample_limit[c_d]:
+            break
         last_idx = path_idx
         path_idx += 1
 
     node = path[last_idx]
     c_d = depth_from(node)
-    if not (2 < c_d <= depth_limit) or len(assigned[node.id]) > sample_limit:
+    if not (2 < c_d <= depth_limit) or len(assigned[node.id]) > sample_limit[c_d]:
         return False, last_idx
 
     runner = build_runner(tmp_dir)
@@ -371,7 +378,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit=15, sample
         return True, last_idx
 
 
-def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit=15, sample_limit=200, tmp_dir="."):
+def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, tmp_dir="."):
     runner = build_runner(tmp_dir)
 
     if path[path_idx].is_leaf:
@@ -383,7 +390,7 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit=15, samp
     for r in range(1, depth_limit+1):
         c_instance = build_unique_set(c_parent, assigned[c_parent.id], instance.examples, r)
 
-        if len(c_instance[0].examples) > sample_limit:
+        if len(c_instance[0].examples) > sample_limit[c_instance[3]]:
             break
 
         last_instance = c_instance
@@ -419,14 +426,17 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit=15, samp
     return False, path_idx
 
 
-def reduced_leaf(tree, instance, path_idx, path, assigned, sample_limit=50, depth_limit=15, tmp_dir="."):
-    runner = runner = build_runner(tmp_dir)
+def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, tmp_dir="."):
+    runner = build_runner(tmp_dir)
 
     prev_instance = None
     prev_idx = path_idx
 
     while True:
-        if path_idx >= len(path) and depth_from(path[path_idx]) > depth_limit:
+        if path_idx >= len(path):
+            break
+        c_d = depth_from(path[path_idx])
+        if c_d > depth_limit:
             break
 
         new_instance = bdd_instance.BddInstance()
@@ -438,7 +448,7 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, sample_limit=50, dept
 
         bdd_instance.reduce(new_instance, randomized_runs=1)
 
-        if len(new_instance.examples) > sample_limit:
+        if len(new_instance.examples) > sample_limit[c_d]:
             break
 
         prev_instance = new_instance
@@ -459,7 +469,7 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, sample_limit=50, dept
     return False, prev_idx
 
 
-def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit=50, depth_limit=15, tmp_dir="."):
+def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit, depth_limit, tmp_dir="."):
     runner = build_runner(tmp_dir)
 
     # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
