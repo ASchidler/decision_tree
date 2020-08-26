@@ -1,7 +1,8 @@
 import improve.improver as improver
 import time
 
-sample_limit = 100
+sample_limit = [400, 400, 400, 400, 400, 400, 200, 200, 200, 200, 200,
+                200, 150, 100, 100, 100, 0]
 depth_limit = 15
 reduce_runs = 1
 
@@ -126,8 +127,8 @@ def run(tree, instance, test, tmp_dir="."):
             #     break
 
             for _ in range(0, reduce_runs):
-                result, idx = improver.mid_reduced(tree, instance, i, new_max_p, assigned, True, depth_limit,
-                                                   sample_limit, tmp_dir=tmp_dir)
+                result, idx = improver.mid_reduced(tree, instance, i, new_max_p, assigned, True,
+                                                   sample_limit, depth_limit, tmp_dir=tmp_dir)
                 if result:
                     process_change(c_ignore, new_max_p, "mr")
                     done = True
