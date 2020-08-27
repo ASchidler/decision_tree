@@ -1,5 +1,6 @@
 import improve.improver as improver
 import time
+import sys
 
 sample_limit = [200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200,
                 200, 150, 100, 100, 100, 0]
@@ -73,7 +74,7 @@ def run(tree, instance, test, tmp_dir="."):
               f"Avg {tree.get_avg_depth():03.4f}\t"
               f"Nodes {tree.get_nodes()}\t"
               f"Method {mth}")
-
+        sys.stdout.flush()
         for c_n in c_path:
             ignore.discard(c_n.id)
 
