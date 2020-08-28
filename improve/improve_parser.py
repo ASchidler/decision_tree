@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 
 pth = sys.argv[1]
 
@@ -36,7 +37,37 @@ for fl in fls:
 results.sort()
 for n in no_result:
     print(n)
+
+c_file = None
+c_results = None
+new_results = []
+
 for r in results:
-    print(r)
+    if c_file is not None:
+        if r[0].startswith(c_file):
+            c_results.append(r)
+            continue
+        else:
+            n_r = [c_file]
+            for i in range(1, len(r)):
+                val = 0
+                cnt = 0
+                for c_l in c_results:
+                    val += c_l[i]
+                    cnt += 1
+                n_r.append(val / cnt)
+
+            new_results.append([*n_r, len(c_results)])
+            c_file = None
+            c_results = None
+
+    if re.search("[0-4]$", r[0]):
+        c_file = r[0][:-2]
+        c_results = [r]
+    else:
+        new_results.append([*r, 1])
+
+for r in new_results:
+    print("\t".join([f"{x}" for x in r]))
 
 

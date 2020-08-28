@@ -1,7 +1,7 @@
 import base_encoding
 from decision_tree import DecisionTree
 from math import log2
-
+import itertools
 
 class TreeEncoding(base_encoding.BaseEncoding):
     def __init__(self, stream):
@@ -16,8 +16,9 @@ class TreeEncoding(base_encoding.BaseEncoding):
         self.d1 = None
         self.c = None
         self.increment = 2
+        self.class_map = None
 
-    def init_vars(self, instance, num_nodes):
+    def init_vars(self, instance, num_nodes, c_var):
         # First the tree structure
         self.v = []
         self.v.append(None) # Avoid 0 index
@@ -62,7 +63,7 @@ class TreeEncoding(base_encoding.BaseEncoding):
                 self.u[i].append(self.add_var())
                 self.d0[i].append(self.add_var())
                 self.d1[i].append(self.add_var())
-        self.c = [self.add_var() if i > 0 else None for i in range(0, num_nodes + 1)]
+        self.c = [[self.add_var() for _ in range(0, c_var)] if i > 0 else None for i in range(0, num_nodes + 1)]
 
     @staticmethod
     def lr(i, mx):
@@ -197,20 +198,20 @@ class TreeEncoding(base_encoding.BaseEncoding):
                     self.add_clause(-self.a[r][j], -self.a[r2][j])
             self.add_clause(*clause)
 
-    def encode_examples(self, instance, num_nodes):
+    def encode_examples(self, instance, num_nodes, class_map):
         for e in instance.examples:
             for j in range(1, num_nodes + 1):
-                self.add_clause(-self.c[j], self.c[j])
-
                 # If the class of the leaf differs from the class of the example, at least one
                 # node on the way must discriminate against the example, otherwise the example
                 # could be classified wrong
                 clause = [-self.v[j]]
-                clause.append(self.c[j] if e.cls else -self.c[j])
 
                 for r in range(1, instance.num_features + 1):
                     clause.append(self.d0[r][j] if e.features[r] else self.d1[r][j])
-                self.add_clause(*clause)
+
+                ec = class_map[e.cls]
+                for c in range(0, len(ec)):
+                    self.add_clause(*clause, self.c[j][c] if ec[c] else -self.c[j][c])
 
     def improve(self, num_nodes):
         ld = [None]
@@ -272,15 +273,76 @@ class TreeEncoding(base_encoding.BaseEncoding):
         # root is the first non-leaf
         #self.add_clause(tau[1][1])
 
-    def encode(self, instance, num_nodes, improve=False):
-        self.init_vars(instance, num_nodes)
+    def encode(self, instance, num_nodes, improve=True):
+        classes = set()
+        for e in instance.examples:
+            classes.add(e.cls)
+
+        c_vars = len(bin(len(classes) - 1)) - 2  # "easier" than log_2
+        classes = list(classes)  # Give classes an order
+        classes.sort()
+
+        self.class_map = {}
+
+        for i in range(0, len(classes)):
+            self.class_map[classes[i]] = []
+            for c_v in bin(i)[2:][::-1]:
+                if c_v == "1":
+                    self.class_map[classes[i]].append(True)
+                else:
+                    self.class_map[classes[i]].append(False)
+
+            while len(self.class_map[classes[i]]) < c_vars:
+                self.class_map[classes[i]].append(False)
+
+        self.init_vars(instance, num_nodes, c_vars)
         self.encode_tree_structure(instance, num_nodes)
         self.encode_discriminating(instance, num_nodes)
         self.encode_feature(instance, num_nodes)
-        self.encode_examples(instance, num_nodes)
+        self.encode_examples(instance, num_nodes, self.class_map)
         if improve:
             self.improve(num_nodes)
+        self.uniquify_classes(instance, num_nodes, self.class_map)
         self.write_header(instance)
+
+    def uniquify_classes(self, instance, num_nodes, class_map):
+        # Disallow wrong labels
+        # Forbid non-existing classes
+        # Generate all class identifiers
+        # c_vars = len(next(iter(class_map.values())))
+        # for c_c in itertools.product([True, False], repeat=c_vars):
+        #     # Check if identifier is used
+        #     exists = False
+        #     for c_v in self.class_map.values():
+        #         all_match = True
+        #         for i in range(0, c_vars):
+        #             if c_v[i] != c_c[i]:
+        #                 all_match = False
+        #                 break
+        #         if all_match:
+        #             exists = True
+        #             break
+        #     # If identifier is not used, prevent it from being used
+        #     if not exists:
+        #         for i in range(1, num_nodes + 1):
+        #             clause = [-self.v[i]]
+        #             for c in range(0, c_vars):
+        #                 clause.append(-self.c[i][c] if c_c[c] else self.c[i][c])
+        #             self.add_clause(*clause)
+
+        # Avoid for specific classes to be used only once
+        for i in range(1, num_nodes + 1):
+            for ck, cv in class_map.items():
+                if ck < 0:
+                    continue
+                for j in range(i + 1, num_nodes + 1):
+                    clause = [-self.v[i], -self.v[j]]
+                    for c in range(0, len(cv)):
+                        modifier = -1 if cv[c] else 1
+
+                        clause.append(modifier * self.c[i][c])
+                        clause.append(modifier * self.c[j][c])
+                    self.add_clause(*clause)
 
     def decode(self, model, instance, num_nodes):
         # TODO: This could be faster, but for debugging purposes, check for consistency
@@ -324,7 +386,16 @@ class TreeEncoding(base_encoding.BaseEncoding):
                             print(f"ERROR: Duplicate feature for {j}, set feature {feature}, current {r}")
                 tree.add_node(j, parent, feature, j % 2 == 0)
             else:
-                tree.add_leaf(j, parent, j % 2 == 0, model[self.c[j]])
+                c_c = None
+                for k, v in self.class_map.items():
+                    failed = False
+                    for c in range(0, len(v)):
+                        if model[self.c[j][c]] != v[c]:
+                            failed = True
+                    if not failed:
+                        c_c = k
+                assert c_c is not None
+                tree.add_leaf(j, parent, j % 2 == 0, c_c)
 
         self.check_consistency(model, instance, num_nodes, tree)
         return tree

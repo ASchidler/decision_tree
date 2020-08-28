@@ -5,6 +5,7 @@ import decision_tree
 import improve.improve_depth_first as df
 import improve.improve_leaf_first as lf
 import improve.improve_random as rf
+import improve.improve_size as sf
 
 tree_path = "datasets/trees"
 instance_path = "datasets/split"
@@ -125,8 +126,8 @@ print(f"Time: Start\t\t"
       f"Avg {tree.get_avg_depth():03.4f}\t"
       f"Nodes {tree.get_nodes()}")
 #
-df.run(tree, training_instance, test_instance, tmp_dir=tmp_dir)
-#rf.run(tree, training_instance, test_instance)
+#df.run(tree, training_instance, test_instance, tmp_dir=tmp_dir)
+sf.run(tree, training_instance, test_instance, tmp_dir=tmp_dir)
 
 print(f"Time: End\t\t"
       f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"
