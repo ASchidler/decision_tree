@@ -121,9 +121,9 @@ def run(tree, instance, test, tmp_dir="."):
                 process_change(c_ignore, new_max_p, "ma")
                 done = True
                 break
-            # result, idx = improver.mid_reduced(tree, instance, i, new_max_p, assigned, False, depth_limit, sample_limit)
+            # result, idx = improver.mid_reduced(tree, instance, i, new_max_p, assigned, False, sample_limit, depth_limit, tmp_dir=tmp_dir)
             # if result:
-            #     process_change(c_ignore, new_max_p)
+            #     process_change(c_ignore, new_max_p, "ma")
             #     done = True
             #     break
 

@@ -108,7 +108,7 @@ def stitch(old_tree, new_tree, root):
     while q:
         c_q = q.pop()
         if c_q.is_leaf:
-            if c_q.cls >= 0:
+            if c_q.cls >= 0 and c_q.cls != False and c_q.cls != True:
                 leaves.append(c_q)
                 hit_count[c_q.cls].append(c_q)
         else:
@@ -256,6 +256,14 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
                 frontier.remove(new_root.id)
                 frontier.add(new_root.left.id)
                 frontier.add(new_root.right.id)
+
+        # Complete with leafs...
+        for cl in list(frontier):
+            c_n = tree.nodes[cl]
+            if not c_n.is_leaf and c_n.left.is_leaf and c_n.right.is_leaf:
+                frontier.remove(cl)
+                frontier.add(c_n.left.id)
+                frontier.add(c_n.right.id)
 
         if c_max_depth > depth_limit:
             break
