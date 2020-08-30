@@ -309,26 +309,26 @@ class TreeEncoding(base_encoding.BaseEncoding):
         # Disallow wrong labels
         # Forbid non-existing classes
         # Generate all class identifiers
-        # c_vars = len(next(iter(class_map.values())))
-        # for c_c in itertools.product([True, False], repeat=c_vars):
-        #     # Check if identifier is used
-        #     exists = False
-        #     for c_v in self.class_map.values():
-        #         all_match = True
-        #         for i in range(0, c_vars):
-        #             if c_v[i] != c_c[i]:
-        #                 all_match = False
-        #                 break
-        #         if all_match:
-        #             exists = True
-        #             break
-        #     # If identifier is not used, prevent it from being used
-        #     if not exists:
-        #         for i in range(1, num_nodes + 1):
-        #             clause = [-self.v[i]]
-        #             for c in range(0, c_vars):
-        #                 clause.append(-self.c[i][c] if c_c[c] else self.c[i][c])
-        #             self.add_clause(*clause)
+        c_vars = len(next(iter(class_map.values())))
+        for c_c in itertools.product([True, False], repeat=c_vars):
+            # Check if identifier is used
+            exists = False
+            for c_v in self.class_map.values():
+                all_match = True
+                for i in range(0, c_vars):
+                    if c_v[i] != c_c[i]:
+                        all_match = False
+                        break
+                if all_match:
+                    exists = True
+                    break
+            # If identifier is not used, prevent it from being used
+            if not exists:
+                for i in range(1, num_nodes + 1):
+                    clause = [-self.v[i]]
+                    for c in range(0, c_vars):
+                        clause.append(-self.c[i][c] if c_c[c] else self.c[i][c])
+                    self.add_clause(*clause)
 
         # Avoid for specific classes to be used only once
         for i in range(1, num_nodes + 1):
