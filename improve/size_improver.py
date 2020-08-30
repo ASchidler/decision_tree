@@ -56,7 +56,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, size_limit, sample_lim
     node = path[last_idx]
     for s in assigned[node.id]:
         new_instance.add_example(instance.examples[s].copy())
-    print(f"{last_size} {len(new_instance.examples)}")
+    #print(f"{last_size} {len(new_instance.examples)}")
     if len(new_instance.examples) == 0:
         return False, last_idx
 
@@ -101,7 +101,7 @@ def leaf_reduce(tree, instance, path_idx, path, assigned, size_limit, sample_lim
     if last_idx <= path_idx:
         return False, max(0, path_idx-1)
 
-    print(f"{last_size} {len(last_instance.examples)}")
+    #print(f"{last_size} {len(last_instance.examples)}")
     new_tree, _ = runner.run(last_instance, last_size-2, u_bound=last_size-2)
     if new_tree is None:
         return False, max(0, path_idx-1)
@@ -174,14 +174,13 @@ def mid_reduce(tree, instance, path_idx, path, assigned, size_limit, sample_limi
             features.extend(tmp_features)
 
     if new_instance is not None:
-        print(f"{root.id} {reduce} {cnt} {len(new_instance.examples)}")
+        #print(f"{root.id} {reduce} {cnt} {len(new_instance.examples)}")
         runner = build_runner(tmp_dir)
         new_tree, _ = runner.run(new_instance, cnt - 2, u_bound=cnt - 2)
         if new_tree is None:
             return False, path_idx
         else:
             new_instance.unreduce_instance(new_tree)
-            print(f"{new_tree.get_accuracy(new_instance.examples)}")
             improver.stitch(tree, new_tree, root)
             return True, path_idx
     return False, path_idx

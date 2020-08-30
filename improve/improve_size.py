@@ -97,8 +97,7 @@ def run(tree, instance, test, tmp_dir="."):
                             p, _ = structure(tree.root)
                             improved = path[idx3]
                         else:
-                            c_idx = min(idx2, idx3, len(path)-1)
-                            q = [path[c_idx]]
+                            q = [path[idx]]
                             while q:
                                 c_n = q.pop()
                                 done.add(c_n.id)
