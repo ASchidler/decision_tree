@@ -6,11 +6,23 @@ import improve.improve_depth_first as df
 import improve.improve_leaf_first as lf
 import improve.improve_random as rf
 import improve.improve_size as sf
+import random
+
+random.seed = 1
 
 tree_path = "datasets/trees"
 instance_path = "datasets/split"
 tmp_dir = "."
+is_iti = False
+is_size = False
 
+for i in range(2, len(sys.argv)):
+    if sys.argv[i] == "-i":
+        is_iti = True
+    elif sys.argv[i] == "-s":
+        is_size = True
+    elif sys.argv[i] == "-t":
+        tmp_dir = sys.argv[i+1]
 
 def parse_weka_tree(tree_path, instance):
     with open(tree_path) as tf:
@@ -82,7 +94,7 @@ def parse_iti_tree(tree_path, instance):
                     l_depth -= 3
                 cp = None if not stack else stack[-1]
                 if c_line.startswith("att"):
-                    feature = int(c_line[3:c_line.find(" ")]) + 1
+                    feature = int(c_line[3:c_line.find(" ")]) #+ 1
                     if cp is not None:
                         node = itree.add_node(c_id, cp.id, feature, cp.right is not None)
                     else:
@@ -90,7 +102,7 @@ def parse_iti_tree(tree_path, instance):
                         node = itree.nodes[1]
 
                 else:
-                    node = itree.add_leaf(c_id, cp.id, cp.right is not None, c_line.startswith("True"))
+                    node = itree.add_leaf(c_id, cp.id, cp.right is not None, c_line.startswith("True") or c_line.startswith("1"))
 
                 c_id += 1
                 l_depth = depth
@@ -108,13 +120,13 @@ if target_instance_idx > len(fls):
 
 target_instance = fls[target_instance_idx-1][:-5]
 
-if len(sys.argv) > 2:
-    tmp_dir = sys.argv[2]
-
 training_instance = parser.parse(os.path.join(instance_path, target_instance + ".data"), has_header=False)
 test_instance = parser.parse(os.path.join(instance_path, target_instance + ".test"), has_header=False)
 
-tree = parse_weka_tree(os.path.join(tree_path, target_instance+".tree"), training_instance)
+if is_iti:
+    tree = parse_iti_tree(os.path.join(tree_path, target_instance+".iti"), training_instance)
+else:
+    tree = parse_weka_tree(os.path.join(tree_path, target_instance+".tree"), training_instance)
 # Parse tree
 
 print(f"{target_instance}: Features {training_instance.num_features}\tExamples {len(training_instance.examples)}")
@@ -125,9 +137,11 @@ print(f"Time: Start\t\t"
       f"Depth {tree.get_depth():03}\t"
       f"Avg {tree.get_avg_depth():03.4f}\t"
       f"Nodes {tree.get_nodes()}")
-#
-#df.run(tree, training_instance, test_instance, tmp_dir=tmp_dir)
-sf.run(tree, training_instance, test_instance, tmp_dir=tmp_dir)
+
+if is_size:
+    sf.run(tree, training_instance, test_instance, tmp_dir=tmp_dir)
+else:
+    df.run(tree, training_instance, test_instance, tmp_dir=tmp_dir)
 
 print(f"Time: End\t\t"
       f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"

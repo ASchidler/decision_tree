@@ -99,12 +99,12 @@ def leaf_reduce(tree, instance, path_idx, path, assigned, size_limit, sample_lim
             break
 
     if last_idx <= path_idx:
-        return False, path_idx
+        return False, max(0, path_idx-1)
 
     print(f"{last_size} {len(last_instance.examples)}")
     new_tree, _ = runner.run(last_instance, last_size-2, u_bound=last_size-2)
     if new_tree is None:
-        return False, last_idx
+        return False, max(0, path_idx-1)
     else:
         node = path[last_idx]
         last_instance.unreduce_instance(new_tree)
@@ -129,7 +129,7 @@ def mid_reduce(tree, instance, path_idx, path, assigned, size_limit, sample_limi
 
     cnt = 3
 
-    while q and cnt <= size_limit:
+    while q and cnt < size_limit:
         c_n = q.pop()
         if c_n.is_leaf:
             continue
@@ -174,7 +174,7 @@ def mid_reduce(tree, instance, path_idx, path, assigned, size_limit, sample_limi
             features.extend(tmp_features)
 
     if new_instance is not None:
-        print(f"{reduce} {cnt} {len(new_instance.examples)}")
+        print(f"{root.id} {reduce} {cnt} {len(new_instance.examples)}")
         runner = build_runner(tmp_dir)
         new_tree, _ = runner.run(new_instance, cnt - 2, u_bound=cnt - 2)
         if new_tree is None:
