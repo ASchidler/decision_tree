@@ -16,13 +16,18 @@ tmp_dir = "."
 is_iti = False
 is_size = False
 
-for i in range(2, len(sys.argv)):
+i = 2
+while i < len(sys.argv):
     if sys.argv[i] == "-i":
         is_iti = True
     elif sys.argv[i] == "-s":
         is_size = True
     elif sys.argv[i] == "-t":
         tmp_dir = sys.argv[i+1]
+        i += 1
+    else:
+        print(f"Unknown argument {sys.argv[i]}")
+    i += 1
 
 def parse_weka_tree(tree_path, instance):
     with open(tree_path) as tf:
@@ -129,7 +134,8 @@ else:
     tree = parse_weka_tree(os.path.join(tree_path, target_instance+".tree"), training_instance)
 # Parse tree
 
-print(f"{target_instance}: Features {training_instance.num_features}\tExamples {len(training_instance.examples)}")
+print(f"{target_instance}: Features {training_instance.num_features}\tExamples {len(training_instance.examples)}\t"
+      f"Optimize {'Depth' if not is_size else 'Size'}\tHeuristic {'Weka' if not is_iti else 'ITI'}")
 
 print(f"Time: Start\t\t"
       f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"
