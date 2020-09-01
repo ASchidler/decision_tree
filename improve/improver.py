@@ -248,7 +248,7 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
             c_max_depth = max(max_depth, c_depth + 1)
             cnt += 1
 
-            if not new_root.is_leaf:
+            if not new_root.is_leaf and new_root.id in frontier:
                 features.add(new_root.feature)
                 q[depth_from(new_root.left)].append((c_depth + 1, new_root.left))
                 q[depth_from(new_root.right)].append((c_depth + 1, new_root.right))
