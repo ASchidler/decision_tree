@@ -103,7 +103,7 @@ for dl in range(3, 20):
 
                     if len(new_instance.examples) > 0:
                         stm = time.time()
-                        new_tree, _ = runner.run(new_instance, c_d - 1, u_bound=c_d - 1, timeout=900)
+                        new_tree, _ = runner.run(new_instance, c_d - 1, u_bound=c_d - 1, timeout=900, suboptimal=True)
                         etm = time.time()
 
                         if new_tree is None:
