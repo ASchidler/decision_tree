@@ -71,8 +71,11 @@ def find_leaf():
 
 assigned = imp.assign_samples(tree, training_instance)
 
-for dl in range(3, 20):
-    for sl in [10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000]:
+sll = [10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000]
+for dl in range(3, 30):
+    for i_sl in range(0, len(sll)):
+        sl = sll[i_sl]
+        psl = 0 if i_sl == 0 else sll[i_sl-1]
         done.clear()
 
         while True:
@@ -93,10 +96,8 @@ for dl in range(3, 20):
 
             if c_rt:
                 c_d = imp.depth_from(c_rt)
-                if c_d == dl and len(assigned[c_rt.id]) <= sl:
-                    pass
 
-                if c_d >= 2:
+                if c_d == dl and sl >= len(assigned[c_rt.id]) > psl:
                     new_instance = bdd_instance.BddInstance()
                     for s in assigned[c_rt.id]:
                         new_instance.add_example(training_instance.examples[s].copy())
