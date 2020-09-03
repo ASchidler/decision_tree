@@ -3,6 +3,7 @@ from os import linesep
 
 class BaseEncoding:
     def __init__(self, stream):
+        self.size_limit = 5 * 1000 * 1000 * 1000
         self.vars = 0
         self.clauses = 0
         self.stream = stream
@@ -24,9 +25,13 @@ class BaseEncoding:
 
     def add_clause(self, *args):
         if len(args) > 0:
+            if self.stream.tell() > self.size_limit:
+                raise MemoryError("Encoding size too large")
+
             self.stream.write(' '.join([str(x) for x in args]))
             self.stream.write(" 0\n")
             self.clauses += 1
+
 
     '''Encode the conjunction of args as auxiliary variable. 
             The auxiliary variable can then be used instead of the conjunction'''
