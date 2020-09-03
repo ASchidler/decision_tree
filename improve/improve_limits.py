@@ -5,6 +5,7 @@ import parser
 import improve.improver as imp
 import time
 import bdd_instance
+import re
 
 instance = tree_path = "datasets/trees"
 instance_path = "datasets/split"
@@ -22,7 +23,7 @@ while i < len(sys.argv):
         print(f"Unknown argument {sys.argv[i]}")
     i += 1
 
-fls = list(x for x in os.listdir(instance_path) if x.endswith(".data"))
+fls = list(x for x in os.listdir(instance_path) if x.endswith(".data") and (x.endswith("0.data") or not re.search("[1-4]\.data", x)))
 fls.sort()
 target_instance_idx = int(sys.argv[1])
 
@@ -70,7 +71,7 @@ def find_leaf():
 
 assigned = imp.assign_samples(tree, training_instance)
 
-for dl in range(2, 20):
+for dl in range(3, 20):
     for sl in [10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000]:
         done.clear()
 
@@ -108,11 +109,14 @@ for dl in range(2, 20):
                         if new_tree is None:
                             if (etm - stm) < 899:
                                 print(f"{dl}\t{sl}\tNF\t{etm - stm:.2f}\t{c_d}\t{len(new_instance.examples)}")
+                                sys.stdout.flush()
                             else:
                                 print(f"{dl}\t{sl}\tTO\t{etm - stm:.2f}\t{c_d}\t{len(new_instance.examples)}")
                                 finished_limit = True
+                                sys.stdout.flush()
                         else:
                             print(f"{dl}\t{sl}\tNT\t{etm - stm:.2f}\t{c_d}\t{len(new_instance.examples)}\t{new_tree.get_depth()}")
+                            sys.stdout.flush()
                 q = [c_rt]
                 while q:
                     c_n = q.pop()
@@ -123,4 +127,5 @@ for dl in range(2, 20):
 
             else:
                 print(f"{dl}\t{sl}\tOOB")
+                sys.stdout.flush()
                 done.add(c_lf[0].id)
