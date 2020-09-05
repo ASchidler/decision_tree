@@ -309,7 +309,7 @@ def build_runner(tmp_dir):
     #return sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=tmp_dir)
 
 
-def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, tmp_dir="."):
+def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, tmp_dir="."):
     runner = build_runner(tmp_dir)
 
     prev_instance = None
@@ -333,7 +333,7 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
         cd = depth_from(node)
 
         # Solve instance
-        new_tree, _ = runner.run(new_instance, cd - 1, u_bound=cd - 1)
+        new_tree, _ = runner.run(new_instance, cd - 1, u_bound=cd - 1, timeout=time_limit)
 
         # Either the branch is done, or
         if new_tree is None:
@@ -355,7 +355,7 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
     return False, prev_idx
 
 
-def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, tmp_dir="."):
+def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, tmp_dir="."):
     last_idx = path_idx
     while path_idx < len(path):
         c_d = depth_from(path[path_idx])
@@ -378,7 +378,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
     if len(new_instance.examples) == 0:
         return False, last_idx
 
-    new_tree, _ = runner.run(new_instance, c_d-1, u_bound=c_d-1)
+    new_tree, _ = runner.run(new_instance, c_d-1, u_bound=c_d-1, timeout=time_limit)
     if new_tree is None:
         return False, last_idx
     else:
@@ -386,7 +386,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
         return True, last_idx
 
 
-def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, tmp_dir="."):
+def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, tmp_dir="."):
     runner = build_runner(tmp_dir)
 
     if path[path_idx].is_leaf:
@@ -417,7 +417,7 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_
     if len(last_instance[0].examples) == 0:
         return False, path_idx
 
-    new_tree, _ = runner.run(last_instance[0], last_instance[3] - 1, u_bound=last_instance[3] - 1)
+    new_tree, _ = runner.run(last_instance[0], last_instance[3] - 1, u_bound=last_instance[3] - 1, timeout=time_limit)
 
     if new_tree is not None:
         q = [new_tree.nodes[0]]
@@ -434,7 +434,7 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_
     return False, path_idx
 
 
-def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, tmp_dir="."):
+def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, tmp_dir="."):
     runner = build_runner(tmp_dir)
 
     prev_instance = None
@@ -466,7 +466,7 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
     if prev_instance is not None:
         node = path[prev_idx]
         nd = depth_from(node)
-        new_tree, _ = runner.run(prev_instance,  nd-1, u_bound=nd-1)
+        new_tree, _ = runner.run(prev_instance,  nd-1, u_bound=nd-1, timeout=time_limit)
 
         if new_tree is not None:
             prev_instance.unreduce_instance(new_tree)
@@ -477,7 +477,7 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
     return False, prev_idx
 
 
-def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit, depth_limit, tmp_dir="."):
+def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit, depth_limit, time_limit, tmp_dir="."):
     runner = build_runner(tmp_dir)
 
     # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
@@ -490,7 +490,7 @@ def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit, 
     if instance is None or len(instance.examples) == 0:
         return False, path_idx
 
-    new_tree, _ = runner.run(instance, i_depth - 1, u_bound=i_depth-1)
+    new_tree, _ = runner.run(instance, i_depth - 1, u_bound=i_depth-1, timeout=time_limit)
 
     if new_tree is not None:
         instance.unreduce_instance(new_tree)

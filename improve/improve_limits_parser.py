@@ -14,7 +14,7 @@ def init_coll():
     return nd
 
 fls = list(x for x in os.listdir(pth))
-results = [init_coll() for _ in range(0, 30)]
+results = [init_coll() for _ in range(0, 70)]
 
 for fl in fls:
     if fl.find(".o") < 0:

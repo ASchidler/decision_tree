@@ -16,7 +16,7 @@ instance_path = "datasets/split"
 tmp_dir = "."
 is_iti = False
 is_size = False
-
+limit_idx = 1
 i = 2
 while i < len(sys.argv):
     if sys.argv[i] == "-i":
@@ -25,6 +25,9 @@ while i < len(sys.argv):
         is_size = True
     elif sys.argv[i] == "-t":
         tmp_dir = sys.argv[i+1]
+        i += 1
+    elif sys.argv[i] == "-l":
+        limit_idx = int(sys.argv[i+1])
         i += 1
     else:
         print(f"Unknown argument {sys.argv[i]}")
@@ -64,7 +67,7 @@ print(f"Time: Start\t\t"
 if is_size:
     sf.run(tree, training_instance, test_instance, tmp_dir=tmp_dir)
 else:
-    df.run(tree, training_instance, test_instance, tmp_dir=tmp_dir)
+    df.run(tree, training_instance, test_instance, tmp_dir=tmp_dir, limit_idx=limit_idx)
 
 print(f"Time: End\t\t"
       f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"

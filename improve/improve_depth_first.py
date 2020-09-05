@@ -2,9 +2,33 @@ import improve.improver as improver
 import time
 import sys
 
-sample_limit = [200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200,
-                200, 150, 100, 100, 100, 0]
+#sample_limit = [200, 200, 200, 200, 200, 200,
+# 200, 200, 200, 200, 200,
+#                200, 150, 100, 100, 100, 0]
+sample_limit_short = [175,
+                      175, 175, 175, 175, 175,
+                      175, 175, 175, 150, 120,
+                      70, 70, 70, 70, 70,
+                      0]
+sample_limit_mid = [300,
+                    300, 300, 300, 270, 270,
+                    270, 270, 270, 270, 250,
+                    200, 200, 175, 90, 90,
+                    0]
+sample_limit_long = [500,
+                     500, 500, 500, 500, 500,
+                     500, 500, 500, 500, 500,
+                     400, 340, 250, 250, 215,
+                     105, 105, 105, 105, 105,
+                     105, 105, 105, 105, 105,
+                     105, 105, 105, 105, 105,
+                     105, 105, 105, 105, 105,
+                     105, 105, 105, 105, 105]
+
+time_limits = [60, 300, 800]
+depth_limits = [12, 15, 38]
 depth_limit = 15
+
 reduce_runs = 1
 
 
@@ -60,7 +84,11 @@ def find_deepest_leaf(tree, ignore=None):
     return c_max[0], c_max[1], path
 
 
-def run(tree, instance, test, tmp_dir="."):
+def run(tree, instance, test, tmp_dir=".", limit_idx=1):
+    sample_limit = [sample_limit_short, sample_limit_mid, sample_limit_long][limit_idx]
+    time_limit = time_limits[limit_idx]
+    depth_limit = depth_limits[limit_idx]
+
     # Select nodes based on the depth
     c_ignore = set()
 
@@ -89,20 +117,20 @@ def run(tree, instance, test, tmp_dir="."):
         done = False
 
         # First try to find root
-        result, select_idx = improver.leaf_select(tree, instance, 0, new_max_p, assigned, depth_limit, sample_limit, tmp_dir=tmp_dir)
+        result, select_idx = improver.leaf_select(tree, instance, 0, new_max_p, assigned, depth_limit, sample_limit, time_limit, tmp_dir=tmp_dir)
         if result:
             process_change(c_ignore, new_max_p, "ls")
             continue
 
         max_leaf_idx = 0
-        result, idx = improver.leaf_rearrange(tree, instance, select_idx, new_max_p, assigned, depth_limit, sample_limit, tmp_dir=tmp_dir)
+        result, idx = improver.leaf_rearrange(tree, instance, select_idx, new_max_p, assigned, depth_limit, sample_limit, time_limit,tmp_dir=tmp_dir)
         max_leaf_idx = max(max_leaf_idx, idx)
         if result:
             process_change(c_ignore, new_max_p, "la")
             continue
 
         for _ in range(0, reduce_runs):
-            result, idx = improver.reduced_leaf(tree, instance, select_idx, new_max_p, assigned, depth_limit, sample_limit, tmp_dir=tmp_dir)
+            result, idx = improver.reduced_leaf(tree, instance, select_idx, new_max_p, assigned, depth_limit, sample_limit, time_limit,tmp_dir=tmp_dir)
             max_leaf_idx = max(max_leaf_idx, idx)
             if result:
                 process_change(c_ignore, new_max_p, "lr")
@@ -116,7 +144,7 @@ def run(tree, instance, test, tmp_dir="."):
             if new_max_p[i].id in c_ignore:
                 continue
 
-            result, idx = improver.mid_rearrange(tree, instance, i, new_max_p, assigned, depth_limit, sample_limit, tmp_dir=tmp_dir)
+            result, idx = improver.mid_rearrange(tree, instance, i, new_max_p, assigned, depth_limit, sample_limit, time_limit,tmp_dir=tmp_dir)
             if result:
                 process_change(c_ignore, new_max_p, "ma")
                 done = True
@@ -129,7 +157,7 @@ def run(tree, instance, test, tmp_dir="."):
 
             for _ in range(0, reduce_runs):
                 result, idx = improver.mid_reduced(tree, instance, i, new_max_p, assigned, True,
-                                                   sample_limit, depth_limit, tmp_dir=tmp_dir)
+                                                   sample_limit, depth_limit, time_limit,tmp_dir=tmp_dir)
                 if result:
                     process_change(c_ignore, new_max_p, "mr")
                     done = True
