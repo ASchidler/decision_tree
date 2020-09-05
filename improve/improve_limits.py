@@ -72,7 +72,7 @@ def find_leaf():
 assigned = imp.assign_samples(tree, training_instance)
 
 sll = [10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000]
-for dl in range(3, 30):
+for dl in range(29, 70):
     for i_sl in range(0, len(sll)):
         sl = sll[i_sl]
         psl = 0 if i_sl == 0 else sll[i_sl-1]
