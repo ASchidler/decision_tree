@@ -3,7 +3,7 @@ from os import linesep
 
 class BaseEncoding:
     def __init__(self, stream):
-        self.size_limit = 5 * 1000 * 1000 * 1000
+        self.size_limit = 15 * 1000 * 1000 * 1000
         self.vars = 0
         self.clauses = 0
         self.stream = stream
