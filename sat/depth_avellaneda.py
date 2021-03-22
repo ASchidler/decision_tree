@@ -1,31 +1,53 @@
-import base_encoding
 from decision_tree import DecisionTree, NonBinaryTree
 import itertools
+from pysat.formula import IDPool, CNF
+from sys import maxsize
+from threading import Timer
+from sat.base_encoding import BaseEncoding
 
-class AAAIEncoding(base_encoding.BaseEncoding):
-    def __init__(self, stream):
-        base_encoding.BaseEncoding.__init__(self, stream)
+
+class DepthAvellaneda(BaseEncoding):
+    def __init__(self):
+        BaseEncoding.__init__(self)
         self.x = None
         self.f = None
         self.c = None
-        self.class_map = None
+        self.class_map = None        
 
     def init_var(self, instance, limit, class_map):
-        self.x = [[] for _ in range(0, len(instance.examples))]
-        for xl in self.x:
-            for _ in range(0, limit):
-                xl.append(self.add_var())
+        self.x = {}
+        for xl in range(0, len(instance.examples)):
+            self.x[xl] = {}
+            for x2 in range(0, limit):
+                self.x[xl][x2] = self.pool.id(f"x{xl}_{x2}")
 
-        self.f = [[None] for _ in range(0, 2**limit)]
-        # index starting with 1
+        # self.x = [[] for _ in range(0, len(instance.examples))]
+        # for xl in self.x:
+        #     for _ in range(0, limit):
+        #         xl.append(self.add_var())
+
+        self.f = {}
         for i in range(1, 2**limit):
-            for _ in range(1, instance.num_features + 1):
-                self.f[i].append(self.add_var())
+            self.f[i] = {}
+            for j in range(1, instance.num_features + 1):
+                self.f[i][j] = self.pool.id(f"f{i}_{j}")
+        # self.f = [[None] for _ in range(0, 2**limit)]
+        # # index starting with 1
+        # for i in range(1, 2**limit):
+        #     for _ in range(1, instance.num_features + 1):
+        #         self.f[i].append(self.add_var())
 
         c_vars = len(next(iter(class_map.values())))
-        self.c = [[self.add_var() for _ in range(0, c_vars)] for _ in range(0, 2**limit)]
+        self.c = {}
+        for i in range(0, 2**limit):
+            self.c[i] = {}
+            for j in range(0, c_vars):
+                self.c[i][j] = self.pool.id(f"c{i}_{j}")
+
+        #self.c = [[self.add_var() for _ in range(0, c_vars)] for _ in range(0, 2**limit)]
 
     def encode(self, instance, limit):
+        self.formula = CNF()
         classes = set()
         for e in instance.examples:
             classes.add(e.cls)
@@ -52,8 +74,8 @@ class AAAIEncoding(base_encoding.BaseEncoding):
             for f1 in range(1, instance.num_features + 1):
                 clause.append(self.f[i][f1])
                 for f2 in range(f1+1, instance.num_features + 1):
-                    self.add_clause(-self.f[i][f1], -self.f[i][f2])
-            self.add_clause(*clause)
+                    self.add_clause([-self.f[i][f1], -self.f[i][f2]])            
+            self.add_clause(clause)
 
         for i in range(0, len(instance.examples)):
             self.alg1(instance, i, limit, 0, 1, list())
@@ -78,8 +100,8 @@ class AAAIEncoding(base_encoding.BaseEncoding):
                 for c_n in range(0, 2**limit):
                     clause = []
                     for i in range(0, c_vars):
-                        clause.append(self.c[c_n][i] if c_c[i] else -self.c[c_n][i])
-                    self.add_clause(*clause)
+                        self.add_clause([self.c[c_n][i] if c_c[i] else -self.c[c_n][i]])
+                    self.add_clause(clause)
 
     def alg1(self, instance, e_idx, limit, lvl, q, clause):
         if lvl == limit:
@@ -88,14 +110,14 @@ class AAAIEncoding(base_encoding.BaseEncoding):
         example = instance.examples[e_idx]
         for f in range(1, instance.num_features + 1):
             if not example.features[f]:
-                self.add_clause(*clause, -self.x[e_idx][lvl], -self.f[q][f])
+                self.add_clause([*clause, -self.x[e_idx][lvl], -self.f[q][f]])
         n_cl = list(clause)
         n_cl.append(-self.x[e_idx][lvl])
         self.alg1(instance, e_idx, limit, lvl+1, 2 * q + 1, n_cl)
 
         for f in range(1, instance.num_features + 1):
             if example.features[f]:
-                self.add_clause(*clause, self.x[e_idx][lvl], -self.f[q][f])
+                self.add_clause([*clause, self.x[e_idx][lvl], -self.f[q][f]])
         n_cl2 = list(clause)
         n_cl2.append(self.x[e_idx][lvl])
         self.alg1(instance, e_idx, limit, lvl+1, 2*q, n_cl2)
@@ -105,9 +127,9 @@ class AAAIEncoding(base_encoding.BaseEncoding):
             c_vars = class_map[instance.examples[e_idx].cls]
             for i in range(0, len(c_vars)):
                 if c_vars[i]:
-                    self.add_clause(*clause, self.c[q - 2 ** limit][i])
+                    self.add_clause([*clause, self.c[q - 2 ** limit][i]])
                 else:
-                    self.add_clause(*clause, -self.c[q - 2 ** limit][i])
+                    self.add_clause([*clause, -self.c[q - 2 ** limit][i]])
         else:
             n_cl = list(clause)
             n_cl.append(self.x[e_idx][lvl])
@@ -115,6 +137,41 @@ class AAAIEncoding(base_encoding.BaseEncoding):
             n_cl2.append(-self.x[e_idx][lvl])
             self.alg2(instance, e_idx, limit, lvl+1, 2*q, n_cl, class_map)
             self.alg2(instance, e_idx, limit, lvl+1, 2*q+1, n_cl2, class_map)
+
+    def run(self, instance, solver, start_bound=1, timeout=0, ub=maxsize):
+        c_bound = start_bound
+        lb = 0
+        best_model = None
+
+        while lb < ub:
+            print(f"Running {c_bound}")
+            with solver() as slv:
+                self.reset_formula()
+                try:
+                    self.encode(instance, c_bound)
+                except MemoryError:
+                    return None
+                slv.append_formula(self.formula)
+                if timeout == 0:
+                    solved = slv.solve()
+                else:
+                    def interrupt(s):
+                        s.interrupt()
+
+                    timer = Timer(timeout, interrupt, [slv])
+                    timer.start()
+                    solved = slv.solve_limited(expect_interrupt=True)
+
+                if solved:
+                    model = {abs(x): x > 0 for x in slv.get_model()}
+                    best_model = self.decode(model, instance, c_bound)
+                    ub = c_bound
+                    c_bound -= 1
+                else:
+                    c_bound += 1
+                    lb = c_bound
+
+        return best_model
 
     def decode(self, model, instance, limit):
         num_leafs = 2**limit

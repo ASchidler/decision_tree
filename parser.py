@@ -1,8 +1,8 @@
-from bdd_instance import BddInstance, BddExamples
+from class_instance import ClassificationInstance, ClassificationExample
 
 
 def parse(filename, has_header=True):
-    instance = BddInstance()
+    instance = ClassificationInstance()
     id = 1
     mappings = {}
     first_line = has_header
@@ -36,7 +36,7 @@ def parse(filename, has_header=True):
                         print(f"Parsing error for field {i}, found more than 2 values ({mappings[i][0]}, {mappings[i][1]}, {estr})")
 
             cls = example.pop()
-            instance.add_example(BddExamples(example, cls, id))
+            instance.add_example(ClassificationExample(example, cls, id))
 
             id += 1
 
@@ -53,7 +53,7 @@ def parse(filename, has_header=True):
 
 
 def parse_nonbinary(filename):
-    instance = BddInstance()
+    instance = ClassificationInstance()
     id = 1
     first_line = True
 
@@ -74,7 +74,7 @@ def parse_nonbinary(filename):
                 example.append(estr)
 
             cls = example.pop()
-            instance.add_example(BddExamples(example, cls, id))
+            instance.add_example(ClassificationExample(example, cls, id))
             id += 1
 
     return instance

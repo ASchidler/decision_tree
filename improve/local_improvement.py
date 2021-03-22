@@ -8,8 +8,11 @@ import improve.improve_random as rf
 import improve.improve_size as sf
 import random
 from improve.tree_parsers import parse_weka_tree, parse_iti_tree
+import resource
 
 random.seed = 1
+# This is used for debugging, for experiments use proper memory limiting
+resource.setrlimit(resource.RLIMIT_AS, (16 * 1024 * 1024 * 1024, 17 * 1024 * 1024 * 1024))
 
 tree_path = "datasets/trees"
 instance_path = "datasets/split"
@@ -17,6 +20,7 @@ tmp_dir = "."
 is_iti = False
 is_size = False
 limit_idx = 1
+pt = False
 i = 2
 while i < len(sys.argv):
     if sys.argv[i] == "-i":
@@ -29,6 +33,8 @@ while i < len(sys.argv):
     elif sys.argv[i] == "-l":
         limit_idx = int(sys.argv[i+1])
         i += 1
+    elif sys.argv[i] == "-p":
+        pt = True
     else:
         print(f"Unknown argument {sys.argv[i]}")
     i += 1
@@ -54,6 +60,10 @@ else:
     tree = parse_weka_tree(os.path.join(tree_path, target_instance+".tree"), training_instance)
 # Parse tree
 
+if pt:
+    with open("input_tree2.gv", "w") as f:
+        f.write(decision_tree.dot_export(tree))
+
 print(f"{target_instance}: Features {training_instance.num_features}\tExamples {len(training_instance.examples)}\t"
       f"Optimize {'Depth' if not is_size else 'Size'}\tHeuristic {'Weka' if not is_iti else 'ITI'}")
 
@@ -67,7 +77,7 @@ print(f"Time: Start\t\t"
 if is_size:
     sf.run(tree, training_instance, test_instance, tmp_dir=tmp_dir)
 else:
-    df.run(tree, training_instance, test_instance, tmp_dir=tmp_dir, limit_idx=limit_idx)
+    df.run(tree, training_instance, test_instance, tmp_dir=tmp_dir, limit_idx=limit_idx, pt=pt)
 
 print(f"Time: End\t\t"
       f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"

@@ -1,51 +1,43 @@
-import base_encoding
 from decision_tree import DecisionTree, NonBinaryTree
-import math
+from pysat.formula import CNF
+from sys import maxsize
+from threading import Timer
+from sat.base_encoding import BaseEncoding
 
 
-class TreeDepthEncoding(base_encoding.BaseEncoding):
-    def __init__(self, stream):
-        base_encoding.BaseEncoding.__init__(self, stream)
+class DepthPartition(BaseEncoding):
+    def __init__(self):
+        BaseEncoding.__init__(self)
         self.g = None
         self.d = None
 
     def init_vars(self, instance, depth):
-        self.d = []
+        self.d = {}
         for i in range(0, len(instance.examples)):
-            self.d.append([])
+            self.d[i] = {}
             for dl in range(0, depth):
-                self.d[i].append([None])
+                self.d[i][dl] = {}
                 for f in range(1, instance.num_features + 1):
-                    self.d[i][dl].append(self.add_var())
+                    self.d[i][dl][f] = self.pool.id(f"d{i}_{dl}_{f}")
 
         self.g = [{} for _ in range(0, len(instance.examples))]
         for i in range(0, len(instance.examples)):
             for j in range(i + 1, len(instance.examples)):
-                self.g[i][j] = [self.add_var() for _ in range(0, depth + 1)]
+                self.g[i][j] = [self.pool.id(f"g{i}_{j}_{d}") for d in range(0, depth + 1)]
 
     def encode(self, instance, depth):
         self.init_vars(instance, depth)
-
+        self.formula = CNF()
         # Add level 0, all examples are in the same group
         for i in range(0, len(instance.examples)):
             for j in range(i + 1, len(instance.examples)):
-                self.add_clause(self.g[i][j][0])
-
-        # Transitivity
-        # for i in range(0, len(instance.examples)):
-        #     for j in range(i + 1, len(instance.examples)):
-        #         for dl in range(1, depth + 1):
-        #             for k in range(j + 1, len(instance.examples)):
-        #                 if i != k and j != k:
-        #                     self.add_clause(-self.g[i][j][dl], -self.g[j][k][dl], self.g[i][k][dl])
-        #                     self.add_clause(-self.g[i][j][dl], -self.g[i][k][dl], self.g[j][k][dl])
-        #                     self.add_clause(-self.g[i][k][dl], -self.g[j][k][dl], self.g[i][j][dl])
+                self.add_clause([self.g[i][j][0]])
 
         # Verify that at last level, the partitioning is by class
         for i in range(0, len(instance.examples)):
             for j in range(i + 1, len(instance.examples)):
                 if instance.examples[i].cls != instance.examples[j].cls:
-                    self.add_clause(-self.g[i][j][depth])
+                    self.add_clause([-self.g[i][j][depth]])
 
         # Verify that the examples are partitioned correctly
         for i in range(0, len(instance.examples)):
@@ -53,22 +45,22 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
                 for dl in range(0, depth):
                     for f in range(1, instance.num_features+1):
                         if instance.examples[i].features[f] == instance.examples[j].features[f]:
-                            self.add_clause(-self.g[i][j][dl], -self.d[i][dl][f], self.g[i][j][dl+1])
+                            self.add_clause([-self.g[i][j][dl], -self.d[i][dl][f], self.g[i][j][dl+1]])
                         else:
-                            self.add_clause(-self.d[i][dl][f], -self.g[i][j][dl + 1])
+                            self.add_clause([-self.d[i][dl][f], -self.g[i][j][dl + 1]])
 
         # Verify that group cannot merge
         for i in range(0, len(instance.examples)):
             for j in range(i + 1, len(instance.examples)):
                 for dl in range(0, depth):
-                    self.add_clause(self.g[i][j][dl], -self.g[i][j][dl + 1])
+                    self.add_clause([self.g[i][j][dl], -self.g[i][j][dl + 1]])
 
         # Verify that d is consistent
         for i in range(0, len(instance.examples)):
             for j in range(i + 1, len(instance.examples)):
                 for dl in range(0, depth):
                     for f in range(1, instance.num_features+1):
-                        self.add_clause(-self.g[i][j][dl], -self.d[i][dl][f], self.d[j][dl][f])
+                        self.add_clause([-self.g[i][j][dl], -self.d[i][dl][f], self.d[j][dl][f]])
 
         # One feature per level and group
         for i in range(0, len(instance.examples)):
@@ -78,10 +70,44 @@ class TreeDepthEncoding(base_encoding.BaseEncoding):
                     clause.append(self.d[i][dl][f])
                     # This set of clauses is not needed for correctness but is faster for small complex instances
                     for f2 in range(f + 1, instance.num_features + 1):
-                        self.add_clause(-self.d[i][dl][f], -self.d[i][dl][f2])
-                self.add_clause(*clause)
+                        self.add_clause([-self.d[i][dl][f], -self.d[i][dl][f2]])
+                self.add_clause(clause)
 
-        self.write_header(instance)
+    def run(self, instance, solver, start_bound=1, timeout=0, ub=maxsize):
+        c_bound = start_bound
+        lb = 0
+        best_model = None
+
+        while lb < ub:
+            print(f"Running {c_bound}")
+            with solver() as slv:
+                self.reset_formula()
+                try:
+                    self.encode(instance, c_bound)
+                except MemoryError:
+                    return None
+
+                slv.append_formula(self.formula)
+                if timeout == 0:
+                    solved = slv.solve()
+                else:
+                    def interrupt(s):
+                        s.interrupt()
+
+                    timer = Timer(timeout, interrupt, [slv])
+                    timer.start()
+                    solved = slv.solve_limited(expect_interrupt=True)
+
+                if solved:
+                    model = {abs(x): x > 0 for x in slv.get_model()}
+                    best_model = self.decode(model, instance, c_bound)
+                    ub = c_bound
+                    c_bound -= 1
+                else:
+                    lb = c_bound + 1
+                    c_bound += 1
+
+        return best_model
 
     def decode_nonbinary(self, model, instance, depth):
         tree = NonBinaryTree()

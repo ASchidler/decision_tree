@@ -1,11 +1,12 @@
-import base_encoding
 from decision_tree import DecisionTree
-from math import log2
 import itertools
+from pysat.formula import IDPool, CNF
+from sys import maxsize
+from threading import Timer
 
-class TreeEncoding(base_encoding.BaseEncoding):
-    def __init__(self, stream):
-        base_encoding.BaseEncoding.__init__(self, stream)
+
+class SizeNarodytska:
+    def __init__(self):
         self.v = None
         self.left = None
         self.right = None
@@ -17,28 +18,30 @@ class TreeEncoding(base_encoding.BaseEncoding):
         self.c = None
         self.increment = 2
         self.class_map = None
+        self.pool = IDPool()
+        self.formula = None
 
     def init_vars(self, instance, num_nodes, c_var):
         # First the tree structure
-        self.v = []
-        self.v.append(None) # Avoid 0 index
-        for _ in range(1, num_nodes + 1):
-            self.v.append(self.add_var())
+        self.v = {}
+        for i in range(1, num_nodes + 1):
+            self.v[i] = self.pool.id(f"v{i}")
 
-        self.right = [{} for _ in range(0, num_nodes + 1)]
-        self.left = [{} for _ in range(0, num_nodes + 1)]
+        self.right = {i: {} for i in range(1, num_nodes + 1)}
+        self.left = {i: {} for i in range(1, num_nodes + 1)}
+
         for i in range(1, num_nodes + 1):
             for j in range(i+1, min(2 * i + 2, num_nodes + 1)):
                 if j % 2 == 0:
-                    self.left[i][j] = self.add_var()
+                    self.left[i][j] = self.pool.id(f"left{i}_{j}")
                 else:
-                    self.right[i][j] = self.add_var()
+                    self.right[i][j] = self.pool.id(f"right{i}_{j}")
 
         self.p = [{} for _ in range(0, num_nodes + 1)]
         for j in range(2, num_nodes + 1, 2): # Starts from 2 not 1
             for i in range(j // 2, j):
-                self.p[j][i] = self.add_var()
-                self.p[j+1][i] = self.add_var()
+                self.p[j][i] = self.pool.id(f"p{j}_{i}")
+                self.p[j+1][i] = self.pool.id(f"p{j+1}_{i}")
 
         # Now the decision tree
         self.a = []
@@ -59,11 +62,11 @@ class TreeEncoding(base_encoding.BaseEncoding):
             self.d0[i].append(None)
             self.d1[i].append(None)
             for j in range(1, num_nodes + 1):
-                self.a[i].append(self.add_var())
-                self.u[i].append(self.add_var())
-                self.d0[i].append(self.add_var())
-                self.d1[i].append(self.add_var())
-        self.c = [[self.add_var() for _ in range(0, c_var)] if i > 0 else None for i in range(0, num_nodes + 1)]
+                self.a[i].append(self.pool.id(f"a{i}_{j}"))
+                self.u[i].append(self.pool.id(f"u{i}_{j}"))
+                self.d0[i].append(self.pool.id(f"d0_{i}_{j}"))
+                self.d1[i].append(self.pool.id(f"d1_{i}_{j}"))
+        self.c = {i: [self.pool.id(f"c{i}_{j}") for j in range(0, c_var)] for i in range(1, num_nodes+1)}
 
     @staticmethod
     def lr(i, mx):
@@ -88,38 +91,38 @@ class TreeEncoding(base_encoding.BaseEncoding):
 
     def encode_tree_structure(self, instance, num_nodes):
         # root is not a leaf
-        self.add_clause(-self.v[1])
+        self.formula.append([-self.v[1]])
 
         for i in range(1, num_nodes + 1):
-            for j in TreeEncoding.lr(i, num_nodes):
+            for j in SizeNarodytska.lr(i, num_nodes):
                 # Leafs have no children
-                self.add_clause(-self.v[i], -self.left[i][j])
+                self.formula.append([-self.v[i], -self.left[i][j]])
                 # children are consecutively numbered
-                self.add_clause(-self.left[i][j], self.right[i][j + 1])
-                self.add_clause(self.left[i][j], -self.right[i][j + 1])
+                self.formula.append([-self.left[i][j], self.right[i][j + 1]])
+                self.formula.append([self.left[i][j], -self.right[i][j + 1]])
 
         # Enforce parent child relationship
         for i in range(1, num_nodes + 1):
-            for j in TreeEncoding.lr(i, num_nodes):
-                self.add_clause(-self.p[j][i], self.left[i][j])
-                self.add_clause(self.p[j][i], -self.left[i][j])
-            for j in TreeEncoding.rr(i, num_nodes):
-                self.add_clause(-self.p[j][i], self.right[i][j])
-                self.add_clause(self.p[j][i], -self.right[i][j])
+            for j in SizeNarodytska.lr(i, num_nodes):
+                self.formula.append([-self.p[j][i], self.left[i][j]])
+                self.formula.append([self.p[j][i], -self.left[i][j]])
+            for j in SizeNarodytska.rr(i, num_nodes):
+                self.formula.append([-self.p[j][i], self.right[i][j]])
+                self.formula.append([self.p[j][i], -self.right[i][j]])
 
         # Cardinality constraint
         # Each non leaf must have exactly one left child
         for i in range(1, num_nodes + 1):
             # First must have a child
             nodes = []
-            for j in TreeEncoding.lr(i, num_nodes):
+            for j in SizeNarodytska.lr(i, num_nodes):
                 nodes.append(self.left[i][j])
-            self.add_clause(self.v[i], *nodes)
+            self.formula.append([self.v[i], *nodes])
             # Next, not more than one
-            for j1 in TreeEncoding.lr(i, num_nodes):
-                for j2 in TreeEncoding.lr(i, num_nodes):
+            for j1 in SizeNarodytska.lr(i, num_nodes):
+                for j2 in SizeNarodytska.lr(i, num_nodes):
                     if j2 > j1:
-                        self.add_clause(self.v[i], -self.left[i][j1], -self.left[i][j2])
+                        self.formula.append([self.v[i], -self.left[i][j1], -self.left[i][j2]])
 
         # Each non-root must have exactly one parent
         for j in range(2, num_nodes + 1, 2):
@@ -128,18 +131,18 @@ class TreeEncoding(base_encoding.BaseEncoding):
             for i in range(j//2, j):
                 clause1.append(self.p[j][i])
                 clause2.append(self.p[j+1][i])
-            self.add_clause(*clause1)
-            self.add_clause(*clause2)
+            self.formula.append([*clause1])
+            self.formula.append([*clause2])
 
             for i1 in range(j//2, j):
                 for i2 in range(i1 + 1, j):
-                    self.add_clause(-self.p[j][i1], -self.p[j][i2])
-                    self.add_clause(-self.p[j+1][i1], -self.p[j+1][i2])
+                    self.formula.append([-self.p[j][i1], -self.p[j][i2]])
+                    self.formula.append([-self.p[j+1][i1], -self.p[j+1][i2]])
 
     def encode_discriminating(self, instance, num_nodes):
         for r in range(1, instance.num_features + 1):
-            self.add_clause(-self.d0[r][1])
-            self.add_clause(-self.d1[r][1])
+            self.formula.append([-self.d0[r][1]])
+            self.formula.append([-self.d1[r][1]])
 
         # Discriminating features
         for j in range(2, num_nodes + 1, 2):
@@ -147,24 +150,24 @@ class TreeEncoding(base_encoding.BaseEncoding):
                 for direction in [False, True]:
                     jpathl = self.d1[r][j] if direction else self.d0[r][j]
                     jpathr = self.d1[r][j+1] if direction else self.d0[r][j+1]
-                    for i in TreeEncoding.pr(j):
+                    for i in SizeNarodytska.pr(j):
                         ipath = self.d1[r][i] if direction else self.d0[r][i]
 
                         # Children inherit from the parent
-                        self.add_clause(-self.left[i][j], -ipath, jpathl)
-                        self.add_clause(-self.right[i][j+1], -ipath, jpathr)
+                        self.formula.append([-self.left[i][j], -ipath, jpathl])
+                        self.formula.append([-self.right[i][j+1], -ipath, jpathr])
 
                         if direction:
                             # The current node discriminates
-                            self.add_clause(-self.left[i][j], -self.a[r][i], jpathl)
+                            self.formula.append([-self.left[i][j], -self.a[r][i], jpathl])
                             # Other side of the implication
-                            self.add_clause(-jpathl, -self.left[i][j], ipath, self.a[r][i])
-                            self.add_clause(-jpathr, -self.right[i][j+1], ipath)
+                            self.formula.append([-jpathl, -self.left[i][j], ipath, self.a[r][i]])
+                            self.formula.append([-jpathr, -self.right[i][j+1], ipath])
                         else:
-                            self.add_clause(-self.right[i][j+1], -self.a[r][i], jpathr)
+                            self.formula.append([-self.right[i][j+1], -self.a[r][i], jpathr])
                             # Other side of the implication
-                            self.add_clause(-jpathl, -self.left[i][j], ipath)
-                            self.add_clause(-jpathr, -self.right[i][j + 1], ipath, self.a[r][i])
+                            self.formula.append([-jpathl, -self.left[i][j], ipath])
+                            self.formula.append([-jpathr, -self.right[i][j + 1], ipath, self.a[r][i]])
 
     def encode_feature(self, instance, num_nodes):
         # Feature assignment
@@ -172,22 +175,22 @@ class TreeEncoding(base_encoding.BaseEncoding):
         for r in range(1, instance.num_features + 1):
             for j in range(1, num_nodes + 1):
                 # Using the feature sets u in rest of sub-tree
-                self.add_clause(-self.a[r][j], self.u[r][j])
+                self.formula.append([-self.a[r][j], self.u[r][j]])
 
-                for i in TreeEncoding.pr(j):
+                for i in SizeNarodytska.pr(j):
                     # If u is true for the parent, the feature must not be used by any child
-                    self.add_clause(-self.u[r][i], -self.p[j][i], -self.a[r][j])
+                    self.formula.append([-self.u[r][i], -self.p[j][i], -self.a[r][j]])
 
                     # Inheritance of u from parent to child
-                    self.add_clause(-self.u[r][i], -self.p[j][i], self.u[r][j])
+                    self.formula.append([-self.u[r][i], -self.p[j][i], self.u[r][j]])
                     # Other side of the equivalence, if urj is true, than one of the conditions must hold
-                    self.add_clause(-self.u[r][j], -self.p[j][i], self.a[r][j], self.u[r][i])
+                    self.formula.append([-self.u[r][j], -self.p[j][i], self.a[r][j], self.u[r][i]])
 
 
         # Leafs have no feature
         for r in range(1, instance.num_features + 1):
             for j in range(1, num_nodes + 1):
-                self.add_clause(-self.v[j], -self.a[r][j])
+                self.formula.append([-self.v[j], -self.a[r][j]])
 
         # Non-Leafs have exactly one feature
         for j in range(1, num_nodes + 1):
@@ -195,8 +198,8 @@ class TreeEncoding(base_encoding.BaseEncoding):
             for r in range(1, instance.num_features + 1):
                 clause.append(self.a[r][j])
                 for r2 in range(r + 1, instance.num_features + 1):
-                    self.add_clause(-self.a[r][j], -self.a[r2][j])
-            self.add_clause(*clause)
+                    self.formula.append([-self.a[r][j], -self.a[r2][j]])
+            self.formula.append([*clause])
 
     def encode_examples(self, instance, num_nodes, class_map):
         for e in instance.examples:
@@ -211,69 +214,70 @@ class TreeEncoding(base_encoding.BaseEncoding):
 
                 ec = class_map[e.cls]
                 for c in range(0, len(ec)):
-                    self.add_clause(*clause, self.c[j][c] if ec[c] else -self.c[j][c])
+                    self.formula.append([*clause, self.c[j][c] if ec[c] else -self.c[j][c]])
 
     def improve(self, num_nodes):
         ld = [None]
         for i in range(1, num_nodes + 1):
             ld.append([])
             for t in range(0, i//2 + 1):
-                ld[i].append(self.add_var())
+                ld[i].append(self.pool.id(f"ld{i}_{t}"))
                 if t == 0:
-                    self.add_clause(ld[i][t])
+                    self.formula.append([ld[i][t]])
                 else:
                     if i > 1:
-                        self.add_clause(-ld[i - 1][t - 1], -self.v[i], ld[i][t])
+                        self.formula.append([-ld[i - 1][t - 1], -self.v[i], ld[i][t]])
                         if t < len(ld[i-1]):
                             # Carry over
-                            self.add_clause(-ld[i-1][t], ld[i][t])
+                            self.formula.append([-ld[i-1][t], ld[i][t]])
                             # Increment if leaf
                             # i == 1 cannot be a leaf, as it is the root
-                            self.add_clause(-ld[i][t], ld[i-1][t], ld[i-1][t-1])
-                            self.add_clause(-ld[i][t], ld[i-1][t], self.v[i])
+                            self.formula.append([-ld[i][t], ld[i-1][t], ld[i-1][t-1]])
+                            self.formula.append([-ld[i][t], ld[i-1][t], self.v[i]])
                         else:
-                            self.add_clause(-ld[i][t], ld[i - 1][t - 1])
-                            self.add_clause(-ld[i][t], self.v[i])
+                            self.formula.append([-ld[i][t], ld[i - 1][t - 1]])
+                            self.formula.append([-ld[i][t], self.v[i]])
                     # Use bound
                     if 2*(i-t+1) <= num_nodes:
-                        self.add_clause(-ld[i][t], -self.left[i][2*(i-t+1)])
+                        self.formula.append([-ld[i][t], -self.left[i][2*(i-t+1)]])
                     if 2*(i-t+1)+1 <= num_nodes:
-                        self.add_clause(-ld[i][t], -self.right[i][2*(i-t+1)+1])
+                        self.formula.append([-ld[i][t], -self.right[i][2*(i-t+1)+1]])
 
         tau = [None]
         for i in range(1, num_nodes+1):
             tau.append([])
             for t in range(0, i+1):
-                tau[i].append(self.add_var())
+                tau[i].append(self.pool.id(f"tau{i}_{t}"))
                 if t == 0:
-                    self.add_clause(tau[i][t])
+                    self.formula.append([tau[i][t]])
                 else:
                     if i > 1:
                         # Increment
-                        self.add_clause(-tau[i - 1][t - 1], self.v[i], -tau[i][t])
+                        self.formula.append([-tau[i - 1][t - 1], self.v[i], -tau[i][t]])
                         if t < len(tau[i-1]):
                             # Carry over
-                            self.add_clause(-tau[i-1][t], tau[i][t])
+                            self.formula.append([-tau[i-1][t], tau[i][t]])
 
                             # Reverse equivalence
-                            self.add_clause(-tau[i][t], tau[i-1][t], tau[i-1][t-1])
-                            self.add_clause(-tau[i][t], tau[i-1][t], -self.v[i])
+                            self.formula.append([-tau[i][t], tau[i-1][t], tau[i-1][t-1]])
+                            self.formula.append([-tau[i][t], tau[i-1][t], -self.v[i]])
                         else:
                             # Reverse equivalence
-                            self.add_clause(-tau[i][t], tau[i - 1][t - 1])
-                            self.add_clause(-tau[i][t], -self.v[i])
+                            self.formula.append([-tau[i][t], tau[i - 1][t - 1]])
+                            self.formula.append([-tau[i][t], -self.v[i]])
 
                 if t > (i//2) + (i % 2): # i/2 rounded up
                     # Use bound
                     if num_nodes >= 2*(t - 1) > i:
-                        self.add_clause(-tau[i][t], -self.left[i][2*(t-1)])
+                        self.formula.append([-tau[i][t], -self.left[i][2*(t-1)]])
                     if i < 2*t-1 <= num_nodes:
-                        self.add_clause(-tau[i][t], -self.right[i][2*t-1])
+                        self.formula.append([-tau[i][t], -self.right[i][2*t-1]])
 
         # root is the first non-leaf
-        #self.add_clause(tau[1][1])
+        #self.formula.append([tau[1][1]])
 
     def encode(self, instance, num_nodes, improve=True):
+        self.formula = CNF()
         classes = set()
         for e in instance.examples:
             classes.add(e.cls)
@@ -302,8 +306,8 @@ class TreeEncoding(base_encoding.BaseEncoding):
         self.encode_examples(instance, num_nodes, self.class_map)
         if improve:
             self.improve(num_nodes)
-        self.uniquify_classes(instance, num_nodes, self.class_map)
-        self.write_header(instance)
+        # TODO: Check why this causes UNSAT
+        #self.uniquify_classes(instance, num_nodes, self.class_map)
 
     def uniquify_classes(self, instance, num_nodes, class_map):
         # Disallow wrong labels
@@ -328,7 +332,7 @@ class TreeEncoding(base_encoding.BaseEncoding):
                     clause = [-self.v[i]]
                     for c in range(0, c_vars):
                         clause.append(-self.c[i][c] if c_c[c] else self.c[i][c])
-                    self.add_clause(*clause)
+                    self.formula.append([*clause])
 
         # Avoid for specific classes to be used only once
         for i in range(1, num_nodes + 1):
@@ -342,7 +346,38 @@ class TreeEncoding(base_encoding.BaseEncoding):
 
                         clause.append(modifier * self.c[i][c])
                         clause.append(modifier * self.c[j][c])
-                    self.add_clause(*clause)
+                    self.formula.append([*clause])
+
+    def run(self, instance, solver, start_bound=3, timeout=0, ub=maxsize):
+        c_bound = start_bound
+        best_model = None
+        lb = 0
+
+        while lb < ub:
+            print(f"Running {c_bound}")
+            with solver() as slv:
+                self.encode(instance, c_bound)
+                slv.append_formula(self.formula)
+                if timeout == 0:
+                    solved = slv.solve()
+                else:
+                    def interrupt(s):
+                        s.interrupt()
+
+                    timer = Timer(timeout, interrupt, [slv])
+                    timer.start()
+                    solved = slv.solve_limited(expect_interrupt=True)
+
+                if solved:
+                    model = {abs(x): x > 0 for x in slv.get_model()}
+                    best_model = self.decode(model, instance, c_bound)
+                    ub = c_bound
+                    c_bound -= 2
+                else:
+                    c_bound += 2
+                    lb = c_bound
+
+        return best_model
 
     def decode(self, model, instance, num_nodes):
         # TODO: This could be faster, but for debugging purposes, check for consistency
@@ -363,7 +398,7 @@ class TreeEncoding(base_encoding.BaseEncoding):
             is_leaf = model[self.v[j]]
 
             parent = None
-            for i in TreeEncoding.pr(j):
+            for i in SizeNarodytska.pr(j):
                 if model[self.p[j][i]]:
                     if parent is None:
                         parent = i
@@ -404,7 +439,7 @@ class TreeEncoding(base_encoding.BaseEncoding):
         # Check left, right vars
         for j in range(2, num_nodes + 1):
             cnt = 0
-            for i in TreeEncoding.pr(j):
+            for i in SizeNarodytska.pr(j):
                 if j % 2 == 0 and model[self.left[i][j]]:
                     cnt += 1
                 elif j % 2 == 1 and model[self.right[i][j]]:

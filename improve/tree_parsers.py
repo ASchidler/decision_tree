@@ -1,5 +1,6 @@
 import decision_tree
 
+
 def parse_weka_tree(tree_path, instance):
     with open(tree_path) as tf:
         lines = []
@@ -85,3 +86,4 @@ def parse_iti_tree(tree_path, instance):
                 stack.append(node)
                 break
     return itree
+

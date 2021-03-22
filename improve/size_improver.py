@@ -1,12 +1,12 @@
 import improve.improver as improver
-from bdd_instance import BddInstance
-import bdd_instance
+from class_instance import ClassificationInstance
+import class_instance
 import sat_tools
-import tree_node_encoding
+from sat import size_narodytska
 
 
 def build_runner(tmp_dir):
-    return sat_tools.SatRunner(tree_node_encoding.TreeEncoding, sat_tools.GlucoseSolver(), base_path=tmp_dir)
+    return sat_tools.SatRunner(size_narodytska.SizeNarodytska, sat_tools.GlucoseSolver(), base_path=tmp_dir)
 
 
 def find_tree(root):
@@ -52,7 +52,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, size_limit, sample_lim
     if last_idx <= path_idx:
         return False, path_idx
 
-    new_instance = BddInstance()
+    new_instance = ClassificationInstance()
     node = path[last_idx]
     for s in assigned[node.id]:
         new_instance.add_example(instance.examples[s].copy())
@@ -79,15 +79,15 @@ def leaf_reduce(tree, instance, path_idx, path, assigned, size_limit, sample_lim
         c_size = len(find_tree(path[last_idx + 1]))
 
         if c_size <= size_limit:
-            new_instance = BddInstance()
+            new_instance = ClassificationInstance()
             node = path[last_idx + 1]
             for s in assigned[node.id]:
                 new_instance.add_example(instance.examples[s].copy())
 
             if reduce:
-                bdd_instance.reduce(new_instance, randomized_runs=1)
+                instance.reduce(new_instance, randomized_runs=1)
             else:
-                bdd_instance.reduce(new_instance, min_key=set(find_features(path[last_idx + 1])))
+                instance.reduce(new_instance, min_key=set(find_features(path[last_idx + 1])))
 
             if len(new_instance.examples) <= sample_limit:
                 last_idx += 1
@@ -134,7 +134,7 @@ def mid_reduce(tree, instance, path_idx, path, assigned, size_limit, sample_limi
         if c_n.is_leaf:
             continue
 
-        c_instance = BddInstance()
+        c_instance = ClassificationInstance()
         class_mapper = {}
         tmp_features = []
 
@@ -156,12 +156,12 @@ def mid_reduce(tree, instance, path_idx, path, assigned, size_limit, sample_limi
                     class_mapper[e] = n_n.id
 
         for e in assigned[root.id]:
-            c_instance.add_example(bdd_instance.BddExamples(instance.examples[e].features, class_mapper[e], instance.examples[e].id))
+            c_instance.add_example(instance.ClassificationExample(instance.examples[e].features, class_mapper[e], instance.examples[e].id))
 
         if reduce:
-            bdd_instance.reduce(c_instance, randomized_runs=1)
+            instance.reduce(c_instance, randomized_runs=1)
         else:
-            bdd_instance.reduce(c_instance, min_key={*features, *tmp_features})
+            instance.reduce(c_instance, min_key={*features, *tmp_features})
 
         if len(c_instance.examples) <= sample_limit:
             new_instance = c_instance

@@ -1,6 +1,16 @@
-This is the source code used for the experiments in our submission.
-The code will be refactored, but for the submission we leave it as it was used in the experiments.
+The code in this repository applies SAT-based local improvement to heuristically computed decision trees, thereby reducing its depth.
+Our approach is discussed in our paper "SAT-based Decision Tree Learning for Large Data Sets" at AAAI'21, soon to be published.
+The exact code used for the experiments can be found at https://doi.org/10.5281/zenodo.4575724
 
+Instances can be found at the UCI Machine Learning repository, how to convert the instances is explained below.
+If you require the exact same instances, for reproducibility, comparability or comprehension, please contact us.
+
+Please note that the current state of the code is designed to support our experiments, we will refactor it into user-friendly code in the near future.
+
+For the decision trees, the output formats of ITI and Weka ar supported. The trees are expected to be in datasets/trees.
+The name of the tree file is expected to be <instance name>.[iti|tree] where .tree is used for weka trees and .iti for ITI trees.
+
+The instances themselves are expected in datasets/split. For each dataset a .data, .names and .test file are expected.
 
 DEPENDENCIES
 
@@ -10,6 +20,14 @@ For the experiments we used the glucose solver (https://www.labri.fr/perso/lsimo
 https://github.com/marekpiotrow/UWrMaxSat). The MaxSAT solver is only required for re-running the feature reduction experiment.
 The paths to the solvers must be adapted in the sat_tools.py file unless they are in the PATH.
 If the ITI scripts are used, iti_runner.py contains a path to ITI (https://www-lrn.cs.umass.edu/iti/index.html)
+
+RUNNING
+
+Given a classification instance in C4.5 format, with an optional test set named .test, a decision tree can be found by running:
+runner.py <path-to-instance>
+
+Local improvement can be performed by first preparing the data as described below and then running:
+improve/local_improvement.py <id>
 
 
 DATA

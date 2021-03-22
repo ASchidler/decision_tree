@@ -2,14 +2,14 @@ import random
 import maxsat.maxsat_feature as maxsat_feature
 
 
-class BddExamples:
+class ClassificationExample:
     def __init__(self, features, cls, id):
         self.features = list(features)
         self.cls = cls
         self.id = id
 
     def copy(self):
-        return BddExamples(self.features, self.cls, self.id)
+        return ClassificationExample(self.features, self.cls, self.id)
 
     def dist(self, other_instance, limit):
         cnt = 0
@@ -19,7 +19,7 @@ class BddExamples:
         return cnt
 
 
-class BddInstance:
+class ClassificationInstance:
     def __init__(self):
         self.num_features = None
         self.examples = []
@@ -279,6 +279,19 @@ class BddInstance:
 
         return True
 
+    def att_counts(self):
+        counts = [0 for _ in range(0, self.num_features + 1)]
+        counts.append(0) # class
+
+        for e in self.examples:
+            for i in range(0, self.num_features):
+                if e.features[i+1]:
+                    counts[i+1] += 1
+            if e.cls:
+                counts[-1] += 1
+
+        return counts
+
 
 def reduce(instance, randomized_runs=5, remove=False, optimal=False, min_key=None):
     # print(f"Before: {instance.num_features} Features, {len(instance.examples)} examples")
@@ -290,7 +303,7 @@ def reduce(instance, randomized_runs=5, remove=False, optimal=False, min_key=Non
             keys.extend([instance.min_key(randomize=True) for _ in range(0, randomized_runs-1)])
             keys.append(instance.min_key(randomize=False))
             keys.extend([instance.min_key3() for _ in range(0, randomized_runs)])
-            if len(instance.examples) < 5000:
+            if len(instance.examples) < 5000 and instance.is_binary():
                 keys.append(instance.min_key2())
 
             keys.sort(key=lambda x: len(x))
@@ -342,4 +355,3 @@ def reduce(instance, randomized_runs=5, remove=False, optimal=False, min_key=Non
             i += 1
 
     # print(f"After: {instance.num_features} Features, {len(instance.examples)} examples")
-

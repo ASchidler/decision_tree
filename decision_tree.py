@@ -1,3 +1,6 @@
+import os
+
+
 class DecisionTreeNode:
     def __init__(self, feature, id):
         self.is_leaf = False
@@ -159,6 +162,104 @@ class DecisionTree:
                 return dfs_find(node.left, cnt) + dfs_find(node.right, cnt) + 1
 
         return dfs_find(self.root, 0)
+
+    def clean(self, instance):
+        p = {}
+        p[self.root.id] = None
+        q = [self.root]
+
+        change = True
+
+        while change:
+            change = False
+
+            while q:
+                cn = q.pop()
+                if cn.left.is_leaf and cn.right.is_leaf:
+                    if cn.id not in p or p[cn.id] is None:
+                        continue
+
+                    if cn.left.cls == cn.right.cls:
+                        if p[cn.id].left == cn:
+                            p[cn.id].left = cn.left
+                            p[cn.left.id] = p[cn.id]
+                        else:
+                            p[cn.id].right = cn.left
+                            p[cn.left.id] = p[cn.id]
+                        self.nodes[cn.right.id] = None
+                        self.nodes[cn.id] = None
+                        # TODO: This unnecessarily causes a reexploration of the subtree rooted at the parent...
+                        # The algorithm can be way more efficient
+                        q.append(p[cn.id])
+                        p.pop(cn.id)
+                else:
+                    p[cn.left.id] = cn
+                    p[cn.right.id] = cn
+                    if not cn.left.is_leaf:
+                        q.append(cn.left)
+                    if not cn.right.is_leaf:
+                        q.append(cn.right)
+
+        leafs = {}
+        q = [self.root]
+        p = {self.root.id: None}
+        while q:
+            cn = q.pop()
+            if cn.is_leaf:
+                leafs[cn.id] = []
+            else:
+                p[cn.left.id] = cn
+                p[cn.right.id] = cn
+                q.extend([cn.right, cn.left])
+
+        for e in instance.examples:
+            cn = self.root
+            while not cn.is_leaf:
+                if e.features[cn.feature]:
+                    cn = cn.left
+                else:
+                    cn = cn.right
+            leafs[cn.id].append(e)
+
+        for k, v in leafs.items():
+            if len(v) == 0:
+                cp = p[k]
+
+                if p[cp.id] is None:
+                    continue
+
+                cpp = p[cp.id]
+
+                if cp.left.id == k:
+                    p[cp.right.id] = cpp
+                    if cpp.left.id == cp.id:
+                        cpp.left = cp.right
+                    else:
+                        cpp.right = cp.right
+                else:
+                    p[cp.left.id] = cpp
+                    if cpp.left.id == cp.id:
+                        cpp.left = cp.left
+                    else:
+                        cpp.right = cp.left
+                change = True
+                p.pop(k)
+                p.pop(cp.id)
+                self.nodes[k] = None
+                self.nodes[cp.id] = None
+
+        # Special case root
+        while not (self.root.left.is_leaf and self.root.right.is_leaf):
+            if self.root.left.is_leaf and len(leafs[self.root.left.id]) == 0:
+                self.nodes[self.root.left.id] = None
+                self.nodes[self.root.id] = None
+                self.root = self.root.right
+            elif self.root.right.is_leaf and len(leafs[self.root.right.id]) == 0:
+                self.nodes[self.root.right.id] = None
+                self.nodes[self.root.id] = None
+                self.root = self.root.left
+            else:
+                break
 
 
 class NonBinaryNode:
@@ -407,3 +508,25 @@ class DecisionDiagram:
                 self.root.left = self.nodes[2] if self.root.right.id == 3 else self.nodes[3]
             elif self.root.right.cls is None:
                 self.root.right = self.nodes[2] if self.root.left.id == 3 else self.nodes[3]
+
+
+def dot_export(tree):
+    output1 = "strict digraph dt {" + os.linesep
+    output2 = ""
+
+    q = [tree.root]
+    while q:
+        cn = q.pop()
+        if cn.is_leaf:
+            cl = 'red' if cn.cls else 'blue'
+            output1 += f"n{cn.id} [label={'1' if cn.cls else '0'}, " \
+                       f"shape=box, fontsize=11,width=0.3,height=0.2,fixedsize=true,style=filled,fontcolor=white," \
+                       f"color={cl}, fillcolor={cl}];{os.linesep}"
+        else:
+            output1 += f"n{cn.id} [label={cn.feature},fontsize=11,width=0.4,height=0.25,fixedsize=true];{os.linesep}"
+            output2 += f"n{cn.id} -> n{cn.left.id} [color=red, arrowhead=none, len=0.5];{os.linesep}"
+            output2 += f"n{cn.id} -> n{cn.right.id} [color=blue, arrowhead=none, len=0.5];{os.linesep}"
+            q.append(cn.left)
+            q.append(cn.right)
+
+    return output1 + output2 + "}"

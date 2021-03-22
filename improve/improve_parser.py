@@ -32,11 +32,9 @@ for fl in fls:
             if end is not None:
                 results.append((c_target, start[0], start[1], start[2], end[0], end[1], end[2]))
             else:
-                no_result.append((c_target, start[0], start[1], start[2]))
+                results.append((c_target, start[0], start[1], start[2], start[0], start[1], start[2]))
 
 results.sort()
-for n in no_result:
-    print(n)
 
 c_file = None
 c_results = None

@@ -4,7 +4,7 @@ import os
 import parser
 import improve.improver as imp
 import time
-import bdd_instance
+import class_instance
 import re
 
 instance = tree_path = "datasets/trees"
@@ -98,7 +98,7 @@ for dl in range(10, 70):
                 c_d = imp.depth_from(c_rt)
 
                 if c_d == dl and sl >= len(assigned[c_rt.id]) > psl:
-                    new_instance = bdd_instance.BddInstance()
+                    new_instance = instance.ClassificationInstance()
                     for s in assigned[c_rt.id]:
                         new_instance.add_example(training_instance.examples[s].copy())
 
