@@ -453,7 +453,7 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
         if len(new_instance.examples) == 0:
             break
 
-        instance.reduce(new_instance, randomized_runs=1)
+        class_instance.reduce(new_instance, randomized_runs=1)
 
         if len(new_instance.examples) > sample_limit[c_d]:
             break

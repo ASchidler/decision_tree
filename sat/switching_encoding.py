@@ -80,3 +80,4 @@ class SwitchingEncoding:
                     lb = c_bound + 1
 
         return best_model
+
