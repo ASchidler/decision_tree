@@ -3,10 +3,12 @@ import itertools
 from pysat.formula import IDPool, CNF
 from sys import maxsize
 from threading import Timer
+import sat.base_encoding
 
 
-class SizeNarodytska:
+class SizeNarodytska(sat.base_encoding.BaseEncoding):
     def __init__(self):
+        sat.base_encoding.BaseEncoding.__init__(self)
         self.v = None
         self.left = None
         self.right = None
@@ -18,8 +20,6 @@ class SizeNarodytska:
         self.c = None
         self.increment = 2
         self.class_map = None
-        self.pool = IDPool()
-        self.formula = None
 
     def init_vars(self, instance, num_nodes, c_var):
         # First the tree structure
@@ -356,6 +356,7 @@ class SizeNarodytska:
         while lb < ub:
             print(f"Running {c_bound}")
             with solver() as slv:
+                self.reset_formula()
                 self.encode(instance, c_bound)
                 slv.append_formula(self.formula)
                 if timeout == 0:

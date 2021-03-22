@@ -1,5 +1,4 @@
 import random
-import maxsat.maxsat_feature as maxsat_feature
 
 
 class ClassificationExample:

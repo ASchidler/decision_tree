@@ -302,9 +302,9 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
 
 
 def build_runner():
-    #enc = switching_encoding.SwitchingEncoding()
+    enc = switching_encoding.SwitchingEncoding()
     #enc = depth_avellaneda.DepthAvellaneda()
-    enc = depth_partition.DepthPartition()
+    #enc = depth_partition.DepthPartition()
     return lambda i, b, t, ub: enc.run(i, Glucose3, start_bound=b, timeout=t, ub=ub)
 
 
