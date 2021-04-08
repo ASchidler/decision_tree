@@ -288,5 +288,9 @@ class DepthAvellaneda(BaseEncoding):
         c = len(instance.classes)
         lc = len(bin(c-1)) - 2  #ln(c)
         s = len(instance.examples)
+        f = instance.num_features
 
-        alg1_lits = sum()
+        forbidden_c = (2**lc - c) * d2 * lc
+        alg1_lits = s * sum(2**i * f * (i+2) for i in range(0, depth))
+
+        return d2 * f * (f-1) // 2 + d2 * f + forbidden_c + alg1_lits + s * d2 * (depth+1) * lc

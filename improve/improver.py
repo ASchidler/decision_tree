@@ -6,6 +6,8 @@ from pysat.solvers import Glucose3
 from decision_tree import DecisionTreeNode, DecisionTreeLeaf
 from sat import switching_encoding, depth_avellaneda, depth_partition
 
+literal_limit = 500 * 1000 * 1000
+
 
 def assign_samples(tree, instance):
     assigned_samples = [[] for _ in tree.nodes]
@@ -227,7 +229,7 @@ def build_unique_set(root, samples, examples, limit=sys.maxsize):
     return new_instance, feature_map, c_leafs, depth
 
 
-def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit, reduce):
+def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit, reduce, encoding):
     max_dist = depth_from(root)
     q = [[] for _ in range(0, max_dist+1)]
     q[max_dist].append((0, root))
@@ -296,7 +298,7 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
                 # TODO: This leads to adding as many nodes as possible. To emphasize the remaining depth more,
                 #  one should stop when the node with the highest remaining depth fails due to too high depth
                 #  or too many samples
-                if len(new_instance.examples) <= sample_limit[c_max_depth]:
+                if len(new_instance.examples) <= sample_limit[c_max_depth] and encoding.estimate_size(new_instance, c_max_depth) <= literal_limit:
                     last_instance = new_instance
                     max_depth = c_max_depth
                 else:
@@ -323,7 +325,7 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
         if c_d > depth_limit:
             break
         new_instance = build_unique_set(path[path_idx], assigned[path[path_idx].id], instance.examples)
-        if len(new_instance[0].examples) > sample_limit[c_d]:
+        if len(new_instance[0].examples) > sample_limit[c_d] or runner.estimate_size(new_instance[0], c_d) > literal_limit:
             break
 
         prev_instance = new_instance
@@ -401,7 +403,7 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_
     for r in range(1, depth_limit+1):
         c_instance = build_unique_set(c_parent, assigned[c_parent.id], instance.examples, r)
 
-        if len(c_instance[0].examples) > sample_limit[c_instance[3]]:
+        if len(c_instance[0].examples) > sample_limit[c_instance[3]] or runner.estimate_size(c_instance[0], r) > literal_limit:
             break
 
         last_instance = c_instance
@@ -489,7 +491,7 @@ def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit, 
         return False, path_idx
 
     c_parent = path[path_idx]
-    instance, i_depth = build_reduced_set(c_parent, tree, instance.examples, assigned, depth_limit, sample_limit, reduce)
+    instance, i_depth = build_reduced_set(c_parent, tree, instance.examples, assigned, depth_limit, sample_limit, reduce, runner)
 
     if instance is None or len(instance.examples) == 0:
         return False, path_idx

@@ -508,3 +508,6 @@ class SizeNarodytska(sat.base_encoding.BaseEncoding):
         if num_features < 100:
             return 70
         return 50
+
+    def estimate_size(self, instance, depth):
+        """Estimates the required size in the number of literals"""

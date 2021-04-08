@@ -78,6 +78,13 @@ class SwitchingEncoding:
                 else:
                     c_bound += 1
                     lb = c_bound + 1
+                    # Clear memory
+                enc.reset_formula()
 
         return best_model
 
+    def estimate_size(self, instance, depth):
+        """Estimates the required size in the number of literals"""
+
+        return self.enc2.estimate_size(instance, depth) if depth >= self.switch_threshold \
+            else self.enc1.estimate_size(instance, depth)

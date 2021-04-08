@@ -270,7 +270,7 @@ class DepthPartition(BaseEncoding):
     def estimate_size(self, instance, depth):
         """Estimates the size in the number of literals the encoding will require."""
         f = instance.num_features
-        s = instance.num_samples
+        s = len(instance.examples)
         s2 = s * (s-1)//2
 
         return s2 + s2 + s2*depth*f*3 + s2*depth*2 + s2 * depth * f * 3 + s*depth*f + s * depth * f * (f-1) // 2
