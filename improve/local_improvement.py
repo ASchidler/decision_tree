@@ -22,10 +22,6 @@ ap = argp.ArgumentParser(description="Python implementation for computing and im
 ap.add_argument("instance", type=str)
 ap.add_argument("-a", dest="alg", action="store", default=0, choices=[0, 1, 2, 3], type=int,
                 help="Which decision tree algorithm to use (0=C4.5, 1=ITI, 2=CART, 3=SAT).")
-ap.add_argument("-s", dest="improve_size", action="store_true", default=False,
-                help="Improve size instead of depth.")
-ap.add_argument("-t", dest="tmp_dir", action="store", default=".",
-                help="Use this directory for temporary files.")
 ap.add_argument("-l", dest="limit_idx", action="store", default=1, type=int,
                 help="The index for the set of limits used for selecting sub-trees.")
 ap.add_argument("-e", dest="print_tree", action="store_true", default=False,
@@ -36,6 +32,9 @@ ap.add_argument("-m", dest="method_prune", action="store", default=0, choices=[0
                 help="Pruning method to use (0=None, 1=C4.5, 2=Cost Complexity, 3=Reduced Error).")
 ap.add_argument("-i", dest="immediate_prune", action="store_true", default=False,
                 help="Prune each sub-tree after computation.")
+ap.add_argument("-t", dest="time_limit", action="store", default=0, type=int,
+                help="The timelimit in seconds. Note that an elapsed timelimit will not cancel the current SAT call."
+                     "Depending on the used limits there is an imprecision of several minutes.")
 
 args = ap.parse_args()
 
@@ -75,7 +74,7 @@ if args.print_tree:
         f.write(decision_tree.dot_export(tree))
 
 print(f"{target_instance}: Features {training_instance.num_features}\tExamples {len(training_instance.examples)}\t"
-      f"Optimize {'Depth' if not args.improve_size else 'Size'}\tHeuristic {'Weka' if args.alg == 0 else ('ITI' if args.alg == 1 else 'CART')}")
+      f"Optimize 'Depth'\tHeuristic {'Weka' if args.alg == 0 else ('ITI' if args.alg == 1 else 'CART')}")
 
 print(f"Time: Start\t\t"
       f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"
@@ -84,10 +83,7 @@ print(f"Time: Start\t\t"
       f"Avg {tree.get_avg_depth():03.4f}\t"
       f"Nodes {tree.get_nodes()}")
 
-if args.improve_size:
-    sf.run(tree, training_instance, test_instance, tmp_dir=args.tmp_dir)
-else:
-    df.run(tree, training_instance, test_instance, tmp_dir=args.tmp_dir, limit_idx=args.limit_idx, pt=args.print_tree)
+df.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree, timelimit=args.time_limit)
 
 print(f"Time: End\t\t"
       f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"
