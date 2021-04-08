@@ -125,6 +125,8 @@ def run(tree, instance, test, tmp_dir=".", limit_idx=1, pt=False):
         if result:
             process_change(c_ignore, new_max_p, "ls", pt)
             continue
+        else:
+            print("None")
 
         max_leaf_idx = 0
         result, idx = improver.leaf_rearrange(tree, instance, select_idx, new_max_p, assigned, depth_limit, sample_limit, time_limit,tmp_dir=tmp_dir)
@@ -132,6 +134,8 @@ def run(tree, instance, test, tmp_dir=".", limit_idx=1, pt=False):
         if result:
             process_change(c_ignore, new_max_p, "la", pt)
             continue
+        else:
+            print("None")
 
         for _ in range(0, reduce_runs):
             result, idx = improver.reduced_leaf(tree, instance, select_idx, new_max_p, assigned, depth_limit, sample_limit, time_limit,tmp_dir=tmp_dir)
@@ -140,6 +144,8 @@ def run(tree, instance, test, tmp_dir=".", limit_idx=1, pt=False):
                 process_change(c_ignore, new_max_p, "lr", pt)
                 done = True
                 break
+            else:
+                print("None")
         if done:
             continue
 
@@ -153,6 +159,8 @@ def run(tree, instance, test, tmp_dir=".", limit_idx=1, pt=False):
                 process_change(c_ignore, new_max_p, "ma", pt)
                 done = True
                 break
+            else:
+                print("None")
             # result, idx = improver.mid_reduced(tree, instance, i, new_max_p, assigned, False, sample_limit, depth_limit, tmp_dir=tmp_dir)
             # if result:
             #     process_change(c_ignore, new_max_p, "ma")

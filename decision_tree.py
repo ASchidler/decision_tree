@@ -163,7 +163,7 @@ class DecisionTree:
 
         return dfs_find(self.root, 0)
 
-    def clean(self, instance):
+    def clean(self, instance, min_samples=1):
         p = {}
         p[self.root.id] = None
         q = [self.root]
@@ -222,7 +222,7 @@ class DecisionTree:
             leafs[cn.id].append(e)
 
         for k, v in leafs.items():
-            if len(v) == 0:
+            if len(v) < min_samples:
                 cp = p[k]
 
                 if p[cp.id] is None:
@@ -383,131 +383,6 @@ class NonBinaryTree:
 
     def check_consistency(self):
         pass
-
-
-class DecisionDiagram:
-    def __init__(self, num_features, num_nodes):
-        self.num_features = num_features
-        self.root = None
-        self.nodes = [None for _ in range(0, num_nodes + 2)] # Indexing starts at 1
-        self.nodes[num_nodes] = DecisionTreeLeaf(False, num_nodes)
-        self.nodes[num_nodes-1] = DecisionTreeLeaf(True, num_nodes-1)
-        self.nodes[num_nodes + 1] = DecisionTreeLeaf(None, num_nodes + 1)
-
-    def add_node(self, id, feature, left, right):
-        if self.nodes[id] is not None:
-            print(f"ERROR: Node {id} already set")
-
-        self.nodes[id] = DecisionTreeNode(feature, id)
-
-        if self.nodes[left] is None:
-            print(f"ERROR: For node {id} the left node {left} has not been added")
-        else:
-            self.nodes[id].left = self.nodes[left]
-
-        if self.nodes[right] is None:
-            print(f"ERROR: For node {id} the left node {right} has not been added")
-        else:
-            self.nodes[id].right = self.nodes[right]
-
-    def decide(self, features):
-        cnode = self.root
-
-        while not cnode.is_leaf:
-            if features[cnode.feature]:
-                cnode = cnode.left
-            else:
-                cnode = cnode.right
-
-        return cnode.cls
-
-    def get_path(self, features):
-        cnode = self.root
-        pth = []
-
-        while not cnode.is_leaf:
-            pth.append(cnode)
-            if features[cnode.feature]:
-                cnode = cnode.left
-            else:
-                cnode = cnode.right
-
-        # TODO: Since the leaf is a conclusion of the preceding path, this can theoretically be skipped...
-        pth.append(cnode)
-        return pth
-
-    def get_accuracy(self, examples):
-        total = 0
-        correct = 0
-        for e in examples:
-            decision = self.decide(e.features)
-            if decision is None:
-                print("ERROR: Hit default decision")
-            total += 1
-            if decision == e.cls:
-                correct += 1
-
-        return correct / total
-
-    def check_consistency(self):
-        pass
-
-    def get_depth(self):
-        def dfs_find(node, level):
-            if node.is_leaf:
-                return level
-            else:
-                return max(dfs_find(node.left, level + 1), dfs_find(node.right, level + 1))
-
-        return dfs_find(self.root, 0)
-
-    def get_nodes(self):
-        nodes = set()
-
-        def dfs_find(node):
-            nodes.add(node)
-            if node.is_leaf:
-                return 1
-            else:
-                dfs_find(node.left)
-                dfs_find(node.right)
-
-        dfs_find(self.root)
-        return len(nodes)
-
-    def simplify(self):
-        """Simplifies BDD by removing nodes that have only one branch"""
-
-        q = [self.root]
-
-        while q:
-            n = q.pop()
-            if n.is_leaf:
-                continue
-
-            # Check left node
-            if not n.left.is_leaf and n.left.left.is_leaf and n.left.left.cls is None:
-                n.left = n.left.right
-                q.append(n)
-            elif not n.left.is_leaf and n.left.right.is_leaf and n.left.right.cls is None:
-                n.left = n.left.left
-                q.append(n)
-            elif not n.right.is_leaf and n.right.left.is_leaf and n.right.left.cls is None:
-                n.right = n.right.right
-                q.append(n)
-            elif not n.right.is_leaf and n.right.right.is_leaf and n.right.right.cls is None:
-                n.right = n.right.left
-                q.append(n)
-            else:
-                q.append(n.left)
-                q.append(n.right)
-
-        # Handle edge case, where all samples have the same class
-        if self.root.left.is_leaf and self.root.right.is_leaf:
-            if self.root.left.cls is None:
-                self.root.left = self.nodes[2] if self.root.right.id == 3 else self.nodes[3]
-            elif self.root.right.cls is None:
-                self.root.right = self.nodes[2] if self.root.left.id == 3 else self.nodes[3]
 
 
 def dot_export(tree):

@@ -50,6 +50,8 @@ def parse_weka_tree(tree_path, instance):
 
 
 def parse_iti_tree(tree_path, instance):
+    is_binary = instance.is_binary()
+
     with open(tree_path) as tf:
         lines = []
         for _, l in enumerate(tf):
@@ -60,6 +62,9 @@ def parse_iti_tree(tree_path, instance):
     l_depth = -1
     stack = []
     for ll in lines:
+        if ll.startswith("Pruning tree"):
+            continue
+
         depth = 0
         for cc in ll:
             if cc == " " or cc == "|":
@@ -79,7 +84,18 @@ def parse_iti_tree(tree_path, instance):
                         node = itree.nodes[1]
 
                 else:
-                    node = itree.add_leaf(c_id, cp.id, cp.right is not None, c_line.startswith("True") or c_line.startswith("1"))
+                    # Add leaf
+                    classes = [x.strip().split(" ") for x in c_line.split(")") if len(x.strip()) > 0]
+                    # Distinguish between pruned (more than one class per leaf) or unpruned
+                    if len(classes) == 1:
+                        c_cls = classes[0][0]
+                    else:
+                        c_cls, _ = max(classes, key=lambda x: int(x[1][1:])) # 1: to skip leading (
+
+                    if is_binary:
+                        c_cls = (c_cls == "1" or c_cls == "True")
+
+                    node = itree.add_leaf(c_id, cp.id, cp.right is not None, c_cls)
 
                 c_id += 1
                 l_depth = depth

@@ -100,7 +100,7 @@ class DepthAvellaneda(BaseEncoding):
                 for c_n in range(0, 2**limit):
                     clause = []
                     for i in range(0, c_vars):
-                        self.add_clause([self.c[c_n][i] if c_c[i] else -self.c[c_n][i]])
+                        clause.append(self.c[c_n][i] if c_c[i] else -self.c[c_n][i])
                     self.add_clause(clause)
 
     def alg1(self, instance, e_idx, limit, lvl, q, clause):
@@ -147,10 +147,8 @@ class DepthAvellaneda(BaseEncoding):
             print(f"Running {c_bound}")
             with solver() as slv:
                 self.reset_formula()
-                try:
-                    self.encode(instance, c_bound)
-                except MemoryError:
-                    return None
+                self.encode(instance, c_bound)
+
                 slv.append_formula(self.formula)
                 if timeout == 0:
                     solved = slv.solve()
@@ -282,3 +280,13 @@ class DepthAvellaneda(BaseEncoding):
     @staticmethod
     def lb():
         return 1
+
+    def estimate_size(self, instance, depth):
+        """Estimates the required size in the number of literals"""
+
+        d2 = 2**depth
+        c = len(instance.classes)
+        lc = len(bin(c-1)) - 2  #ln(c)
+        s = len(instance.examples)
+
+        alg1_lits = sum()

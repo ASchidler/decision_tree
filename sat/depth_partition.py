@@ -82,10 +82,8 @@ class DepthPartition(BaseEncoding):
             print(f"Running {c_bound}")
             with solver() as slv:
                 self.reset_formula()
-                try:
-                    self.encode(instance, c_bound)
-                except MemoryError:
-                    return None
+
+                self.encode(instance, c_bound)
 
                 slv.append_formula(self.formula)
                 if timeout == 0:
@@ -268,6 +266,14 @@ class DepthPartition(BaseEncoding):
 
     def check_consistency(self, model, instance, num_nodes, tree):
         pass
+
+    def estimate_size(self, instance, depth):
+        """Estimates the size in the number of literals the encoding will require."""
+        f = instance.num_features
+        s = instance.num_samples
+        s2 = s * (s-1)//2
+
+        return s2 + s2 + s2*depth*f*3 + s2*depth*2 + s2 * depth * f * 3 + s*depth*f + s * depth * f * (f-1) // 2
 
     @staticmethod
     def new_bound(tree, instance):

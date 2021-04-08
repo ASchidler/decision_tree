@@ -24,6 +24,7 @@ class ClassificationInstance:
         self.examples = []
         self.reduce_map = []
         self.reduce_features = None
+        self.classes = set()
 
     def add_example(self, example):
         if example.features[0] is not None:
@@ -35,6 +36,7 @@ class ClassificationInstance:
             # Make 1 based instead of 0 based
             example.features.insert(0, None)
             self.examples.append(example)
+            self.classes.add(example.cls)
         else:
             if self.num_features is None:
                 self.num_features = len(example.features) - 1
@@ -42,6 +44,7 @@ class ClassificationInstance:
             #     print(f"Example should have {self.num_features} features, but has {len(example.features) - 1}")
 
             self.examples.append(example)
+            self.classes.add(example.cls)
 
     def find_same_features(self):
         unnecessary = []

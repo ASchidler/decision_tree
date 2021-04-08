@@ -59,6 +59,7 @@ def replace(old_tree, new_tree, root):
     # Clean tree
     q = [root]
     ids = []
+
     while q:
         r_n = q.pop()
 
@@ -96,7 +97,7 @@ def replace(old_tree, new_tree, root):
     # Sub-tree is now been added in place of the old sub-tree
 
 
-def stitch(old_tree, new_tree, root):
+def stitch(old_tree, new_tree, root, instance):
     # Remove unnecessary
 
     # find leaves in new node
@@ -182,6 +183,9 @@ def stitch(old_tree, new_tree, root):
             else:
                 n_r = old_tree.add_node(ids.pop(), o_r.id, c_c.feature, c_p)
                 q.append((n_r, c_c))
+
+    # TODO: This is necessary if sub-trees are duplicated, but only has to be performed for the sub-tree
+    old_tree.clean(instance)
 
 
 def build_unique_set(root, samples, examples, limit=sys.maxsize):
@@ -302,14 +306,14 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
 
 
 def build_runner():
-    enc = switching_encoding.SwitchingEncoding()
+    return switching_encoding.SwitchingEncoding(), Glucose3
+
     #enc = depth_avellaneda.DepthAvellaneda()
     #enc = depth_partition.DepthPartition()
-    return lambda i, b, t, ub: enc.run(i, Glucose3, start_bound=b, timeout=t, ub=ub)
 
 
 def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, tmp_dir="."):
-    runner = build_runner()
+    runner, slv = build_runner()
 
     prev_instance = None
     prev_idx = path_idx
@@ -332,7 +336,7 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
         cd = depth_from(node)
 
         # Solve instance
-        new_tree = runner(new_instance, cd - 1, time_limit, ub=cd-1)
+        new_tree = runner.run(new_instance, slv, start_bound=cd-1, timeout=time_limit, ub=cd-1)
 
         # Either the branch is done, or
         if new_tree is None:
@@ -368,7 +372,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
     if not (2 < c_d <= depth_limit) or len(assigned[node.id]) > sample_limit[c_d]:
         return False, last_idx
 
-    runner = build_runner()
+    runner, slv = build_runner()
 
     new_instance = class_instance.ClassificationInstance()
     for s in assigned[node.id]:
@@ -377,7 +381,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
     if len(new_instance.examples) == 0:
         return False, last_idx
 
-    new_tree = runner(new_instance, c_d-1, time_limit, ub=c_d-1)
+    new_tree = runner.run(new_instance, slv, start_bound=c_d - 1, timeout=time_limit, ub=c_d - 1)
     if new_tree is None:
         return False, last_idx
     else:
@@ -386,7 +390,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
 
 
 def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, tmp_dir="."):
-    runner = build_runner()
+    runner, slv = build_runner()
 
     if path[path_idx].is_leaf:
         return False, path_idx
@@ -416,7 +420,7 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_
     if len(last_instance[0].examples) == 0:
         return False, path_idx
 
-    new_tree = runner(last_instance[0], last_instance[3] - 1, time_limit, ub=last_instance[3]-1)
+    new_tree = runner.run(last_instance[0], slv, start_bound=last_instance[3] - 1, timeout=time_limit, ub=last_instance[3] - 1)
 
     if new_tree is not None:
         q = [new_tree.nodes[0]]
@@ -427,14 +431,14 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_
                 q.append(c_q.children[True])
                 q.append(c_q.children[False])
         # Stitch the new tree in the middle
-        stitch(tree, new_tree, c_parent)
+        stitch(tree, new_tree, c_parent, instance)
         return True, path_idx
 
     return False, path_idx
 
 
 def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, tmp_dir="."):
-    runner = build_runner()
+    runner, slv = build_runner()
 
     prev_instance = None
     prev_idx = path_idx
@@ -465,7 +469,8 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
     if prev_instance is not None:
         node = path[prev_idx]
         nd = depth_from(node)
-        new_tree = runner(prev_instance,  nd-1, time_limit, ub=nd-1)
+        new_tree = runner.run(prev_instance, slv, start_bound=nd - 1, timeout=time_limit,
+                              ub=nd - 1)
 
         if new_tree is not None:
             prev_instance.unreduce_instance(new_tree)
@@ -477,7 +482,7 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
 
 
 def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit, depth_limit, time_limit, tmp_dir="."):
-    runner = build_runner()
+    runner, slv = build_runner()
 
     # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
     if path[path_idx].is_leaf:
@@ -489,13 +494,13 @@ def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit, 
     if instance is None or len(instance.examples) == 0:
         return False, path_idx
 
-    new_tree = runner(instance, i_depth - 1, time_limit, ub=i_depth-1)
-
+    new_tree = runner.run(instance, slv, start_bound=i_depth - 1, timeout=time_limit,
+                          ub=i_depth - 1)
     if new_tree is not None:
         instance.unreduce_instance(new_tree)
 
         # Stitch the new tree in the middle
-        stitch(tree, new_tree, c_parent)
+        stitch(tree, new_tree, c_parent, instance)
         return True, path_idx
 
     return False, path_idx
