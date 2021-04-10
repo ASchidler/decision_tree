@@ -92,7 +92,7 @@ print(f"Time: Start\t\t"
 if args.method_prune != 3:
     #df.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree, timelimit=args.time_limit)
     if args.method_prune == 1:
-        pruning.prune_c45_raise(tree, training_instance, args.ratio, m=args.min_samples)
+        pruning.prune_c45(tree, training_instance, args.ratio, m=args.min_samples)
     else:
         tree.clean(training_instance, min_samples=args.min_samples)
 else:
