@@ -37,7 +37,7 @@ ap.add_argument("-i", dest="immediate_prune", action="store_true", default=False
 ap.add_argument("-t", dest="time_limit", action="store", default=0, type=int,
                 help="The timelimit in seconds. Note that an elapsed timelimit will not cancel the current SAT call."
                      "Depending on the used limits there is an imprecision of several minutes.")
-ap.add_argument("-r", dest="ratio", action="store", default=0.25, type=float,
+ap.add_argument("-r", dest="ratio", action="store", default=0.3, type=float,
                 help="Ratio used for pruning. The semantics depends on the pruning method.")
 ap.add_argument("-s", dest="min_samples", action="store", default=2, type=int,
                 help="The minimum number of samples per leaf.")
@@ -90,7 +90,7 @@ print(f"Time: Start\t\t"
       f"Nodes {tree.get_nodes()}")
 
 if args.method_prune != 3:
-    #df.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree, timelimit=args.time_limit)
+    df.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree, timelimit=args.time_limit)
     if args.method_prune == 1:
         pruning.prune_c45(tree, training_instance, args.ratio, m=args.min_samples)
     else:
@@ -108,3 +108,5 @@ print(f"Time: End\t\t"
       f"Depth {tree.get_depth():03}\t"
       f"Avg {tree.get_avg_depth():03.4f}\t"
       f"Nodes {tree.get_nodes()}")
+
+print(tree.as_string())

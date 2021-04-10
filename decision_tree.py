@@ -211,6 +211,21 @@ class DecisionTree:
 
         return assigned_samples
 
+    def as_string(self):
+        lines = []
+
+        def add_node(n, d):
+            indent = ''.join("-" for _ in range(0, d))
+            n_id = f"c({n.cls})" if n.is_leaf else f"a({n.feature})"
+            lines.append(indent + "" + n_id)
+            if not n.is_leaf:
+                add_node(n.left, d+1)
+                add_node(n.right, d+1)
+
+        add_node(self.root, 0)
+        return os.linesep.join(lines)
+
+
 class NonBinaryNode:
     def __init__(self, id):
         self.is_leaf = False
