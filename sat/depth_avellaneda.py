@@ -175,7 +175,6 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize):
                 c_bound += 1
                 c_lb = c_bound
 
-    best_model.clean(instance)
     return best_model
 
 

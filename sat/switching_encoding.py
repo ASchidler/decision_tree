@@ -61,8 +61,7 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize):
             else:
                 c_bound += 1
                 clb = c_bound + 1
-                # Clear memory
-    best_model.clean(instance)
+
     return best_model
 
 

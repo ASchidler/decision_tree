@@ -273,7 +273,7 @@ def _decode(model, instance, depth, vs):
             df_tree(new_grps[0], parent, d+1)
 
     df_tree(list(enumerate(instance.examples)), None, 0)
-    tree.clean(instance)
+
     return tree
 
 

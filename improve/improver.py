@@ -310,11 +310,9 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
 def build_runner():
     return switching_encoding, Glucose3
 
-    #enc = depth_avellaneda.DepthAvellaneda()
-    #enc = depth_partition.DepthPartition()
-
 
 def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit):
+    a1 = tree.get_accuracy(instance.examples)
     runner, slv = build_runner()
 
     prev_instance = None
@@ -355,6 +353,8 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
 
             # Clean tree
             replace(tree, new_tree, node)
+            a2 = tree.get_accuracy(instance.examples)
+
             return True, prev_idx
 
     return False, prev_idx
@@ -373,7 +373,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
     c_d = depth_from(node)
     if not (2 < c_d <= depth_limit) or len(assigned[node.id]) > sample_limit[c_d]:
         return False, last_idx
-
+    return False, last_idx
     runner, slv = build_runner()
 
     new_instance = class_instance.ClassificationInstance()

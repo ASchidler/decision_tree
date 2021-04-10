@@ -164,103 +164,52 @@ class DecisionTree:
         return dfs_find(self.root, 0)
 
     def clean(self, instance, min_samples=1):
-        p = {}
-        p[self.root.id] = None
-        q = [self.root]
+        """Removes nodes that perform unnecessary splits, i.e. splits where one branch classifies fewer than a minimum number of samples"""
+        assigned = self.assign_samples(instance)
 
-        change = True
+        def remove_rec(node):
+            if node.is_leaf:
+                return None
 
-        while change:
-            change = False
-
-            while q:
-                cn = q.pop()
-                if cn.left.is_leaf and cn.right.is_leaf:
-                    if cn.id not in p or p[cn.id] is None:
-                        continue
-
-                    if cn.left.cls == cn.right.cls:
-                        if p[cn.id].left == cn:
-                            p[cn.id].left = cn.left
-                            p[cn.left.id] = p[cn.id]
-                        else:
-                            p[cn.id].right = cn.left
-                            p[cn.left.id] = p[cn.id]
-                        self.nodes[cn.right.id] = None
-                        self.nodes[cn.id] = None
-                        # TODO: This unnecessarily causes a reexploration of the subtree rooted at the parent...
-                        # The algorithm can be way more efficient
-                        q.append(p[cn.id])
-                        p.pop(cn.id)
-                else:
-                    p[cn.left.id] = cn
-                    p[cn.right.id] = cn
-                    if not cn.left.is_leaf:
-                        q.append(cn.left)
-                    if not cn.right.is_leaf:
-                        q.append(cn.right)
-
-        leafs = {}
-        q = [self.root]
-        p = {self.root.id: None}
-        while q:
-            cn = q.pop()
-            if cn.is_leaf:
-                leafs[cn.id] = []
+            if len(assigned[node.left.id]) < min_samples:
+                ret = remove_rec(node.right)
+                self.nodes[node.left.id] = None
+                return node.right if ret is None else ret
+            elif len(assigned[node.right.id]) < min_samples:
+                ret = remove_rec(node.left)
+                self.nodes[node.right.id] = None
+                return node.left if ret is None else ret
             else:
-                p[cn.left.id] = cn
-                p[cn.right.id] = cn
-                q.extend([cn.right, cn.left])
+                ret1 = remove_rec(node.right)
+                if ret1 is not None:
+                    self.nodes[node.right.id] = None
+                    node.right = ret1
+                ret2 = remove_rec(node.left)
+                if ret2 is not None:
+                    self.nodes[node.left.id] = None
+                    node.left = ret2
+                return None
 
-        for e in instance.examples:
-            cn = self.root
-            while not cn.is_leaf:
-                if e.features[cn.feature]:
-                    cn = cn.left
+        final_root = remove_rec(self.root)
+        if final_root is not None:
+            self.nodes[self.root.id] = None
+            self.root = final_root
+
+    def assign_samples(self, instance):
+        assigned_samples = [[] for _ in self.nodes]
+
+        for s in instance.examples:
+            cnode = self.root
+            assigned_samples[cnode.id].append(s.id - 1)
+
+            while not cnode.is_leaf:
+                if s.features[cnode.feature]:
+                    cnode = cnode.left
                 else:
-                    cn = cn.right
-            leafs[cn.id].append(e)
+                    cnode = cnode.right
+                assigned_samples[cnode.id].append(s.id - 1)
 
-        for k, v in leafs.items():
-            if len(v) < min_samples:
-                cp = p[k]
-
-                if p[cp.id] is None:
-                    continue
-
-                cpp = p[cp.id]
-
-                if cp.left.id == k:
-                    p[cp.right.id] = cpp
-                    if cpp.left.id == cp.id:
-                        cpp.left = cp.right
-                    else:
-                        cpp.right = cp.right
-                else:
-                    p[cp.left.id] = cpp
-                    if cpp.left.id == cp.id:
-                        cpp.left = cp.left
-                    else:
-                        cpp.right = cp.left
-                change = True
-                p.pop(k)
-                p.pop(cp.id)
-                self.nodes[k] = None
-                self.nodes[cp.id] = None
-
-        # Special case root
-        while not (self.root.left.is_leaf and self.root.right.is_leaf):
-            if self.root.left.is_leaf and len(leafs[self.root.left.id]) == 0:
-                self.nodes[self.root.left.id] = None
-                self.nodes[self.root.id] = None
-                self.root = self.root.right
-            elif self.root.right.is_leaf and len(leafs[self.root.right.id]) == 0:
-                self.nodes[self.root.right.id] = None
-                self.nodes[self.root.id] = None
-                self.root = self.root.left
-            else:
-                break
-
+        return assigned_samples
 
 class NonBinaryNode:
     def __init__(self, id):

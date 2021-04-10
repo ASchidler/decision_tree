@@ -10,6 +10,8 @@ import random
 from improve.tree_parsers import parse_weka_tree, parse_iti_tree
 import resource
 import argparse as argp
+from class_instance import split
+import pruning
 
 random.seed = 1
 # This is used for debugging, for experiments use proper memory limiting
@@ -35,6 +37,10 @@ ap.add_argument("-i", dest="immediate_prune", action="store_true", default=False
 ap.add_argument("-t", dest="time_limit", action="store", default=0, type=int,
                 help="The timelimit in seconds. Note that an elapsed timelimit will not cancel the current SAT call."
                      "Depending on the used limits there is an imprecision of several minutes.")
+ap.add_argument("-r", dest="ratio", action="store", default=0.25, type=float,
+                help="Ratio used for pruning. The semantics depends on the pruning method.")
+ap.add_argument("-s", dest="min_samples", action="store", default=2, type=int,
+                help="The minimum number of samples per leaf.")
 
 args = ap.parse_args()
 
@@ -83,7 +89,18 @@ print(f"Time: Start\t\t"
       f"Avg {tree.get_avg_depth():03.4f}\t"
       f"Nodes {tree.get_nodes()}")
 
-df.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree, timelimit=args.time_limit)
+if args.method_prune != 3:
+    #df.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree, timelimit=args.time_limit)
+    if args.method_prune == 1:
+        pruning.prune_c45_raise(tree, training_instance, args.ratio, m=args.min_samples)
+    else:
+        tree.clean(training_instance, min_samples=args.min_samples)
+else:
+    new_training, holdout = split(training_instance, ratio_splitoff=args.ratio)
+    df.run(tree, new_training, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,
+           timelimit=args.time_limit)
+    tree.clean(new_training, min_samples=args.min_samples)
+    pruning.prune_reduced_error(tree, holdout)
 
 print(f"Time: End\t\t"
       f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"

@@ -1,4 +1,5 @@
 import random
+from collections import defaultdict
 
 
 class ClassificationExample:
@@ -357,3 +358,52 @@ def reduce(instance, randomized_runs=5, remove=False, optimal=False, min_key=Non
             i += 1
 
     # print(f"After: {instance.num_features} Features, {len(instance.examples)} examples")
+
+
+def split(instance, ratio_splitoff=0.25):
+    cls_ex = defaultdict(list)
+
+    for c_ex in instance.examples:
+        cls_ex[c_ex.cls].append(c_ex)
+
+    # Shuffle
+    for v in cls_ex.values():
+        for idx in range(0, len(v)):
+            n_idx = random.randint(idx, len(v) - 1)
+            v[idx], v[n_idx] = v[n_idx], v[idx]
+
+    # Establish how many samples to take for each class, to retain the distribution
+    overall_target = int(len(instance.examples) * ratio_splitoff)
+    cls_target = {k: int(len(v) * ratio_splitoff) for k, v in cls_ex.items()}
+    cls_total = sum(v for v in cls_target.values())
+    ranking = [(len(v), k) for k, v in cls_ex.items()]
+    ranking.sort()
+
+    # Add extra samples to even out rounding errors:
+    while cls_total < overall_target:
+        for _, k in ranking:
+            if cls_total >= overall_target:
+                break
+            cls_target[k] += 1
+            cls_total += 1
+
+    # Create instances
+    instance1 = ClassificationInstance()
+    instance2 = ClassificationInstance()
+    i1_id = 1
+    i2_id = 1
+
+    for k, v in cls_target.items():
+        for ce in cls_ex[k]:
+            nce = ce.copy()
+            if v > 0:
+                nce.id = i1_id
+                instance2.add_example(nce)
+                v -= 1
+                i1_id += 1
+            else:
+                nce.id = i2_id
+                instance1.add_example(nce)
+                i2_id += 1
+
+    return instance1, instance2
