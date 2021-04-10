@@ -6,7 +6,7 @@ from pysat.solvers import Glucose3
 from decision_tree import DecisionTreeNode, DecisionTreeLeaf
 from sat import switching_encoding, depth_avellaneda, depth_partition
 
-literal_limit = 1 * 1000 * 1000 * 1000
+literal_limit = 500 * 1000 * 1000
 
 
 def assign_samples(tree, instance):
