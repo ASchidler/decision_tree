@@ -39,7 +39,7 @@ ap.add_argument("-t", dest="time_limit", action="store", default=0, type=int,
                      "Depending on the used limits there is an imprecision of several minutes.")
 ap.add_argument("-r", dest="ratio", action="store", default=0.3, type=float,
                 help="Ratio used for pruning. The semantics depends on the pruning method.")
-ap.add_argument("-s", dest="min_samples", action="store", default=2, type=int,
+ap.add_argument("-s", dest="min_samples", action="store", default=1, type=int,
                 help="The minimum number of samples per leaf.")
 
 args = ap.parse_args()
