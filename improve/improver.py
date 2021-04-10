@@ -214,7 +214,7 @@ def build_unique_set(root, samples, examples, limit=sys.maxsize):
         feature_map[i] = c_features[i - 1]
 
     new_instance = class_instance.ClassificationInstance()
-    added = set()
+    added = {}
     for s in samples:
         values = [None for _ in range(0, len(feature_map) + 1)]
         for k, v in feature_map.items():
@@ -222,9 +222,14 @@ def build_unique_set(root, samples, examples, limit=sys.maxsize):
 
         tp = tuple(values)
         if tp not in added:
-            added.add(tp)
+            added[tp] = examples[s].cls
             new_instance.add_example(
                 class_instance.ClassificationExample(values, examples[s].cls, examples[s].id))
+        else:
+            # This check is necessary: if the decision tree is pruned, some samples may be misclassified.
+            # In that case, the feature set of the sub-tree may not be a support set.
+            if added[tp] != examples[s].cls:
+                return None
 
     return new_instance, feature_map, c_leafs, depth
 
@@ -241,7 +246,7 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
     max_depth = 0
 
     while q:
-        while not q[-1]:
+        while not q[-1] and q:
             q.pop()
 
         if not q:
@@ -312,7 +317,6 @@ def build_runner():
 
 
 def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit):
-    a1 = tree.get_accuracy(instance.examples)
     runner, slv = build_runner()
 
     prev_instance = None
@@ -323,6 +327,8 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
         if c_d > depth_limit:
             break
         new_instance = build_unique_set(path[path_idx], assigned[path[path_idx].id], instance.examples)
+        if new_instance is None:
+            break
         if len(new_instance[0].examples) > sample_limit[c_d] or runner.estimate_size(new_instance[0], c_d) > literal_limit:
             break
 
@@ -353,7 +359,6 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
 
             # Clean tree
             replace(tree, new_tree, node)
-            a2 = tree.get_accuracy(instance.examples)
 
             return True, prev_idx
 
@@ -373,7 +378,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
     c_d = depth_from(node)
     if not (2 < c_d <= depth_limit) or len(assigned[node.id]) > sample_limit[c_d]:
         return False, last_idx
-    return False, last_idx
+
     runner, slv = build_runner()
 
     new_instance = class_instance.ClassificationInstance()
@@ -402,13 +407,14 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_
 
     for r in range(1, depth_limit+1):
         c_instance = build_unique_set(c_parent, assigned[c_parent.id], instance.examples, r)
-
+        if c_instance is None:
+            break
         if len(c_instance[0].examples) > sample_limit[c_instance[3]] or runner.estimate_size(c_instance[0], r-1) > literal_limit:
             break
 
         last_instance = c_instance
 
-    if last_instance[3] <= 1:
+    if last_instance is None or last_instance[3] <= 1:
         return False, path_idx
 
     class_mapping = {}
