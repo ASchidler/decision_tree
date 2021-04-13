@@ -2,11 +2,12 @@ import sys
 from collections import defaultdict
 
 import class_instance
-from pysat.solvers import Glucose3
+from pysat.solvers import Glucose3, Glucose4
 from decision_tree import DecisionTreeNode, DecisionTreeLeaf
 from sat import switching_encoding, depth_avellaneda, depth_partition
 
-literal_limit = 500 * 1000 * 1000
+# 500 Mio. takes ~ < 16 GB, 250 Mio. ~ < 12 GB, 200 Mio. sometimes goes over 8 GB
+literal_limit = 200 * 1000 * 1000
 
 
 def assign_samples(tree, instance):
@@ -246,7 +247,7 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
     max_depth = 0
 
     while q:
-        while not q[-1] and q:
+        while q and not q[-1]:
             q.pop()
 
         if not q:

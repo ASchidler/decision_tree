@@ -38,6 +38,8 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize):
 
     while clb < ub:
         print(f"Running {c_bound}")
+        print('{:,}'.format(estimate_size(instance, c_bound)))
+
         with solver() as slv:
             enc = enc2 if c_bound >= _switch_threshold else enc1
 

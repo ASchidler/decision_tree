@@ -15,7 +15,7 @@ import pruning
 
 random.seed = 1
 # This is used for debugging, for experiments use proper memory limiting
-resource.setrlimit(resource.RLIMIT_AS, (16 * 1024 * 1024 * 1024, 17 * 1024 * 1024 * 1024))
+resource.setrlimit(resource.RLIMIT_AS, (8 * 1024 * 1024 * 1024, 8 * 1024 * 1024 * 1024))
 
 tree_path = "datasets/trees"
 instance_path = "datasets/split"
