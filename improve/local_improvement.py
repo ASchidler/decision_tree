@@ -7,7 +7,7 @@ import improve.improve_leaf_first as lf
 import improve.improve_random as rf
 import improve.improve_size as sf
 import random
-from improve.tree_parsers import parse_weka_tree, parse_iti_tree
+from improve.tree_parsers import parse_weka_tree, parse_iti_tree, parse_internal_tree
 import resource
 import argparse as argp
 from class_instance import split
@@ -69,7 +69,7 @@ if args.alg == 0:
 elif args.alg == 1:
     tree = parse_iti_tree(os.path.join(tree_path, target_instance + tree_infix + ".iti"), training_instance)
 elif args.alg == 2:
-    tree = parse_iti_tree(os.path.join(tree_path, target_instance + tree_infix + ".cart"), training_instance)
+    tree = parse_internal_tree(os.path.join(tree_path, target_instance + tree_infix + ".cart"), training_instance)
 else:
     raise RuntimeError(f"Unknown DT algorithm {args.alg}")
 
@@ -81,6 +81,15 @@ if args.print_tree:
 
 print(f"{target_instance}: Features {training_instance.num_features}\tExamples {len(training_instance.examples)}\t"
       f"Optimize 'Depth'\tHeuristic {'Weka' if args.alg == 0 else ('ITI' if args.alg == 1 else 'CART')}")
+
+print(f"Time: Start\t\t"
+      f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"
+      f"Test {tree.get_accuracy(test_instance.examples):.4f}\t"
+      f"Depth {tree.get_depth():03}\t"
+      f"Avg {tree.get_avg_depth():03.4f}\t"
+      f"Nodes {tree.get_nodes()}")
+
+pruning.cost_complexity(tree, training_instance)
 
 print(f"Time: Start\t\t"
       f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"

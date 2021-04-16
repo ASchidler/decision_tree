@@ -103,3 +103,51 @@ def parse_iti_tree(tree_path, instance):
                 break
     return itree
 
+
+def parse_internal_tree(tree_path, instance):
+    with open(tree_path) as tf:
+        lines = []
+        for _, l in enumerate(tf):
+            lines.append(l)
+
+    tree = decision_tree.DecisionTree(instance.num_features, len(lines))
+
+    cstack = []
+    id = 0
+
+    for cl in lines:
+        id += 1
+        cf = cl.split("-")
+        depth = len(cf) - 1
+
+        if cf[-1].startswith("a"):
+            cn = decision_tree.DecisionTreeNode(int(cf[-1].strip()[2:-1]), id)
+        else:
+            cc = cf[-1].strip()[2:-1]
+            if cc == "True":
+                cc = True
+            elif cc == "False":
+                cc = False
+            else:
+                try:
+                    cc = int(cc)
+                except ValueError:
+                    pass
+            cn = decision_tree.DecisionTreeLeaf(cc, id)
+        tree.nodes[id] = cn
+
+        while depth < len(cstack):
+            cstack.pop()
+
+        # root
+        if depth == 0:
+            pass
+        else:
+            if cstack[-1].left is None:
+                cstack[-1].left = cn
+            else:
+                cstack[-1].right = cn
+        cstack.append(cn)
+
+    tree.root = tree.nodes[1]
+    return tree

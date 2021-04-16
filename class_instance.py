@@ -308,7 +308,7 @@ def reduce(instance, randomized_runs=5, remove=False, optimal=False, min_key=Non
             keys.extend([instance.min_key3() for _ in range(0, randomized_runs)])
 
             num_entries = len(instance.examples) * len(instance.examples) * instance.num_features
-            if num_entries < 1000000000 and instance.is_binary():
+            if num_entries < 390000000 and instance.is_binary():
                 ky = instance.min_key2()
                 keys.append(ky)
 
