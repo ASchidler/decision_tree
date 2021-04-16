@@ -94,8 +94,12 @@ def parse_iti_tree(tree_path, instance):
 
                     if is_binary:
                         c_cls = (c_cls == "1" or c_cls == "True")
-
-                    node = itree.add_leaf(c_id, cp.id, cp.right is not None, c_cls)
+                    if cp is not None:
+                        node = itree.add_leaf(c_id, cp.id, cp.right is not None, c_cls)
+                    else:
+                        node = decision_tree.DecisionTreeLeaf(c_cls, c_id)
+                        itree.nodes[1] = node
+                        itree.root = node
 
                 c_id += 1
                 l_depth = depth

@@ -92,7 +92,7 @@ def prune_reduced_error(tree, pruning_instance, subtree_raise=True):
     rec_subtree_replace(tree.root)
 
 
-def prune_c45(tree, instance, ratio, m=1, subtree_raise=True):
+def prune_c45(tree, instance, ratio, m=2, subtree_raise=True):
     tree.clean(instance, min_samples=m)
 
     z = -1 * norm.ppf(ratio)
@@ -280,7 +280,6 @@ def _cost_complexity_prune(tree, instance, test_instance, original_instance, alp
     leafs = {}
     p = {}
     classes = {}
-    tree = tree.copy()
     assigned = tree.assign_samples(instance)
 
     def find_errors(node):
@@ -342,7 +341,7 @@ def _cost_complexity_prune(tree, instance, test_instance, original_instance, alp
         ret = do_pass(tree.root, new_alpha)
         if ret[0] is not None:
             tree.root = ret[0]
-        print(f"{tree.get_nodes()}")
+
         results.append(tree.get_accuracy(test_instance.examples))
 
     return results
@@ -373,4 +372,3 @@ def cost_complexity(tree, instance):
 
     best_alpha, _ = max(list(enumerate(accuracies)), key=lambda k: k[1])
     _cost_complexity_prune(tree, instance, instance, instance, [alphas[best_alpha]])
-

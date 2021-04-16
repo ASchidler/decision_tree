@@ -89,15 +89,6 @@ print(f"Time: Start\t\t"
       f"Avg {tree.get_avg_depth():03.4f}\t"
       f"Nodes {tree.get_nodes()}")
 
-pruning.cost_complexity(tree, training_instance)
-
-print(f"Time: Start\t\t"
-      f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"
-      f"Test {tree.get_accuracy(test_instance.examples):.4f}\t"
-      f"Depth {tree.get_depth():03}\t"
-      f"Avg {tree.get_avg_depth():03.4f}\t"
-      f"Nodes {tree.get_nodes()}")
-
 if args.method_prune != 3:
     df.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree, timelimit=args.time_limit)
     if args.method_prune == 1:
