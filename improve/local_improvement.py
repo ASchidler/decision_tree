@@ -19,6 +19,9 @@ resource.setrlimit(resource.RLIMIT_AS, (8 * 1024 * 1024 * 1024, 8 * 1024 * 1024 
 
 tree_path = "datasets/trees"
 instance_path = "datasets/split"
+tree_validation_path = "datasets/validate-trees"
+instance_validation_path = "datasets/validate"
+validation_ratios = [0, 20, 30]
 
 ap = argp.ArgumentParser(description="Python implementation for computing and improving decision trees.")
 ap.add_argument("instance", type=str)
@@ -41,12 +44,17 @@ ap.add_argument("-r", dest="ratio", action="store", default=0.3, type=float,
                 help="Ratio used for pruning. The semantics depends on the pruning method.")
 ap.add_argument("-s", dest="min_samples", action="store", default=1, type=int,
                 help="The minimum number of samples per leaf.")
+ap.add_argument("-d", dest="validation", action="store", default=0, type=int,
+                help="Use data with validation set, 1=20% holdout, 2=30% holdout.")
 
 args = ap.parse_args()
 
 try:
     target_instance_idx = int(args.instance)
-    fls = list(x for x in os.listdir(instance_path) if x.endswith(".data"))
+    if args.validation == 0:
+        fls = list(x for x in os.listdir(instance_path) if x.endswith(".data"))
+    else:
+        fls = list(x for x in os.listdir(instance_validation_path) if x.endswith(f"{validation_ratios[args.validation]}.data"))
     fls.sort()
 
     if target_instance_idx > len(fls):
@@ -60,6 +68,10 @@ except ValueError:
 tree_infix = ""
 if args.load_pruned > 0:
     tree_infix = f".p{args.load_pruned}"
+
+if args.validation > 0:
+    instance_path = instance_validation_path
+    tree_path = tree_validation_path
 
 training_instance = parser.parse(os.path.join(instance_path, target_instance + ".data"), has_header=False)
 test_instance = parser.parse(os.path.join(instance_path, target_instance + ".test"), has_header=False)
