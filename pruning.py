@@ -6,6 +6,10 @@ from scipy.stats import norm
 from sklearn.model_selection import KFold
 from class_instance import ClassificationInstance
 
+ccp_default_alpha = 0.05
+c45_default_c = 0.2
+c45_default_m = 2
+
 
 def prune_reduced_error(tree, pruning_instance, subtree_raise=True):
     # TODO: Add sub-tree raising
@@ -107,13 +111,13 @@ def prune_c45(tree, instance, ratio, m=2, subtree_raise=True):
     assigned = tree.assign_samples(instance)
 
     def c45_reassign(child, samples):
-
         if child.is_leaf:
             incorrect = 0
             for s in samples:
                 if instance.examples[s].cls != child.cls:
                     incorrect += 1
-            e = calc_confidence(len(samples), incorrect)
+
+            e = calc_confidence(len(samples), incorrect) if len(samples) > 0 else 0
 
             return [(incorrect, len(samples), e)]
         else:
@@ -196,6 +200,67 @@ def prune_c45(tree, instance, ratio, m=2, subtree_raise=True):
 
     c45_prune_replace_red(tree.root)
     tree.clean(instance, min_samples=m)
+
+
+def prune_c45_optimized(tree, instance, subtree_raise=True, simple=False):
+    if simple:
+        return prune_c45(tree, instance, c45_default_c, c45_default_m, subtree_raise)
+
+    x = [e.features for e in instance.examples]
+    y = [e.cls for e in instance.examples]
+
+    folds = list(KFold().split(x, y))
+    new_instances = []
+    for c_fold_training, c_fold_test in folds:
+        new_training = ClassificationInstance()
+        new_test = ClassificationInstance()
+
+        for c_id in c_fold_training:
+            new_training.add_example(instance.examples[c_id].copy())
+        for new_id, c_example in enumerate(new_training.examples):
+            c_example.id = new_id
+
+        for c_id in c_fold_test:
+            new_test.add_example(instance.examples[c_id].copy())
+        for new_id, c_example in enumerate(new_test.examples):
+            c_example.id = new_id
+        new_instances.append((new_training, new_test))
+
+    def get_accuracy(c_val, m_val):
+        acc = 0.0
+        for new_training, new_test in new_instances:
+            new_tree = tree.copy()
+            new_tree.clean(new_training)
+            prune_c45(new_tree, new_training, c_val, m_val, subtree_raise)
+            acc += new_tree.get_accuracy(new_test.examples)
+        return acc
+
+    # Establish baseline
+    best_accuracy = get_accuracy(c45_default_c, c45_default_m)
+    best_c = c45_default_c
+    best_m = c45_default_m
+
+    c_c = 0.01
+    while c_c < 0.5:
+        accuracy = get_accuracy(c_c, best_m)
+        if accuracy > best_accuracy:
+            best_c = c_c
+            best_accuracy = accuracy
+
+        c_c += 0.01 if c_c < 0.05 else 0.05
+
+    max_m = len(instance.examples) // 5 * 4
+    m_values = [1, 2, 3, 4, *[x for x in range(5, min(50, max_m) + 1, 5)]]
+    for c_m in m_values:
+        c_accuracy = get_accuracy(best_c, c_m)
+        if c_accuracy < 0.001:
+            break
+
+        if c_accuracy > best_accuracy:
+            best_accuracy = c_accuracy
+            best_m = c_m
+
+    prune_c45(tree, instance, best_c, best_m, subtree_raise)
 
 
 def _cost_complexity_alphas(tree, instance):
@@ -347,7 +412,10 @@ def _cost_complexity_prune(tree, instance, test_instance, original_instance, alp
     return results
 
 
-def cost_complexity(tree, instance):
+def cost_complexity(tree, instance, simple=False):
+    if simple:
+        return _cost_complexity_prune(tree, instance, instance, instance, [ccp_default_alpha])
+
     alphas = _cost_complexity_alphas(tree, instance)
 
     x = [e.features for e in instance.examples]

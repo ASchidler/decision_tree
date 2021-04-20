@@ -1,13 +1,23 @@
 import decision_tree
 
 
-def parse_weka_tree(tree_path, instance):
-    with open(tree_path) as tf:
-        lines = []
-        for _, l in enumerate(tf):
-            lines.append(l)
+def parse_weka_tree(tree_path, instance, lines=None):
+    if lines is None:
+        with open(tree_path) as tf:
+            lines = []
+            for _, l in enumerate(tf):
+                lines.append(l)
 
     wtree = decision_tree.DecisionTree(instance.num_features, len(lines) * 2)
+    # Single leaf tree, edge case
+    if lines[0].strip().startswith(":"):
+        pos = lines[0].index(":")
+        cls = lines[0][pos + 2:pos + 3]
+        c_leaf = decision_tree.DecisionTreeLeaf(cls, 1)
+        wtree.nodes[1] = c_leaf
+        wtree.root = c_leaf
+        return wtree
+
     c_id = 1
     l_depth = -1
     stack = []
