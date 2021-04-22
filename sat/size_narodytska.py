@@ -368,7 +368,7 @@ class SizeNarodytska(sat.base_encoding.BaseEncoding):
                     timer = Timer(timeout, interrupt, [slv])
                     timer.start()
                     solved = slv.solve_limited(expect_interrupt=True)
-
+                    timer.cancel()
                 if solved:
                     model = {abs(x): x > 0 for x in slv.get_model()}
                     best_model = self.decode(model, instance, c_bound)

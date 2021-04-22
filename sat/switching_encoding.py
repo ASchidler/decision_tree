@@ -51,10 +51,10 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize):
                 def interrupt(s):
                     s.interrupt()
 
-                timer = Timer(timeout, interrupt, [slv])
+                timer = Timer(1, interrupt, [slv])
                 timer.start()
                 solved = slv.solve_limited(expect_interrupt=True)
-
+                timer.cancel()
             if solved:
                 model = {abs(x): x > 0 for x in slv.get_model()}
                 best_model = enc._decode(model, instance, c_bound, vs)
