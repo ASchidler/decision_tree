@@ -1,4 +1,4 @@
-from decision_tree import DecisionTree, NonBinaryTree
+from decision_tree import DecisionTree
 from pysat.formula import IDPool
 from sys import maxsize
 from threading import Timer
@@ -113,80 +113,7 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize):
     return best_model
 
 
-def _decode_nonbinary(model, instance, depth, vs):
-    d = vs["d"]
-    g = vs["g"]
-    tree = NonBinaryTree()
-
-    def find_feature(ce, cdl):
-        ce_feature = None
-        for cf in range(1, instance.num_features+1):
-            if model[d[ce][cdl][cf]]:
-                if ce_feature is None:
-                    ce_feature = cf
-                # else:
-                #     print(f"ERROR double feature {cf} and {ce_feature} for experiment {ce}, at level {cdl}.")
-        if ce_feature is None:
-            print(f"ERROR no feature for {ce} at level {cdl}.")
-        return ce_feature
-
-    def df_tree(grp, parent, cd):
-        if cd == depth:
-            cls = grp[0][1].cls
-            for _, e in grp:
-                if e.cls != cls:
-                    print(f"Error, double cls in leaf group {cls}, {e.cls}")
-            tree.add_leaf(parent, grp[0][1].features[parent.feature], cls)
-            return
-
-        # Find feature
-        f = find_feature(grp[0][0], cd)
-
-        # Find groups
-        new_grps = []
-
-        for e_id, e in grp:
-            found = False
-            for ng in new_grps:
-                n_id, _ = ng[0]
-                u = min(e_id, n_id)
-                v = max(e_id, n_id)
-
-                if model[g[u][v][cd+1]]:
-                    if found:
-                        print("Double group membership")
-                        exit(1)
-                    found = True
-                    ng.append((e_id, e))
-            if not found:
-                new_grps.append([(e_id, e)])
-
-        # Check group consistency
-        if parent is not None:
-            for ng in new_grps:
-                val = ng[0][1].features[parent.feature]
-
-                for _, e in ng:
-                    if e.features[parent.feature] != val:
-                        print(f"Inhomogenous group, values {val}, {e.features[f]}")
-                        exit(1)
-
-        if len(new_grps) > 1:
-            val = None if parent is None else grp[0][1].features[parent.feature]
-            n_n = tree.add_node(parent, val, f)
-            for ng in new_grps:
-               df_tree(ng, n_n, cd+1)
-        else:
-            df_tree(new_grps[0], parent, cd+1)
-
-    df_tree(list(enumerate(instance.examples)), None, 0)
-    return tree
-
-
 def _decode(model, instance, depth, vs):
-    if not instance.is_binary():
-        return _decode_nonbinary(model, instance, depth, vs)
-
     tree = DecisionTree(instance.num_features, 1)
     g = vs["g"]
     ds = vs["d"]

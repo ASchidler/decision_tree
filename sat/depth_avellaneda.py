@@ -1,4 +1,4 @@
-from decision_tree import DecisionTree, NonBinaryTree
+from decision_tree import DecisionTree
 import itertools
 from pysat.formula import IDPool, CNF
 from sys import maxsize
@@ -206,9 +206,6 @@ def _decode(model, instance, limit, vs):
                 tree.add_leaf(num_leafs + i, (num_leafs + i)//2, i % 2 == 1, c_c)
 
     _reduce_tree(tree, instance)
-
-    if len(next(iter(class_map.values()))) > 2:
-        return NonBinaryTree(tree)
 
     return tree
 

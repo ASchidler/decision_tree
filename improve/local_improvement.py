@@ -3,9 +3,6 @@ import parser
 import os
 import decision_tree
 import improve.improve_depth_first as df
-import improve.improve_leaf_first as lf
-import improve.improve_random as rf
-import improve.improve_size as sf
 import random
 from improve.tree_parsers import parse_weka_tree, parse_iti_tree, parse_internal_tree
 import resource
