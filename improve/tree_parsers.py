@@ -12,7 +12,8 @@ def parse_weka_tree(tree_path, instance, lines=None):
     # Single leaf tree, edge case
     if lines[0].strip().startswith(":"):
         pos = lines[0].index(":")
-        cls = lines[0][pos + 2:pos + 3]
+        pos2 = lines[0].index(" ", pos+2)
+        cls = lines[0][pos + 2:pos2]
         c_leaf = decision_tree.DecisionTreeLeaf(cls, 1)
         wtree.nodes[1] = c_leaf
         wtree.root = c_leaf
@@ -50,7 +51,8 @@ def parse_weka_tree(tree_path, instance, lines=None):
 
                 if c_line.find(":") > -1:
                     pos = c_line.index(":")
-                    cls = c_line[pos+2:pos+3]
+                    pos2 = c_line.index(" ", pos+2)
+                    cls = c_line[pos + 2:pos2]
                     wtree.add_leaf(c_id, cp.id, cp.right is not None, cls)
                     c_id += 1
 

@@ -110,13 +110,13 @@ def stitch(old_tree, new_tree, root, instance):
     while q:
         c_q = q.pop()
         if c_q.is_leaf:
-            if c_q.cls >= 0 and c_q.cls != False and c_q.cls != True:
+            if not c_q.cls.startswith("-") and c_q.cls not in instance.classes:
                 leaves.append(c_q)
-                hit_count[c_q.cls].append(c_q)
+                hit_count[int(c_q.cls)].append(c_q)
         else:
             q.extend(c_q.get_children().values())
 
-    original_ids = set(x.cls for x in leaves)
+    original_ids = set(int(x.cls) for x in leaves)
 
     # Duplicate structures for leaves used multiple times
     for k, v in hit_count.items():
@@ -128,7 +128,7 @@ def stitch(old_tree, new_tree, root, instance):
                     old_tree.nodes.append(DecisionTreeLeaf(old_tree.nodes[k].cls, n_id))
                 else:
                     old_tree.nodes.append(DecisionTreeNode(old_tree.nodes[k].feature, n_id))
-                c_l.cls = n_id
+                c_l.cls = f"{n_id}"
 
                 if not old_tree.nodes[k].is_leaf:
                     q = [(old_tree.nodes[k], old_tree.nodes[-1])]
@@ -176,13 +176,13 @@ def stitch(old_tree, new_tree, root, instance):
 
         for c_p, c_c in [(True, n_r.get_children()[True]), (False, n_r.get_children()[False])]:
             if c_c.is_leaf:
-                if c_c.cls < 0:
-                    old_tree.add_leaf(ids.pop(), o_r.id, c_p, True if c_c.cls == -2 else False)
+                if c_c.cls.startswith("-"):
+                    old_tree.add_leaf(ids.pop(), o_r.id, c_p, c_c.cls[1:])
                 else:
                     if c_p:
-                        o_r.left = old_tree.nodes[c_c.cls]
+                        o_r.left = old_tree.nodes[int(c_c.cls)]
                     else:
-                        o_r.right = old_tree.nodes[c_c.cls]
+                        o_r.right = old_tree.nodes[int(c_c.cls)]
             else:
                 n_r = old_tree.add_node(ids.pop(), o_r.id, c_c.feature, c_p)
                 q.append((n_r, c_c))
@@ -284,10 +284,10 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
             for c_leaf in frontier:
                 for s in assigned[c_leaf]:
                     if tree.nodes[c_leaf].is_leaf:
-                        class_mapping[s] = -2 if tree.nodes[c_leaf].cls else -1
+                        class_mapping[s] = f"-{tree.nodes[c_leaf].cls}"
                     else:
                         cnt_internal += 1
-                        class_mapping[s] = c_leaf
+                        class_mapping[s] = f"{c_leaf}"
 
             # If all "leaves" are leaves, this method is not required, as it will be handled by separate improvements
             if cnt_internal > 0:
@@ -418,13 +418,20 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_
     if last_instance is None or last_instance[3] <= 1:
         return False, path_idx
 
-    class_mapping = {}
+    classes = set()
+    class_map = {}
     for cl in last_instance[2]:
-        for al in assigned[cl]:
-            class_mapping[al + 1] = cl
+        if tree.nodes[cl].is_leaf:
+            for al in assigned[cl]:
+                class_map[al+1] = f"-{tree.nodes[cl].cls}"
+        else:
+            for al in assigned[cl]:
+                class_map[al + 1] = f"{cl}"
 
-    for ex in last_instance[0].examples:
-        ex.cls = class_mapping[ex.id]
+    for c_ex in last_instance[0].examples:
+        c_ex.cls = class_map[c_ex.id]
+        classes.add(c_ex.cls)
+    last_instance[0].classes = classes
 
     if len(last_instance[0].examples) == 0:
         return False, path_idx
@@ -432,13 +439,13 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_
     new_tree = runner.run(last_instance[0], slv, start_bound=last_instance[3] - 1, timeout=time_limit, ub=last_instance[3] - 1)
 
     if new_tree is not None:
-        q = [new_tree.nodes[0]]
+        q = [new_tree.root]
         while q:
             c_q = q.pop()
             if not c_q.is_leaf:
                 c_q.feature = last_instance[1][c_q.feature]
-                q.append(c_q.children[True])
-                q.append(c_q.children[False])
+                q.append(c_q.left)
+                q.append(c_q.right)
         # Stitch the new tree in the middle
         stitch(tree, new_tree, c_parent, instance)
         return True, path_idx
@@ -498,15 +505,15 @@ def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit, 
         return False, path_idx
 
     c_parent = path[path_idx]
-    instance, i_depth = build_reduced_set(c_parent, tree, instance.examples, assigned, depth_limit, sample_limit, reduce, runner)
+    new_instance, i_depth = build_reduced_set(c_parent, tree, instance.examples, assigned, depth_limit, sample_limit, reduce, runner)
 
-    if instance is None or len(instance.examples) == 0:
+    if new_instance is None or len(new_instance.examples) == 0:
         return False, path_idx
 
-    new_tree = runner.run(instance, slv, start_bound=i_depth - 1, timeout=time_limit,
+    new_tree = runner.run(new_instance, slv, start_bound=i_depth - 1, timeout=time_limit,
                           ub=i_depth - 1)
     if new_tree is not None:
-        instance.unreduce_instance(new_tree)
+        new_instance.unreduce_instance(new_tree)
 
         # Stitch the new tree in the middle
         stitch(tree, new_tree, c_parent, instance)
