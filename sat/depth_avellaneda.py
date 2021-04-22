@@ -52,10 +52,7 @@ def _init_var(instance, limit, class_map):
 
 
 def encode(instance, limit, solver):
-    classes = set()
-    for e in instance.examples:
-        classes.add(e.cls)
-    classes = list(classes) # Give classes an order
+    classes = list(instance.classes) # Give classes an order
     c_vars = len(bin(len(classes)-1)) - 2 # "easier" than log_2
 
     class_map = {}

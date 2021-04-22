@@ -51,7 +51,7 @@ def parse_weka_tree(tree_path, instance, lines=None):
                 if c_line.find(":") > -1:
                     pos = c_line.index(":")
                     cls = c_line[pos+2:pos+3]
-                    wtree.add_leaf(c_id, cp.id, cp.right is not None, cls == "1")
+                    wtree.add_leaf(c_id, cp.id, cp.right is not None, cls)
                     c_id += 1
 
                 l_depth = depth
@@ -60,8 +60,6 @@ def parse_weka_tree(tree_path, instance, lines=None):
 
 
 def parse_iti_tree(tree_path, instance):
-    is_binary = instance.is_binary()
-
     with open(tree_path) as tf:
         lines = []
         for _, l in enumerate(tf):
@@ -102,8 +100,6 @@ def parse_iti_tree(tree_path, instance):
                     else:
                         c_cls, _ = max(classes, key=lambda x: int(x[1][1:])) # 1: to skip leading (
 
-                    if is_binary:
-                        c_cls = (c_cls == "1" or c_cls == "True")
                     if cp is not None:
                         node = itree.add_leaf(c_id, cp.id, cp.right is not None, c_cls)
                     else:
@@ -138,15 +134,6 @@ def parse_internal_tree(tree_path, instance):
             cn = decision_tree.DecisionTreeNode(int(cf[-1].strip()[2:-1]), id)
         else:
             cc = cf[-1].strip()[2:-1]
-            if cc == "True":
-                cc = True
-            elif cc == "False":
-                cc = False
-            else:
-                try:
-                    cc = int(cc)
-                except ValueError:
-                    pass
             cn = decision_tree.DecisionTreeLeaf(cc, id)
         tree.nodes[id] = cn
 

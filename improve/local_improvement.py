@@ -25,6 +25,8 @@ validation_ratios = [0, 20, 30]
 
 ap = argp.ArgumentParser(description="Python implementation for computing and improving decision trees.")
 ap.add_argument("instance", type=str)
+ap.add_argument("-c", dest="choices", action="store_true", default=False,
+                help="List the known instances with their id")
 ap.add_argument("-a", dest="alg", action="store", default=0, choices=[0, 1, 2, 3], type=int,
                 help="Which decision tree algorithm to use (0=C4.5, 1=ITI, 2=CART, 3=SAT).")
 ap.add_argument("-l", dest="limit_idx", action="store", default=1, type=int,
@@ -49,13 +51,21 @@ ap.add_argument("-d", dest="validation", action="store", default=0, type=int,
 
 args = ap.parse_args()
 
+if args.validation == 0:
+    fls = list(x for x in os.listdir(instance_path) if x.endswith(".data"))
+else:
+    fls = list(
+        x for x in os.listdir(instance_validation_path) if x.endswith(f"{validation_ratios[args.validation]}.data"))
+
+fls.sort()
+
+if args.choices:
+    for i, cf in enumerate(fls):
+        print(f"{i+1}: {cf}")
+    exit(0)
+
 try:
     target_instance_idx = int(args.instance)
-    if args.validation == 0:
-        fls = list(x for x in os.listdir(instance_path) if x.endswith(".data"))
-    else:
-        fls = list(x for x in os.listdir(instance_validation_path) if x.endswith(f"{validation_ratios[args.validation]}.data"))
-    fls.sort()
 
     if target_instance_idx > len(fls):
         print(f"Only {len(fls)} files are known.")
