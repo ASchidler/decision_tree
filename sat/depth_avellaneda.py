@@ -3,16 +3,6 @@ import itertools
 from pysat.formula import IDPool, CNF
 from sys import maxsize
 from threading import Timer
-from sat.base_encoding import BaseEncoding
-
-
-class DepthAvellaneda(BaseEncoding):
-    def __init__(self):
-        BaseEncoding.__init__(self)
-        self.x = None
-        self.f = None
-        self.c = None
-        self.class_map = None        
 
 
 def _init_var(instance, limit, class_map):
@@ -23,21 +13,11 @@ def _init_var(instance, limit, class_map):
         for x2 in range(0, limit):
             x[xl][x2] = pool.id(f"x{xl}_{x2}")
 
-    # self.x = [[] for _ in range(0, len(instance.examples))]
-    # for xl in self.x:
-    #     for _ in range(0, limit):
-    #         xl.append(self.add_var())
-
     f = {}
     for i in range(1, 2**limit):
         f[i] = {}
         for j in range(1, instance.num_features + 1):
             f[i][j] = pool.id(f"f{i}_{j}")
-    # self.f = [[None] for _ in range(0, 2**limit)]
-    # # index starting with 1
-    # for i in range(1, 2**limit):
-    #     for _ in range(1, instance.num_features + 1):
-    #         self.f[i].append(self.add_var())
 
     c_vars = len(next(iter(class_map.values())))
     c = {}
@@ -45,8 +25,6 @@ def _init_var(instance, limit, class_map):
         c[i] = {}
         for j in range(0, c_vars):
             c[i][j] = pool.id(f"c{i}_{j}")
-
-    #self.c = [[self.add_var() for _ in range(0, c_vars)] for _ in range(0, 2**limit)]
 
     return x, f, c
 
@@ -264,7 +242,6 @@ def check_consistency(self, model, instance, num_nodes, tree):
     pass
 
 
-@staticmethod
 def new_bound(tree, instance):
     if tree is None:
         return 1

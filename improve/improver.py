@@ -304,9 +304,11 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
                 # TODO: This leads to adding as many nodes as possible. To emphasize the remaining depth more,
                 #  one should stop when the node with the highest remaining depth fails due to too high depth
                 #  or too many samples
-                if len(new_instance.examples) <= sample_limit[c_max_depth] and encoding.estimate_size(new_instance, c_max_depth-1) <= literal_limit:
-                    last_instance = new_instance
-                    max_depth = c_max_depth
+                if encoding.estimate_size(new_instance, c_max_depth-1) <= literal_limit:
+                    if len(new_instance.examples) <= sample_limit[c_max_depth] \
+                            or (last_instance is None and len(new_instance.examples) < sample_limit[1]):
+                        last_instance = new_instance
+                        max_depth = c_max_depth
                 else:
                     q = None
 
@@ -315,6 +317,14 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
 
 def build_runner():
     return switching_encoding, Glucose3
+
+
+def _get_max_bound(size, sample_limit):
+    new_ub = -1
+    for cb, sl in enumerate(sample_limit):
+        if sl < size:
+            new_ub = cb
+    return new_ub
 
 
 def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit):
@@ -327,11 +337,16 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
         c_d = depth_from(path[path_idx])
         if c_d > depth_limit:
             break
+
         new_instance = build_unique_set(path[path_idx], assigned[path[path_idx].id], instance.examples)
         if new_instance is None:
             break
-        if len(new_instance[0].examples) > sample_limit[c_d] or runner.estimate_size(new_instance[0], c_d) > literal_limit:
+
+        if runner.estimate_size(new_instance[0], c_d) > literal_limit:
             break
+        if len(new_instance[0].examples) > sample_limit[c_d]:
+            if prev_instance is not None or len(new_instance[0].examples) > sample_limit[1]:
+                break
 
         prev_instance = new_instance
         prev_idx = path_idx
@@ -341,9 +356,12 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
         node = path[prev_idx]
         new_instance, feature_map, c_leafs, _ = prev_instance
         cd = depth_from(node)
+        new_ub = _get_max_bound(len(prev_instance[0].examples), sample_limit)
+        if new_ub < 1:
+            return False, prev_idx
 
         # Solve instance
-        new_tree = runner.run(new_instance, slv, start_bound=cd-1, timeout=time_limit, ub=cd-1)
+        new_tree = runner.run(new_instance, slv, start_bound=min(new_ub, cd-1), timeout=time_limit, ub=min(new_ub, cd-1))
 
         # Either the branch is done, or
         if new_tree is None:
@@ -377,11 +395,15 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
 
     node = path[last_idx]
     c_d = depth_from(node)
-    if not (2 < c_d <= depth_limit) or len(assigned[node.id]) > sample_limit[c_d]:
+    if c_d <= 2:
+        return False, last_idx
+
+    new_ub = _get_max_bound(len(assigned[node.id]), sample_limit)
+
+    if new_ub < 1:
         return False, last_idx
 
     runner, slv = build_runner()
-
     new_instance = class_instance.ClassificationInstance()
     for s in assigned[node.id]:
         new_instance.add_example(instance.examples[s].copy())
@@ -389,7 +411,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
     if len(new_instance.examples) == 0 or runner.estimate_size(new_instance, c_d-1) > literal_limit:
         return False, last_idx
 
-    new_tree = runner.run(new_instance, slv, start_bound=c_d - 1, timeout=time_limit, ub=c_d - 1)
+    new_tree = runner.run(new_instance, slv, start_bound=min(new_ub, c_d - 1), timeout=time_limit, ub=min(new_ub, c_d - 1))
     if new_tree is None:
         return False, last_idx
     else:
@@ -410,8 +432,11 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_
         c_instance = build_unique_set(c_parent, assigned[c_parent.id], instance.examples, r)
         if c_instance is None:
             break
-        if len(c_instance[0].examples) > sample_limit[c_instance[3]] or runner.estimate_size(c_instance[0], r-1) > literal_limit:
+        if runner.estimate_size(c_instance[0], r-1) > literal_limit:
             break
+        if len(c_instance[0].examples) > sample_limit[c_instance[3]]:
+            if last_instance is not None or len(c_instance[0].examples) > sample_limit[1]:
+                break
 
         last_instance = c_instance
 
@@ -433,10 +458,12 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_
         classes.add(c_ex.cls)
     last_instance[0].classes = classes
 
-    if len(last_instance[0].examples) == 0:
+    new_ub = _get_max_bound(len(last_instance[0].examples), sample_limit)
+    if len(last_instance[0].examples) == 0 or new_ub < 1:
         return False, path_idx
 
-    new_tree = runner.run(last_instance[0], slv, start_bound=last_instance[3] - 1, timeout=time_limit, ub=last_instance[3] - 1)
+    new_tree = runner.run(last_instance[0], slv, start_bound=min(new_ub, last_instance[3] - 1),
+                          timeout=time_limit, ub=min(new_ub, last_instance[3] - 1))
 
     if new_tree is not None:
         q = [new_tree.root]
@@ -475,8 +502,11 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
 
         class_instance.reduce(new_instance, randomized_runs=1)
 
-        if len(new_instance.examples) > sample_limit[c_d] or runner.estimate_size(new_instance, c_d-1) > literal_limit:
+        if runner.estimate_size(new_instance, c_d-1) > literal_limit:
             break
+        if len(new_instance.examples) > sample_limit[c_d]:
+            if prev_instance is not None or len(new_instance.examples) > sample_limit[1]:
+                break
 
         prev_instance = new_instance
         prev_idx = path_idx
@@ -485,8 +515,12 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
     if prev_instance is not None:
         node = path[prev_idx]
         nd = depth_from(node)
-        new_tree = runner.run(prev_instance, slv, start_bound=nd - 1, timeout=time_limit,
-                              ub=nd - 1)
+        new_ub = _get_max_bound(len(prev_instance.examples), sample_limit)
+        if new_ub < 1:
+            return False, prev_idx
+
+        new_tree = runner.run(prev_instance, slv, start_bound=min(new_ub, nd - 1), timeout=time_limit,
+                              ub=min(new_ub, nd - 1))
 
         if new_tree is not None:
             prev_instance.unreduce_instance(new_tree)
@@ -509,9 +543,12 @@ def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit, 
 
     if new_instance is None or len(new_instance.examples) == 0:
         return False, path_idx
+    new_ub = _get_max_bound(len(new_instance.examples), sample_limit)
+    if new_ub < 1:
+        return False, path_idx
 
-    new_tree = runner.run(new_instance, slv, start_bound=i_depth - 1, timeout=time_limit,
-                          ub=i_depth - 1)
+    new_tree = runner.run(new_instance, slv, start_bound=min(new_ub, i_depth - 1), timeout=time_limit,
+                          ub=min(new_ub, i_depth - 1))
     if new_tree is not None:
         new_instance.unreduce_instance(new_tree)
 

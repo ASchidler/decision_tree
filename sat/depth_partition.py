@@ -2,14 +2,6 @@ from decision_tree import DecisionTree
 from pysat.formula import IDPool
 from sys import maxsize
 from threading import Timer
-from sat.base_encoding import BaseEncoding
-
-
-class DepthPartition(BaseEncoding):
-    def __init__(self):
-        BaseEncoding.__init__(self)
-        self.g = None
-        self.d = None
 
 
 def _init_vars(instance, depth):
