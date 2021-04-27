@@ -7,39 +7,39 @@ random.seed(1)
 
 
 class RandomStrategy:
-    def __init__(self, instance, limit=maxsize):
+    def __init__(self, instance):
         self.instance = ClassificationInstance()
         self.order = []
-
+        self.instance.classes = set(instance.classes)
         # Find class distribution
-        classes = defaultdict(list)
+        self.classes = defaultdict(list)
 
         for c_e in instance.examples:
-            classes[c_e.cls].append(c_e)
+            self.classes[c_e.cls].append(c_e)
 
-        for cc in classes.values():
+        for cc in self.classes.values():
             random.shuffle(cc)
 
-        numbers = {c: 0 for c in classes.keys()}
+        self.distribution = {k: len(v) / len(instance.examples) for k, v in self.classes.items()}
 
-        while len(self.order) < len(instance.examples) and len(self.order) < limit:
-            c_max = max(numbers.items(), key=lambda x: x[1])
-
-            if c_max[0] == 0:
-                for k, v in classes:
-                    if len(v) == 0:
-                        continue
-                    c_max = max(c_max, (len(v), k))
-                    numbers[k] = len(v) * 100 // len(instance.examples) + 1
-
-            self.order.append(classes[c_max[1]].pop())
-            numbers[c_max[1]] -= 1
-
-        self.order.reverse()
+        self.c_numbers = {c: 0 for c in self.classes.keys()}
+        self.c_diffs = {k: v1 for k, v1 in self.distribution.items()}
 
     def extend(self, n):
-        for _ in range(0, min(n, len(self.order))):
-            new_ex = self.order.pop()
+        while n > 0 and len(self.classes) > 0:
+            n -= 1
+
+            c_max, _ = max(self.c_diffs.items(), key=lambda x: x[1])
+            new_ex = self.classes[c_max].pop()
             new_ex = new_ex.copy()
             new_ex.id = len(self.instance.examples) + 1
             self.instance.add_example(new_ex)
+
+            if len(self.classes[c_max]) == 0:
+                self.classes.pop(c_max)
+                self.c_diffs.pop(c_max)
+            else:
+                self.c_numbers[c_max] += 1
+                self.c_diffs[c_max] = self.distribution[c_max] - self.c_numbers[c_max] / len(self.instance.examples)
+
+

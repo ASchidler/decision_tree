@@ -4,8 +4,9 @@ from sys import maxsize
 from threading import Timer
 
 
-def _init_vars(instance, depth):
-    pool = IDPool()
+def _init_vars(instance, depth, pool, start=0):
+    if not pool:
+        pool = IDPool()
     d = {}
     for i in range(0, len(instance.examples)):
         d[i] = {}
@@ -19,26 +20,26 @@ def _init_vars(instance, depth):
         for j in range(i + 1, len(instance.examples)):
             g[i][j] = [pool.id(f"g{i}_{j}_{d}") for d in range(0, depth + 1)]
 
-    return g, d
+    return g, d, pool
 
 
-def encode(instance, depth, solver):
-    g, d = _init_vars(instance, depth)
+def encode(instance, depth, solver, start=0, pool=None):
+    g, d, p = _init_vars(instance, depth, pool, start)
 
     # Add level 0, all examples are in the same group
     for i in range(0, len(instance.examples)):
-        for j in range(i + 1, len(instance.examples)):
+        for j in range(max(start, i + 1), len(instance.examples)):
             solver.add_clause([g[i][j][0]])
 
     # Verify that at last level, the partitioning is by class
     for i in range(0, len(instance.examples)):
-        for j in range(i + 1, len(instance.examples)):
+        for j in range(max(start, i + 1), len(instance.examples)):
             if instance.examples[i].cls != instance.examples[j].cls:
                 solver.add_clause([-g[i][j][depth]])
 
     # Verify that the examples are partitioned correctly
     for i in range(0, len(instance.examples)):
-        for j in range(i + 1, len(instance.examples)):
+        for j in range(max(start, i + 1), len(instance.examples)):
             for dl in range(0, depth):
                 for f in range(1, instance.num_features+1):
                     if instance.examples[i].features[f] == instance.examples[j].features[f]:
@@ -48,19 +49,19 @@ def encode(instance, depth, solver):
 
     # Verify that group cannot merge
     for i in range(0, len(instance.examples)):
-        for j in range(i + 1, len(instance.examples)):
+        for j in range(max(start, i + 1), len(instance.examples)):
             for dl in range(0, depth):
                 solver.add_clause([g[i][j][dl], -g[i][j][dl + 1]])
 
     # Verify that d is consistent
     for i in range(0, len(instance.examples)):
-        for j in range(i + 1, len(instance.examples)):
+        for j in range(max(start, i + 1), len(instance.examples)):
             for dl in range(0, depth):
                 for f in range(1, instance.num_features+1):
                     solver.add_clause([-g[i][j][dl], -d[i][dl][f], d[j][dl][f]])
 
     # One feature per level and group
-    for i in range(0, len(instance.examples)):
+    for i in range(start, len(instance.examples)):
         for dl in range(0, depth):
             clause = []
             for f in range(1, instance.num_features + 1):
@@ -70,7 +71,7 @@ def encode(instance, depth, solver):
                     solver.add_clause([-d[i][dl][f], -d[i][dl][f2]])
             solver.add_clause(clause)
 
-    return {"g": g, "d": d}
+    return {"g": g, "d": d, "p": p}
 
 
 def run(instance, solver, start_bound=1, timeout=0, ub=maxsize):
@@ -200,10 +201,10 @@ def check_consistency(model, instance, num_nodes, tree):
     pass
 
 
-def estimate_size(instance, depth):
+def estimate_size(instance, depth, start=0):
     """Estimates the size in the number of literals the encoding will require."""
     f = instance.num_features
-    s = len(instance.examples)
+    s = len(instance.examples) - start
     s2 = s * (s-1)//2
 
     return s2 + s2 + s2*depth*f*3 + s2*depth*2 + s2 * depth * f * 3 + s*depth*f + s * depth * f * (f-1) // 2

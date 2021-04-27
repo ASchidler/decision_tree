@@ -1,9 +1,10 @@
 from decision_tree import DecisionTree
 import itertools
-from pysat.formula import IDPool, CNF
+from pysat.formula import IDPool
 from sys import maxsize
 from threading import Timer
-
+import resource
+import threading
 
 def _init_var(instance, limit, class_map):
     pool = IDPool()
@@ -26,12 +27,12 @@ def _init_var(instance, limit, class_map):
         for j in range(0, c_vars):
             c[i][j] = pool.id(f"c{i}_{j}")
 
-    return x, f, c
+    return x, f, c, pool
 
 
 def encode(instance, limit, solver):
-    classes = list(instance.classes) # Give classes an order
-    c_vars = len(bin(len(classes)-1)) - 2 # "easier" than log_2
+    classes = list(instance.classes)  # Give classes an order
+    c_vars = len(bin(len(classes)-1)) - 2  # "easier" than log_2
 
     class_map = {}
     for i in range(0, len(classes)):
@@ -45,7 +46,7 @@ def encode(instance, limit, solver):
         while len(class_map[classes[i]]) < c_vars:
             class_map[classes[i]].append(False)
 
-    x, f, c = _init_var(instance, limit, class_map)
+    x, f, c, p = _init_var(instance, limit, class_map)
 
     # each node has a feature
     for i in range(1, 2**limit):
@@ -81,7 +82,7 @@ def encode(instance, limit, solver):
                 for i in range(0, c_vars):
                     clause.append(c[c_n][i] if c_c[i] else -c[c_n][i])
                 solver.add_clause(clause)
-    return {"f": f, "x": x, "c": c, "class_map": class_map}
+    return {"f": f, "x": x, "c": c, "class_map": class_map, "pool": p}
 
 
 def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, solver):
@@ -149,6 +150,141 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize):
             else:
                 c_bound += 1
                 c_lb = c_bound
+
+    return best_model
+
+
+def run_incremental(instance, solver, strategy, timeout, size_limit, start_bound=1, increment=5, ubound=maxsize):
+    c_bound = start_bound
+    best_model = None
+    c_solver = None
+    is_done = []
+    c = len(instance.classes)
+    lc = len(bin(c - 1)) - 2  # ln(c)
+    f = instance.num_features
+
+    def interrupt():
+        if c_solver is not None:
+            c_solver.interrupt()
+            is_done.append(True)
+
+    timer = Timer(timeout, interrupt)
+    timer.start()
+
+    while not is_done and c_bound <= ubound:
+        print(f"Running {c_bound}")
+        c_a = 0
+        with solver() as slv:
+            c_solver = slv
+
+            while estimate_size(strategy.instance, c_bound) > size_limit and len(strategy.instance.examples) > 1:
+                strategy.instance.examples.pop()
+
+            c_guess = estimate_size(strategy.instance, c_bound)
+            d2 = 2 ** c_bound
+
+            too_big = True
+            while too_big:
+                try:
+                    vs = encode(strategy.instance, c_bound, slv)
+                    too_big = False
+                except MemoryError:
+                    for _ in range(0, len(strategy.instance.examples) // 5):
+                        strategy.instance.pop()
+
+            solved = True
+
+            while solved:
+                try:
+                    solved = slv.solve_limited(expect_interrupt=True)
+                except MemoryError:
+                    solved = False
+                    c_bound -= 1  # Will be incremented at the end
+                    # Reduce instance size by 20%
+                    for _ in range(0, len(strategy.instance.examples) // 5):
+                        strategy.instance.pop()
+
+                if solved:
+                    model = {abs(x): x > 0 for x in slv.get_model()}
+                    best_model = _decode(model, strategy.instance, c_bound, vs)
+                    c_a = best_model.get_accuracy(instance.examples)
+                    print(f"Found: a: {c_a}, d: {best_model.get_depth()}, n: {best_model.get_nodes()}")
+                    if c_a > 0.9999:
+                        break
+
+                    alg1_lits = increment * sum(2 ** i * f * (i + 2) for i in range(0, c_bound))
+                    c_guess += alg1_lits + increment * d2 * (c_guess + 1) * lc
+
+                    if c_guess > size_limit:
+                        is_done = True
+                        break
+
+                    strategy.extend(increment)
+                    try:
+                        for e_idx in range(len(strategy.instance.examples)-increment, len(strategy.instance.examples)):
+                            vs["x"][e_idx] = {}
+                            for x2 in range(0, c_bound):
+                                vs["x"][e_idx][x2] = vs["pool"].id(f"x{e_idx}{x2}")
+                            _alg1(strategy.instance, e_idx, c_bound, 0, 1, list(), vs["f"], vs["x"], slv)
+                            _alg2(strategy.instance, e_idx, c_bound, 0, 1, list(), vs["class_map"], vs["x"], vs["c"], slv)
+                    except MemoryError:
+                        is_done = True
+                        break
+                    print(f"Extended to {len(strategy.instance.examples)}")
+
+            if c_a > 0.9999:
+                break
+            c_bound += 1
+
+    timer.cancel()
+    return best_model
+
+
+def run_limited(solver, strategy, size_limit, limit, start_bound=1, go_up=True, timeout=0):
+    c_bound = start_bound
+    best_model = None
+    strategy.extend(limit[c_bound])
+
+    while True:
+        print(f"Running {c_bound}")
+        with solver() as slv:
+            while estimate_size(strategy.instance, c_bound) > size_limit and len(strategy.instance.examples) > 1:
+                strategy.instance.examples.pop()
+
+            vs = encode(strategy.instance, c_bound, slv)
+            timed_out = []
+            if timeout == 0:
+                solved = slv.solve()
+            else:
+                def interrupt(s):
+                    s.interrupt()
+                    timed_out.append(True)
+
+                timer = Timer(timeout, interrupt, [slv])
+                timer.start()
+                solved = slv.solve_limited(expect_interrupt=True)
+                timer.cancel()
+
+            if solved:
+                model = {abs(x): x > 0 for x in slv.get_model()}
+                best_model = _decode(model, strategy.instance, c_bound, vs)
+
+                if go_up:
+                    break
+
+                strategy.extend(limit[c_bound-1] - limit[c_bound])
+                c_bound -= 1
+            else:
+                if go_up:
+                    if c_bound == len(limit) or timed_out:
+                        for _ in range(0, 5):
+                            strategy.instance.examples.pop()
+                    else:
+                        for _ in range(0, limit[c_bound] - limit[c_bound] + 1):
+                            strategy.instance.examples.pop()
+                        c_bound += 1
+                else:
+                    break
 
     return best_model
 
