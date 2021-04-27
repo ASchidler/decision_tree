@@ -1,4 +1,4 @@
-size_limit = 175 * 1000 * 1000
+size_limit = 200 * 1000 * 1000
 
 sample_limit_short = [175,
                       175, 175, 175, 175, 175,

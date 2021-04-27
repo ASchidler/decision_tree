@@ -6,6 +6,7 @@ from threading import Timer
 import resource
 import threading
 
+
 def _init_var(instance, limit, class_map):
     pool = IDPool()
     x = {}
@@ -183,16 +184,14 @@ def run_incremental(instance, solver, strategy, timeout, size_limit, start_bound
             c_guess = estimate_size(strategy.instance, c_bound)
             d2 = 2 ** c_bound
 
-            too_big = True
-            while too_big:
-                try:
-                    vs = encode(strategy.instance, c_bound, slv)
-                    too_big = False
-                except MemoryError:
-                    for _ in range(0, len(strategy.instance.examples) // 5):
-                        strategy.instance.pop()
-
             solved = True
+            try:
+                vs = encode(strategy.instance, c_bound, slv)
+            except MemoryError:
+                solved = False
+                c_bound -= 1
+                for _ in range(0, len(strategy.instance.examples) // 5):
+                    strategy.instance.pop()
 
             while solved:
                 try:
@@ -213,7 +212,7 @@ def run_incremental(instance, solver, strategy, timeout, size_limit, start_bound
                         break
 
                     alg1_lits = increment * sum(2 ** i * f * (i + 2) for i in range(0, c_bound))
-                    c_guess += alg1_lits + increment * d2 * (c_guess + 1) * lc
+                    c_guess += alg1_lits + increment * d2 * (c_bound + 1) * lc
 
                     if c_guess > size_limit:
                         is_done = True
