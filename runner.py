@@ -57,8 +57,9 @@ if args.mode == 0:
     tree = encoding.run(instance, Glucose3, timeout=args.time_limit)
 elif args.mode == 1:
     strategy = strat(instance)
-    strategy.extend(50)
-    tree = encoding.run_incremental(instance, Glucose3, strategy, args.time_limit, limits.size_limit)
+    strategy.extend(5)
+    tree = encoding.run(strategy.instance, Glucose3)
+    #tree = encoding.run_incremental(instance, Glucose3, strategy, args.time_limit, limits.size_limit)
 elif args.mode == 2:
     strategy = es.EntropyStrategy(instance, stratified=True)
     tree = encoding.run_limited(Glucose3, strategy, limits.size_limit, limits.sample_limit_short)

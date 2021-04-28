@@ -6,6 +6,7 @@ class MaintainingStrategy:
     def __init__(self, instance):
         self.original_instance = instance
         self.instance = class_instance.ClassificationInstance()
+        self.instance.classes = set(instance.classes)
 
         self.feature_distribution = [0 for _ in range(0, instance.num_features+1)]
         self.class_distribution = defaultdict(int)
@@ -29,12 +30,12 @@ class MaintainingStrategy:
 
     def extend(self, n):
         def add_ex(new_ex):
-            self.instance.add_example(ex.copy())
+            self.instance.add_example(new_ex.copy())
             self.instance.examples[-1].id = len(self.instance.examples)
-            self.current_class_distribution[ex.cls] += 1
+            self.current_class_distribution[new_ex.cls] += 1
 
-            if len(self.classes[ex.cls]) == 0:
-                self.classes.pop(ex.cls)
+            if len(self.classes[new_ex.cls]) == 0:
+                self.classes.pop(new_ex.cls)
 
             for cf in range(1, self.original_instance.num_features + 1):
                 if new_ex.features[cf]:
@@ -42,8 +43,9 @@ class MaintainingStrategy:
 
         while n > 0 and len(self.classes) > 0:
             n -= 1
-            if len(self.instance.examples) == 0:
-                ex = next(iter(self.classes.values())).pop()
+            if len(self.instance.examples) < len(self.classes):
+                nxt_cls = next(x for x in self.classes.keys() if self.current_class_distribution[x] == 0)
+                ex = self.classes[nxt_cls].pop()
                 add_ex(ex)
             else:
                 best_cls = (2, None)

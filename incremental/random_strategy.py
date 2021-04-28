@@ -28,9 +28,13 @@ class RandomStrategy:
     def extend(self, n):
         while n > 0 and len(self.classes) > 0:
             n -= 1
-
-            c_max, _ = max(self.c_diffs.items(), key=lambda x: x[1])
-            new_ex = self.classes[c_max].pop()
+            if len(self.instance.examples) < len(self.classes):
+                nxt_cls = next(x for x in self.classes.keys() if self.c_numbers[x] == 0)
+                new_ex = self.classes[nxt_cls].pop()
+                c_max = new_ex.cls
+            else:
+                c_max, _ = max(self.c_diffs.items(), key=lambda x: x[1])
+                new_ex = self.classes[c_max].pop()
             new_ex = new_ex.copy()
             new_ex.id = len(self.instance.examples) + 1
             self.instance.add_example(new_ex)

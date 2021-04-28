@@ -51,7 +51,7 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize):
                 def interrupt(s):
                     s.interrupt()
 
-                timer = Timer(1, interrupt, [slv])
+                timer = Timer(timeout, interrupt, [slv])
                 timer.start()
                 solved = slv.solve_limited(expect_interrupt=True)
                 timer.cancel()

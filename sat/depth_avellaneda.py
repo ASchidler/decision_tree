@@ -1,10 +1,10 @@
-from decision_tree import DecisionTree
 import itertools
-from pysat.formula import IDPool
 from sys import maxsize
 from threading import Timer
-import resource
-import threading
+
+from pysat.formula import IDPool
+
+from decision_tree import DecisionTree
 
 
 def _init_var(instance, limit, class_map):
@@ -34,18 +34,10 @@ def _init_var(instance, limit, class_map):
 def encode(instance, limit, solver):
     classes = list(instance.classes)  # Give classes an order
     c_vars = len(bin(len(classes)-1)) - 2  # "easier" than log_2
-
+    c_values = list(itertools.product([True, False], repeat=c_vars))
     class_map = {}
     for i in range(0, len(classes)):
-        class_map[classes[i]] = []
-        for c_v in bin(i)[2:][::-1]:
-            if c_v == "1":
-                class_map[classes[i]].append(True)
-            else:
-                class_map[classes[i]].append(False)
-
-        while len(class_map[classes[i]]) < c_vars:
-            class_map[classes[i]].append(False)
+        class_map[classes[i]] = c_values.pop()
 
     x, f, c, p = _init_var(instance, limit, class_map)
 
@@ -63,26 +55,12 @@ def encode(instance, limit, solver):
         _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, solver)
 
     # Forbid non-existing classes
-    # Generate all class identifiers
-    for c_c in itertools.product([True, False], repeat=c_vars):
-        # Check if identifier is used
-        exists = False
-        for c_v in class_map.values():
-            all_match = True
+    for c_c in c_values:
+        for c_n in range(0, 2**limit):
+            clause = []
             for i in range(0, c_vars):
-                if c_v[i] != c_c[i]:
-                    all_match = False
-                    break
-            if all_match:
-                exists = True
-                break
-        # If identifier is not used, prevent it from being used
-        if not exists:
-            for c_n in range(0, 2**limit):
-                clause = []
-                for i in range(0, c_vars):
-                    clause.append(c[c_n][i] if c_c[i] else -c[c_n][i])
-                solver.add_clause(clause)
+                clause.append(-c[c_n][i] if c_c[i] else c[c_n][i])
+            solver.add_clause(clause)
     return {"f": f, "x": x, "c": c, "class_map": class_map, "pool": p}
 
 

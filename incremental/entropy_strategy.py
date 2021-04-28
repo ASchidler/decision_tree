@@ -28,8 +28,10 @@ class EntropyStrategy:
     def extend(self, n):
         while n > 0 and len(self.class_remaining) > 0:
             n -= 1
-            if len(self.instance.examples) == 0:
-                next_example = next(self.class_remaining.values().__iter__()).pop()
+            if len(self.instance.examples) < len(self.class_remaining):
+                nxt_cls = next(x for x in self.class_remaining.keys() if self.distribution_cls[x] == 0)
+                next_example = self.class_remaining[nxt_cls].pop()
+
                 self.distribution_cls[next_example.cls] += 1
                 if len(self.class_remaining[next_example.cls]) == 0:
                     self.class_remaining.pop(next_example.cls)
