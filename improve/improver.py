@@ -272,6 +272,7 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
             c_n = tree.nodes[cl]
             if not c_n.is_leaf and c_n.left.is_leaf and c_n.right.is_leaf:
                 frontier.remove(cl)
+                features.add(c_n.feature)
                 frontier.add(c_n.left.id)
                 frontier.add(c_n.right.id)
 
