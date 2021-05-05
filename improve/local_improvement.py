@@ -1,18 +1,23 @@
 import sys
+import time
+
 import parser
 import os
 import decision_tree
 import improve.improve_depth_first as df
+import improve.improve_easy_first as ef
 import random
 from improve.tree_parsers import parse_weka_tree, parse_iti_tree, parse_internal_tree
 import resource
 import argparse as argp
 from class_instance import split
 import pruning
+from threading import Timer
 
+start_time = time.time()
 random.seed = 1
 # This is used for debugging, for experiments use proper memory limiting
-resource.setrlimit(resource.RLIMIT_AS, (8 * 1024 * 1024 * 1024, 8 * 1024 * 1024 * 1024))
+resource.setrlimit(resource.RLIMIT_AS, (12 * 1024 * 1024 * 1024, 25 * 1024 * 1024 * 1024 // 2))
 
 tree_path = "datasets/trees"
 instance_path = "datasets/split"
@@ -101,6 +106,27 @@ if args.print_tree:
 print(f"{target_instance}: Features {training_instance.num_features}\tExamples {len(training_instance.examples)}\t"
       f"Optimize 'Depth'\tHeuristic {'Weka' if args.alg == 0 else ('ITI' if args.alg == 1 else 'CART')}")
 
+
+def exit_timeout():
+    # TODO: There is a race condition in case the tree is currently changing. This should rarely be the case, as
+    # this takes a lot shorter than reduction +
+    print(f"Timeout: {time.time() - start_time}")
+    tree.clean(training_instance, min_samples=args.min_samples)
+    print(f"Time: End\t\t"
+          f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"
+          f"Test {tree.get_accuracy(test_instance.examples):.4f}\t"
+          f"Depth {tree.get_depth():03}\t"
+          f"Avg {tree.get_avg_depth():03.4f}\t"
+          f"Nodes {tree.get_nodes()}")
+    print(tree.as_string())
+    exit(1)
+
+
+timer = None
+if args.time_limit > 0:
+    timer = Timer(args.time_limit * 1.1 - (time.time() - start_time), exit_timeout)
+    timer.start()
+
 print(f"Time: Start\t\t"
       f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"
       f"Test {tree.get_accuracy(test_instance.examples):.4f}\t"
@@ -109,7 +135,10 @@ print(f"Time: Start\t\t"
       f"Nodes {tree.get_nodes()}")
 
 if args.method_prune != 3:
-    df.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree, timelimit=args.time_limit)
+    # df.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,
+    #        timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time))
+    ef.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,
+           timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time))
     if args.method_prune == 1:
         pruning.prune_c45(tree, training_instance, args.ratio, m=args.min_samples)
     else:
@@ -117,7 +146,7 @@ if args.method_prune != 3:
 else:
     new_training, holdout = split(training_instance, ratio_splitoff=args.ratio)
     df.run(tree, new_training, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,
-           timelimit=args.time_limit)
+           timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time))
     tree.clean(new_training, min_samples=args.min_samples)
     pruning.prune_reduced_error(tree, holdout)
 
@@ -129,3 +158,6 @@ print(f"Time: End\t\t"
       f"Nodes {tree.get_nodes()}")
 
 print(tree.as_string())
+
+if timer:
+    timer.cancel()

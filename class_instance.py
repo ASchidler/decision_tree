@@ -123,7 +123,7 @@ class ClassificationInstance:
 
         print(f"Found {fd} FDs and {unn} unnecessary values")
 
-    def min_key(self, randomize=False):
+    def min_key(self, randomize=False, verify=True):
         key = list(range(1, self.num_features + 1))
 
         if randomize:
@@ -157,22 +157,23 @@ class ClassificationInstance:
                 i += 1
 
         # Sanity check
-        seen = {}
+        if verify:
+            seen = {}
 
-        for e in self.examples:
-            values = []
-            for j in key:
-                values.append(e.features[j])
-            c_key = tuple(values)
-            if c_key in seen and seen[c_key] != e.cls:
-                print("Not a key")
-                exit(1)
-            else:
-                seen[c_key] = e.cls
+            for e in self.examples:
+                values = []
+                for j in key:
+                    values.append(e.features[j])
+                c_key = tuple(values)
+                if c_key in seen and seen[c_key] != e.cls:
+                    print("Not a key")
+                    exit(1)
+                else:
+                    seen[c_key] = e.cls
 
         return key
 
-    def min_key2(self):
+    def min_key2(self, verify=True):
         """This heuristic takes a different approach and adds the necessary features for distinction one by one"""
         feats = {f: set() for f in range(1, self.num_features+1)}
         key = []
@@ -201,22 +202,22 @@ class ClassificationInstance:
                     for v in feats.values():
                         v.discard(c_v)
 
-        seen = {}
-
-        for e in self.examples:
-            values = []
-            for j in key:
-                values.append(e.features[j])
-            c_key = tuple(values)
-            if c_key in seen and seen[c_key] != e.cls:
-                print("Not a key")
-                exit(1)
-            else:
-                seen[c_key] = e.cls
+        if verify:
+            seen = {}
+            for e in self.examples:
+                values = []
+                for j in key:
+                    values.append(e.features[j])
+                c_key = tuple(values)
+                if c_key in seen and seen[c_key] != e.cls:
+                    print("Not a key")
+                    exit(1)
+                else:
+                    seen[c_key] = e.cls
 
         return key
 
-    def min_key3(self):
+    def min_key3(self, verify=True):
         """As min_key2, not greedy but random"""
 
         key = set()
@@ -236,18 +237,19 @@ class ClassificationInstance:
                         # Add random feature
                         key.add(c_diff[random.randint(0, len(c_diff) - 1)])
 
-        seen = {}
+        if verify:
+            seen = {}
 
-        for e in self.examples:
-            values = []
-            for j in key:
-                values.append(e.features[j])
-            c_key = tuple(values)
-            if c_key in seen and seen[c_key] != e.cls:
-                print("Not a key")
-                exit(1)
-            else:
-                seen[c_key] = e.cls
+            for e in self.examples:
+                values = []
+                for j in key:
+                    values.append(e.features[j])
+                c_key = tuple(values)
+                if c_key in seen and seen[c_key] != e.cls:
+                    print("Not a key")
+                    exit(1)
+                else:
+                    seen[c_key] = e.cls
 
         return list(key)
 
@@ -303,8 +305,8 @@ def reduce(instance, randomized_runs=5, remove=False, optimal=False, min_key=Non
     if min_key is None:
         if not optimal:
             keys = []
-            keys.extend([instance.min_key(randomize=True) for _ in range(0, randomized_runs-1)])
-            keys.append(instance.min_key(randomize=False))
+            # keys.extend([instance.min_key(randomize=True) for _ in range(0, randomized_runs-1)])
+            # keys.append(instance.min_key(randomize=False))
             keys.extend([instance.min_key3() for _ in range(0, randomized_runs)])
 
             num_entries = len(instance.examples) * len(instance.examples) * instance.num_features
@@ -327,9 +329,11 @@ def reduce(instance, randomized_runs=5, remove=False, optimal=False, min_key=Non
     removal.update(unnecessary)
 
     instance.reduce_map = []
+    instance.reduce_features = instance.num_features
+
     cFront = 1
     cBack = instance.num_features
-    instance.reduce_features = instance.num_features
+
 
     while cFront < cBack:
         while cFront not in removal and cFront < cBack:
@@ -349,15 +353,17 @@ def reduce(instance, randomized_runs=5, remove=False, optimal=False, min_key=Non
     instance.num_features = max(instance.num_features, 1)
 
     # Remove duplicate examples
-    seen = set()
+    seen = dict()
     i = 0
     while i < len(instance.examples):
         e = instance.examples[i]
         k = tuple(e.features[f] for f in range(1, instance.num_features + 1))
         if k in seen:
+            if e.cls != seen[k]:
+                print("Error")
             instance.examples.pop(i)
         else:
-            seen.add(k)
+            seen[k] = e.cls
             i += 1
 
     # print(f"After: {instance.num_features} Features, {len(instance.examples)} examples")

@@ -76,28 +76,47 @@ def replace(old_tree, new_tree, root):
             old_tree.nodes[r_n.id] = None
             ids.append(r_n.id)
 
-    # Add other tree
-    root.feature = new_tree.root.feature
-    q = [(new_tree.root, root)]
-
-    while q:
-        r_n, r_o = q.pop()
-
-        if len(ids) < 2:  # Lower max. depth may still have more nodes
-            ids.append(len(old_tree.nodes))
-            ids.append(len(old_tree.nodes) + 1)
-            old_tree.nodes.append(None)
-            old_tree.nodes.append(None)
-
-        cs = [(r_n.left, True), (r_n.right, False)]
-        for nn, pol in cs:
-            if nn.is_leaf:
-                old_tree.add_leaf(ids.pop(), r_o.id, pol, nn.cls)
-            else:
-                n_r = old_tree.add_node(ids.pop(), r_o.id, nn.feature, pol)
-                q.append((nn, n_r))
-
-    # Sub-tree is now been added in place of the old sub-tree
+    # Add other tree. First case is if we reduced the tree to one node.
+    if new_tree.root.is_leaf:
+        # Find parent
+        def find_parent(c_n, target_id):
+            if not c_n.is_leaf:
+                if c_n.left.id == target_id:
+                    return c_n, True
+                elif c_n.right.id == target_id:
+                    return c_n, False
+                ll = find_parent(c_n.left, target_id)
+                return ll if ll else find_parent(c_n.right, target_id)
+            return None
+        parent, is_left = find_parent(old_tree.root, root.id)
+        n_n = DecisionTreeLeaf(new_tree.root.cls, root.id)
+        if is_left:
+            parent.left = n_n
+        else:
+            parent.right = n_n
+        old_tree.nodes[root.id] = n_n
+    else:
+        root.feature = new_tree.root.feature
+        q = [(new_tree.root, root)]
+    
+        while q:
+            r_n, r_o = q.pop()
+    
+            if len(ids) < 2:  # Lower max. depth may still have more nodes
+                ids.append(len(old_tree.nodes))
+                ids.append(len(old_tree.nodes) + 1)
+                old_tree.nodes.append(None)
+                old_tree.nodes.append(None)
+    
+            cs = [(r_n.left, True), (r_n.right, False)]
+            for nn, pol in cs:
+                if nn.is_leaf:
+                    old_tree.add_leaf(ids.pop(), r_o.id, pol, nn.cls)
+                else:
+                    n_r = old_tree.add_node(ids.pop(), r_o.id, nn.feature, pol)
+                    q.append((nn, n_r))
+    
+        # Sub-tree is now been added in place of the old sub-tree
 
 
 def stitch(old_tree, new_tree, root, instance):

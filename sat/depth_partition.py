@@ -1,11 +1,12 @@
 from decision_tree import DecisionTree
 from pysat.formula import IDPool
+from pysat.card import ITotalizer
 from sys import maxsize
 from threading import Timer
 
 
 def _init_vars(instance, depth, vs, start=0):
-    pool = IDPool() if not vs else vs["p"]
+    pool = IDPool() if not vs else vs["pool"]
     d = {} if not vs else vs["d"]
 
     for i in range(0, len(instance.examples)):
@@ -76,13 +77,27 @@ def encode(instance, depth, solver, start=0, pool=None):
                     solver.add_clause([-d[i][dl][f], -d[i][dl][f2]])
             solver.add_clause(clause)
 
-    return {"g": g, "d": d, "p": p}
+    return {"g": g, "d": d, "pool": p}
 
 
-def run(instance, solver, start_bound=1, timeout=0, ub=maxsize):
+def encode_size(vs, instance, solver, dl):
+    pool = vs["pool"]
+    card_vars = []
+
+    for i in range(1, len(instance.examples)):
+        clause = [vs["g"][j][i][dl] for j in range(0, i)]
+        clause.append(pool.id(f"s{i}"))
+        solver.add_clause(clause)
+        card_vars.append(pool.id(f"s{i}"))
+
+    return card_vars
+
+
+def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False):
     c_bound = start_bound
-    clb = 0
+    clb = 1
     best_model = None
+    best_depth = None
 
     while clb < ub:
         print(f"Running {c_bound}")
@@ -100,6 +115,7 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize):
                 solved = slv.solve_limited(expect_interrupt=True)
                 timer.cancel()
             if solved:
+                best_depth = c_bound
                 model = {abs(x): x > 0 for x in slv.get_model()}
                 best_model = _decode(model, instance, c_bound, vs)
                 ub = c_bound
@@ -107,6 +123,37 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize):
             else:
                 clb = c_bound + 1
                 c_bound += 1
+
+    if opt_size and best_model:
+        with solver() as slv:
+            c_size_bound = best_model.root.get_leafs() - 1
+            solved = True
+            vs = encode(instance, best_depth, slv)
+            card = encode_size(vs, instance, slv, best_depth)
+
+            tot = ITotalizer(card, c_size_bound, top_id=vs["pool"].top+1)
+            slv.append_formula(tot.cnf)
+
+            while solved:
+                print(f"Running {c_size_bound}")
+                if timeout == 0:
+                    solved = slv.solve()
+                else:
+                    def interrupt(s):
+                        s.interrupt()
+
+                    timer = Timer(timeout, interrupt, [slv])
+                    timer.start()
+                    solved = slv.solve_limited(expect_interrupt=True)
+                    timer.cancel()
+
+                if solved:
+                    model = {abs(x): x > 0 for x in slv.get_model()}
+                    best_model = _decode(model, instance, best_depth, vs)
+                    c_size_bound -= 1
+                    slv.add_clause([-tot.rhs[c_size_bound]])
+                else:
+                    break
 
     return best_model
 
@@ -116,9 +163,6 @@ def run_incremental(instance, solver, strategy, timeout, size_limit, start_bound
     best_model = None
     c_solver = None
     is_done = []
-    c = len(instance.classes)
-    lc = len(bin(c - 1)) - 2  # ln(c)
-    f = instance.num_features
 
     def interrupt():
         if c_solver is not None:

@@ -3,7 +3,7 @@ from sys import maxsize
 from threading import Timer
 
 from pysat.formula import IDPool
-
+from pysat.card import ITotalizer
 from decision_tree import DecisionTree
 
 
@@ -31,8 +31,10 @@ def _init_var(instance, limit, class_map):
     return x, f, c, pool
 
 
-def encode(instance, limit, solver):
+def encode(instance, limit, solver, opt_size=False):
     classes = list(instance.classes)  # Give classes an order
+    if opt_size:
+        classes.insert(0, "EmptyLeaf")
     c_vars = len(bin(len(classes)-1)) - 2  # "easier" than log_2
     c_values = list(itertools.product([True, False], repeat=c_vars))
     class_map = {}
@@ -101,10 +103,24 @@ def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, solver):
         _alg2(instance, e_idx, limit, lvl+1, 2*q+1, n_cl2, class_map, x, c, solver)
 
 
-def run(instance, solver, start_bound=1, timeout=0, ub=maxsize):
+def encode_size(vs, instance, solver, dl):
+    pool = vs["pool"]
+    card_vars = []
+    c = vs["c"]
+
+    for c_n in range(0, 2 ** dl):
+        card_vars.append(pool.id(f"n{c_n}"))
+        for c_c in c[c_n].values():
+            solver.add_clause([-c_c, pool.id(f"n{c_n}")])
+
+    return card_vars
+
+
+def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False):
     c_bound = start_bound
-    c_lb = 0
+    c_lb = 1
     best_model = None
+    best_depth = None
 
     while c_lb < ub:
         print(f"Running {c_bound}")
@@ -124,11 +140,43 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize):
             if solved:
                 model = {abs(x): x > 0 for x in slv.get_model()}
                 best_model = _decode(model, instance, c_bound, vs)
+                best_depth = c_bound
                 ub = c_bound
                 c_bound -= 1
             else:
                 c_bound += 1
                 c_lb = c_bound
+
+    if opt_size and best_model:
+        with solver() as slv:
+            c_size_bound = best_model.root.get_leafs() - 1
+            solved = True
+            vs = encode(instance, best_depth, slv)
+            card = encode_size(vs, instance, slv, best_depth)
+
+            tot = ITotalizer(card, c_size_bound, top_id=vs["pool"].top+1)
+            slv.append_formula(tot.cnf)
+
+            while solved:
+                print(f"Running {c_size_bound}")
+                if timeout == 0:
+                    solved = slv.solve()
+                else:
+                    def interrupt(s):
+                        s.interrupt()
+
+                    timer = Timer(timeout, interrupt, [slv])
+                    timer.start()
+                    solved = slv.solve_limited(expect_interrupt=True)
+                    timer.cancel()
+
+                if solved:
+                    model = {abs(x): x > 0 for x in slv.get_model()}
+                    best_model = _decode(model, instance, best_depth, vs)
+                    c_size_bound -= 1
+                    slv.add_clause([-tot.rhs[c_size_bound]])
+                else:
+                    break
 
     return best_model
 

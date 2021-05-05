@@ -14,7 +14,7 @@ class MaintainingStrategy:
 
         for ce in instance.examples:
             self.class_distribution[ce.cls] += 1
-            for i in range(1, len(ce.features)):
+            for i in range(1, instance.num_features+1):
                 if ce.features[i]:
                     self.feature_distribution[i] += 1
             self.classes[ce.cls].append(ce)

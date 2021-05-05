@@ -12,6 +12,9 @@ class DecisionTreeNode:
     def get_children(self):
         return {True: self.left, False: self.right}
 
+    def get_leafs(self):
+        return self.left.get_leafs() + self.right.get_leafs()
+
     def __lt__(self, other):
         return self.id < other.id
 
@@ -24,6 +27,9 @@ class DecisionTreeLeaf:
 
     def __lt__(self, other):
         return self.id < other.id
+
+    def get_leafs(self):
+        return 1
 
 
 class DecisionTree:

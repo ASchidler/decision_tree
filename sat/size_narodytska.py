@@ -362,10 +362,10 @@ def _uniquify_classes(data, instance, num_nodes, class_map, solver):
                 solver.add_clause([*clause])
 
 
-def run(instance, solver, start_bound=3, timeout=0, ub=maxsize):
+def run(instance, solver, start_bound=3, timeout=0, ub=maxsize, opt_size=False):
     c_bound = start_bound
     best_model = None
-    c_lb = 0
+    c_lb = 1
 
     while c_lb < ub:
         print(f"Running {c_bound}")
