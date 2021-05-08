@@ -82,7 +82,7 @@ def find_deepest_leaf(tree, ignore=None):
     return c_max[0], c_max[1], path
 
 
-def run(tree, instance, test, limit_idx=1, pt=False, timelimit=0):
+def run(tree, instance, test, limit_idx=1, pt=False, timelimit=0, opt_size=False):
     sample_limit = [sample_limit_short, sample_limit_mid, sample_limit_long][limit_idx]
     time_limit = time_limits[limit_idx]
     depth_limit = depth_limits[limit_idx]
@@ -123,7 +123,7 @@ def run(tree, instance, test, limit_idx=1, pt=False, timelimit=0):
         done = False
 
         # First try to find root
-        result, select_idx = improver.leaf_select(tree, instance, 0, new_max_p, assigned, depth_limit, sample_limit, time_limit)
+        result, select_idx = improver.leaf_select(tree, instance, 0, new_max_p, assigned, depth_limit, sample_limit, time_limit, opt_size=opt_size)
         if result:
             process_change(c_ignore, new_max_p, "ls", pt)
             continue
@@ -133,7 +133,7 @@ def run(tree, instance, test, limit_idx=1, pt=False, timelimit=0):
             return
 
         max_leaf_idx = 0
-        result, idx = improver.leaf_rearrange(tree, instance, select_idx, new_max_p, assigned, depth_limit, sample_limit, time_limit)
+        result, idx = improver.leaf_rearrange(tree, instance, select_idx, new_max_p, assigned, depth_limit, sample_limit, time_limit, opt_size=opt_size)
         max_leaf_idx = max(max_leaf_idx, idx)
         if result:
             process_change(c_ignore, new_max_p, "la", pt)
@@ -144,7 +144,7 @@ def run(tree, instance, test, limit_idx=1, pt=False, timelimit=0):
             return
 
         for _ in range(0, reduce_runs):
-            result, idx = improver.reduced_leaf(tree, instance, select_idx, new_max_p, assigned, depth_limit, sample_limit, time_limit)
+            result, idx = improver.reduced_leaf(tree, instance, select_idx, new_max_p, assigned, depth_limit, sample_limit, time_limit, opt_size=opt_size)
             max_leaf_idx = max(max_leaf_idx, idx)
             if result:
                 process_change(c_ignore, new_max_p, "lr", pt)
@@ -162,7 +162,7 @@ def run(tree, instance, test, limit_idx=1, pt=False, timelimit=0):
             if new_max_p[i].id in c_ignore:
                 continue
 
-            result, idx = improver.mid_rearrange(tree, instance, i, new_max_p, assigned, depth_limit, sample_limit, time_limit)
+            result, idx = improver.mid_rearrange(tree, instance, i, new_max_p, assigned, depth_limit, sample_limit, time_limit, opt_size=opt_size)
             if result:
                 process_change(c_ignore, new_max_p, "ma", pt)
                 done = True
@@ -174,7 +174,7 @@ def run(tree, instance, test, limit_idx=1, pt=False, timelimit=0):
 
             for _ in range(0, reduce_runs):
                 result, idx = improver.mid_reduced(tree, instance, i, new_max_p, assigned, True,
-                                                   sample_limit, depth_limit, time_limit)
+                                                   sample_limit, depth_limit, time_limit, opt_size=opt_size)
                 if result:
                     process_change(c_ignore, new_max_p, "mr", pt)
                     done = True

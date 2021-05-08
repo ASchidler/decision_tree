@@ -13,6 +13,7 @@ import argparse as argp
 from class_instance import split
 import pruning
 from threading import Timer
+import signal
 
 start_time = time.time()
 random.seed = 1
@@ -50,6 +51,8 @@ ap.add_argument("-s", dest="min_samples", action="store", default=1, type=int,
                 help="The minimum number of samples per leaf.")
 ap.add_argument("-d", dest="validation", action="store", default=0, type=int,
                 help="Use data with validation set, 1=20% holdout, 2=30% holdout.")
+ap.add_argument("-z", dest="size", action="store_true", default=False,
+                help="Decrease the size as well as the depth.")
 
 args = ap.parse_args()
 
@@ -133,6 +136,23 @@ print(f"Time: Start\t\t"
       f"Depth {tree.get_depth():03}\t"
       f"Avg {tree.get_avg_depth():03.4f}\t"
       f"Nodes {tree.get_nodes()}")
+
+
+# Although there are a lot of safeguards there is some edge condition that causes a segfault (probably due to Memout)
+def sig_handler(signum, frame):
+    print("ERROR: Segfault")
+    print(f"Time: End\t\t"
+          f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"
+          f"Test {tree.get_accuracy(test_instance.examples):.4f}\t"
+          f"Depth {tree.get_depth():03}\t"
+          f"Avg {tree.get_avg_depth():03.4f}\t"
+          f"Nodes {tree.get_nodes()}")
+
+    print(tree.as_string())
+    exit(1)
+
+
+signal.signal(signal.SIGSEGV, sig_handler)
 
 if args.method_prune != 3:
     # df.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,

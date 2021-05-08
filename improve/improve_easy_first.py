@@ -55,7 +55,7 @@ def find_deepest_leaf(tree, ignore=None):
                 q.append((c_d+1, c_n.right))
 
     if c_max[1] is None:
-        return -1, None, None
+        return None
 
     c_node = c_max[1]
     path = []
@@ -78,7 +78,7 @@ def clear_ignore(ignore, root):
             q.append(c_n.right)
 
 
-def run(tree, instance, test, limit_idx=1, pt=False, timelimit=0):
+def run(tree, instance, test, limit_idx=1, pt=False, timelimit=0, opt_size=False):
     sample_limit = [sample_limit_short, sample_limit_mid, sample_limit_long][limit_idx]
     time_limit = time_limits[limit_idx]
     depth_limit = depth_limits[limit_idx]
@@ -103,6 +103,9 @@ def run(tree, instance, test, limit_idx=1, pt=False, timelimit=0):
     tree_size = tree.get_nodes()
     while tree_size > len(c_ignore_reduce):
         pth = find_deepest_leaf(tree, c_ignore)
+        if pth is None:
+            return
+
         allow_reduction = (tree_size == len(c_ignore))
 
         while pth:
@@ -113,27 +116,27 @@ def run(tree, instance, test, limit_idx=1, pt=False, timelimit=0):
             op = None
             if not allow_reduction:
                 # result, _ = improver.mid_rearrange(tree, instance, 0, [root], assigned, depth_limit, sample_limit, time_limit)
-                result, _ = improver.leaf_select(tree, instance, 0, [root], assigned, depth_limit, sample_limit, time_limit)
+                result, _ = improver.leaf_select(tree, instance, 0, [root], assigned, depth_limit, sample_limit, time_limit, opt_size=opt_size)
                 if result:
                     op = "ls"
                 if not result:
                     result, _ = improver.leaf_rearrange(tree, instance, 0, [root], assigned, depth_limit, sample_limit,
-                                                        time_limit)
+                                                        time_limit, opt_size=opt_size)
                     if result:
                         op = "la"
 
                 if not result:
                     result, _ = improver.mid_reduced(tree, instance, 0, [root], assigned, False, sample_limit,
-                                                     depth_limit, time_limit)
+                                                     depth_limit, time_limit, opt_size=opt_size)
                     if result:
                         op = "ma"
             else:
-                result, _ = improver.reduced_leaf(tree, instance, 0, [root], assigned, depth_limit, sample_limit, time_limit)
+                result, _ = improver.reduced_leaf(tree, instance, 0, [root], assigned, depth_limit, sample_limit, time_limit, opt_size=opt_size)
                 if result:
                     op = "lr"
                 if not result:
                     result, _ = improver.mid_reduced(tree, instance, 0, [root], assigned, True, sample_limit,
-                                                     depth_limit, time_limit)
+                                                     depth_limit, time_limit, opt_size=opt_size)
                     if result:
                         op = "mr"
 

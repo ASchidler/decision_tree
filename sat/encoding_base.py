@@ -9,12 +9,11 @@ import time
 def check_memory(s, done):
     used = psutil.Process().memory_info().vms
     free_memory = limits.mem_limit - used
-    print(free_memory)
+
     if free_memory < 2000 * 1024 * 1024:
-        print("Caught")
+        print("Caught memout")
         done.append(True)
         s.interrupt()
-        print("Interrupted")
         print(f"{s.get_status()}")
     elif s.glucose is not None:  # TODO: Not a solver independent way to detect if the solver has been deleted...
         Timer(1, check_memory, [s, done]).start()

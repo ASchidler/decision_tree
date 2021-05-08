@@ -64,11 +64,11 @@ if args.mode == 0:
 elif args.mode == 1:
     strategy = strat(instance)
     strategy.extend(5)
-    tree = eb.run_incremental(encoding, instance, Glucose3, strategy, args.time_limit, limits.size_limit)
+    tree = eb.run_incremental(encoding, instance, Glucose3, strategy, args.time_limit, limits.size_limit, opt_size=args.size)
 elif args.mode == 2:
     strategy = strat(instance)
     strategy.extend(5)
-    tree = eb.run_incremental(encoding, instance, Glucose3, strategy, args.time_limit, limits.size_limit)
+    tree = eb.run_incremental(encoding, instance, Glucose3, strategy, args.time_limit, limits.size_limit, opt_size=args.size)
     #tree = encoding.run_limited(Glucose3, strategy, limits.size_limit, limits.sample_limit_short, start_bound=len(limits.sample_limit_short)-2, go_up=False)
 
     def add_nodes(c_root):
