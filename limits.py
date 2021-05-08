@@ -22,3 +22,6 @@ sample_limit_long = [500,
 
 time_limits = [60, 300, 800]
 depth_limits = [12, 15, 29]
+
+
+mem_limit = 12 * 1024 * 1024 * 1024

@@ -24,11 +24,15 @@ class RandomStrategy:
 
         self.c_numbers = {c: 0 for c in self.classes.keys()}
         self.c_diffs = {k: v1 for k, v1 in self.distribution.items()}
+        self.pool = []
 
-    def extend(self, n):
+    def extend(self, n, tree=None):
         while n > 0 and len(self.classes) > 0:
             n -= 1
-            if len(self.instance.examples) < len(self.classes):
+            if self.pool:
+                self.instance.add_example(self.pool.pop())
+                continue
+            elif len(self.instance.examples) < len(self.classes):
                 nxt_cls = next(x for x in self.classes.keys() if self.c_numbers[x] == 0)
                 new_ex = self.classes[nxt_cls].pop()
                 c_max = new_ex.cls
@@ -46,4 +50,6 @@ class RandomStrategy:
                 self.c_numbers[c_max] += 1
                 self.c_diffs[c_max] = self.distribution[c_max] - self.c_numbers[c_max] / len(self.instance.examples)
 
-
+    def pop(self):
+        popped = self.instance.examples.pop()
+        self.pool.append(popped)

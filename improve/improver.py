@@ -7,7 +7,7 @@ from decision_tree import DecisionTreeNode, DecisionTreeLeaf
 from sat import switching_encoding, depth_avellaneda, depth_partition
 
 # 500 Mio. takes ~ < 16 GB, 250 Mio. ~ < 12 GB, 200 Mio. sometimes goes over 8 GB
-literal_limit = 200 * 1000 * 1000
+literal_limit = 200 * 1000 * 1000 # 200 * 1000 * 1000
 
 
 def assign_samples(tree, instance):

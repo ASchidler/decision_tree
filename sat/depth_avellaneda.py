@@ -5,6 +5,7 @@ from threading import Timer
 from pysat.formula import IDPool
 from pysat.card import ITotalizer
 from decision_tree import DecisionTree
+import time
 
 
 def _init_var(instance, limit, class_map):
@@ -181,24 +182,31 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False):
     return best_model
 
 
-def run_incremental(instance, solver, strategy, timeout, size_limit, start_bound=1, increment=5, ubound=maxsize):
+def run_incremental(instance, solver, strategy, timeout, size_limit, start_bound=1, increment=5, ubound=maxsize, opt_size=True):
     c_bound = start_bound
-    best_model = None
+    best_model = (0.0, None)
     c_solver = None
     is_done = []
     c = len(instance.classes)
     lc = len(bin(c - 1)) - 2  # ln(c)
     f = instance.num_features
 
-    def interrupt():
+    def interrupt(set_done=True):
         if c_solver is not None:
             c_solver.interrupt()
-            is_done.append(True)
+            if set_done:
+                is_done.append(True)
+
+    def mini_interrupt():
+        # Increments the current bound
+        interrupt(set_done=False)
 
     timer = Timer(timeout, interrupt)
     timer.start()
+    new_best_model = None
 
     while not is_done and c_bound <= ubound:
+        last_runtime = max(5, timeout / 5)
         print(f"Running {c_bound}")
         c_a = 0
         with solver() as slv:
@@ -220,6 +228,9 @@ def run_incremental(instance, solver, strategy, timeout, size_limit, start_bound
                     strategy.instance.pop()
 
             while solved:
+                timer2 = Timer(5 * last_runtime, mini_interrupt)
+                timer2.start()
+                c_runtime_start = time.time()
                 try:
                     solved = slv.solve_limited(expect_interrupt=True)
                 except MemoryError:
@@ -228,12 +239,17 @@ def run_incremental(instance, solver, strategy, timeout, size_limit, start_bound
                     # Reduce instance size by 20%
                     for _ in range(0, len(strategy.instance.examples) // 5):
                         strategy.instance.pop()
+                last_runtime = max(1.0, time.time() - c_runtime_start)
 
+                timer2.cancel()
                 if solved:
                     model = {abs(x): x > 0 for x in slv.get_model()}
-                    best_model = _decode(model, strategy.instance, c_bound, vs)
-                    c_a = best_model.get_accuracy(instance.examples)
-                    print(f"Found: a: {c_a}, d: {best_model.get_depth()}, n: {best_model.get_nodes()}")
+                    new_best_model = _decode(model, strategy.instance, c_bound, vs)
+                    c_a = new_best_model.get_accuracy(instance.examples)
+                    if best_model[1] is None or best_model[0] < c_a:
+                        best_model = (c_a, new_best_model)
+
+                    # print(f"Found: a: {c_a}, d: {new_best_model.get_depth()}, n: {new_best_model.get_nodes()}")
                     if c_a > 0.9999:
                         break
 
@@ -241,10 +257,10 @@ def run_incremental(instance, solver, strategy, timeout, size_limit, start_bound
                     c_guess += alg1_lits + increment * d2 * (c_bound + 1) * lc
 
                     if c_guess > size_limit:
-                        is_done = True
+                        is_done.append(True)
                         break
 
-                    strategy.extend(increment)
+                    strategy.extend(increment, best_model[1])
                     try:
                         for e_idx in range(len(strategy.instance.examples)-increment, len(strategy.instance.examples)):
                             vs["x"][e_idx] = {}
@@ -255,14 +271,42 @@ def run_incremental(instance, solver, strategy, timeout, size_limit, start_bound
                     except MemoryError:
                         is_done = True
                         break
-                    print(f"Extended to {len(strategy.instance.examples)}")
+                    # print(f"Extended to {len(strategy.instance.examples)}")
 
-            if c_a > 0.9999:
-                break
+            if c_a > 0.999999:
+                is_done.append(True)
+
+            if opt_size and new_best_model is not None and is_done:
+                timer.cancel()
+                slv.clear_interrupt()
+                c_size_bound = new_best_model.root.get_leafs() - 1
+                solved = True
+                card = encode_size(vs, strategy.instance, slv, c_bound)
+
+                tot = ITotalizer(card, c_size_bound, top_id=vs["pool"].top + 1)
+                slv.append_formula(tot.cnf)
+
+                timer = Timer(timeout, interrupt)
+                timer.start()
+
+                while solved:
+                    print(f"Running {c_size_bound}")
+                    solved = slv.solve_limited(expect_interrupt=True)
+
+                    if solved:
+                        model = {abs(x): x > 0 for x in slv.get_model()}
+                        new_best_model = _decode(model, strategy.instance, c_bound, vs)
+                        c_a = new_best_model.get_accuracy(instance.examples)
+                        if best_model[1] is None or best_model[0] < c_a:
+                            best_model = (c_a, new_best_model)
+
+                        c_size_bound -= 1
+                        slv.add_clause([-tot.rhs[c_size_bound]])
+                    else:
+                        break
             c_bound += 1
-
     timer.cancel()
-    return best_model
+    return best_model[1]
 
 
 def run_limited(solver, strategy, size_limit, limit, start_bound=1, go_up=True, timeout=0):
@@ -274,7 +318,7 @@ def run_limited(solver, strategy, size_limit, limit, start_bound=1, go_up=True, 
         print(f"Running {c_bound}")
         with solver() as slv:
             while estimate_size(strategy.instance, c_bound) > size_limit and len(strategy.instance.examples) > 1:
-                strategy.instance.examples.pop()
+                strategy.pop()
 
             vs = encode(strategy.instance, c_bound, slv)
             timed_out = []
@@ -303,10 +347,10 @@ def run_limited(solver, strategy, size_limit, limit, start_bound=1, go_up=True, 
                 if go_up:
                     if c_bound == len(limit) or timed_out:
                         for _ in range(0, 5):
-                            strategy.instance.examples.pop()
+                            strategy.pop()
                     else:
                         for _ in range(0, limit[c_bound] - limit[c_bound] + 1):
-                            strategy.instance.examples.pop()
+                            strategy.pop()
                         c_bound += 1
                 else:
                     break

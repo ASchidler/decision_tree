@@ -74,6 +74,12 @@ class DecisionTree:
         self.root = DecisionTreeNode(feature, 1)
         self.nodes[1] = self.root
 
+    def set_root_leaf(self, cls):
+        if self.root is not None:
+            print("Root already set")
+        self.root = DecisionTreeLeaf(cls, 1)
+        self.nodes[1] = self.root
+
     def get_root(self):
         return self.root
 
@@ -204,16 +210,16 @@ class DecisionTree:
     def assign_samples(self, instance):
         assigned_samples = [[] for _ in self.nodes]
 
-        for s in instance.examples:
+        for idx, s in enumerate(instance.examples):
             cnode = self.root
-            assigned_samples[cnode.id].append(s.id - 1)
+            assigned_samples[cnode.id].append(idx)
 
             while not cnode.is_leaf:
                 if s.features[cnode.feature]:
                     cnode = cnode.left
                 else:
                     cnode = cnode.right
-                assigned_samples[cnode.id].append(s.id - 1)
+                assigned_samples[cnode.id].append(idx)
 
         return assigned_samples
 

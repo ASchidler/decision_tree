@@ -298,21 +298,23 @@ class ClassificationInstance:
         return counts
 
 
-def reduce(instance, randomized_runs=5, remove=False, optimal=False, min_key=None):
+def reduce(instance, randomized_runs=5, remove=False, optimal=False, min_key=None, slow=False):
     # print(f"Before: {instance.num_features} Features, {len(instance.examples)} examples")
 
     unnecessary = []
     if min_key is None:
         if not optimal:
             keys = []
-            # keys.extend([instance.min_key(randomize=True) for _ in range(0, randomized_runs-1)])
-            # keys.append(instance.min_key(randomize=False))
             keys.extend([instance.min_key3() for _ in range(0, randomized_runs)])
 
             num_entries = len(instance.examples) * len(instance.examples) * instance.num_features
-            if num_entries < 390000000 and instance.is_binary():
-                ky = instance.min_key2()
-                keys.append(ky)
+
+            if slow:
+                keys.extend([instance.min_key(randomize=True) for _ in range(0, randomized_runs-1)])
+                keys.append(instance.min_key(randomize=False))
+                if num_entries < 390000000 and instance.is_binary():
+                    ky = instance.min_key2()
+                    keys.append(ky)
 
             keys.sort(key=lambda x: len(x))
             min_key = keys[0]

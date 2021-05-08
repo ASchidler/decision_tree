@@ -24,11 +24,18 @@ class EntropyStrategy:
         for c_e in self.original_instance.examples:
             self.original_distribution_cls[c_e.cls] += 1
             self.class_remaining[c_e.cls].append(c_e)
+        self.pool = []
 
-    def extend(self, n):
+    def pop(self):
+        popped = self.instance.examples.pop()
+        self.pool.append(popped)
+
+    def extend(self, n, tree=None):
         while n > 0 and len(self.class_remaining) > 0:
-            n -= 1
-            if len(self.instance.examples) < len(self.class_remaining):
+            if self.pool:
+                self.instance.add_example(self.pool.pop())
+                continue
+            elif len(self.instance.examples) < len(self.class_remaining):
                 nxt_cls = next(x for x in self.class_remaining.keys() if self.distribution_cls[x] == 0)
                 next_example = self.class_remaining[nxt_cls].pop()
 
@@ -72,7 +79,9 @@ class EntropyStrategy:
 
                 max_ex = (-1, None)
                 c_e_list = self.class_remaining[max_cls]
+
                 for idx, c_e in enumerate(c_e_list):
+
                     new_entropy = 0
                     for i in range(1, self.original_instance.num_features+1):
                         new_entropy += added_entropy_components[i] if c_e.features[i] else same_entropy_components[i]
@@ -99,6 +108,7 @@ class EntropyStrategy2:
         self.instance.classes = set(instance.classes)
         self.distribution = [0 for _ in instance.examples[0].features]
         self.distribution_cls = {x: 0 for x in self.original_instance.classes}
+        self.pool = []
 
         self.feature_entropy = 0
         self.remaining = list(instance.examples)
@@ -108,10 +118,13 @@ class EntropyStrategy2:
         for c_e in self.original_instance.examples:
             self.class_remaining[c_e.cls].append(c_e)
 
-    def extend(self, n):
+    def extend(self, n, tree=None):
         while n > 0 and len(self.remaining) > 0:
             n -= 1
-            if len(self.instance.examples) < len(self.class_remaining):
+            if self.pool:
+                self.instance.add_example(self.pool.pop())
+                continue
+            elif len(self.instance.examples) < len(self.class_remaining):
                 nxt_cls = next(x for x in self.class_remaining.keys() if self.distribution_cls[x] == 0)
                 next_example = self.class_remaining[nxt_cls].pop()
 
@@ -134,6 +147,10 @@ class EntropyStrategy2:
                 max_ex = (-1, None)
                 for idx, c_e in enumerate(self.remaining):
                     new_entropy = 0
+                    e_incorrect = (tree is not None and tree.decide(c_e.features) != c_e.cls)
+                    if e_incorrect:
+                        new_entropy = self.instance.num_features
+
                     for i in range(1, self.original_instance.num_features+1):
                         new_entropy += added_entropy_components[i] if c_e.features[i] else same_entropy_components[i]
                     max_ex = max(max_ex, (new_entropy, idx))
@@ -144,9 +161,14 @@ class EntropyStrategy2:
 
             self.instance.add_example(next_example.copy())
             self.instance.examples[-1].id = len(self.instance.examples)
+            self.distribution_cls[next_example.cls] += 1
             for i in range(1, len(next_example.features)):
                 if next_example.features[i]:
                     self.distribution[i] += 1
+
+    def pop(self):
+        popped = self.instance.examples.pop()
+        self.pool.append(popped)
 
 
 

@@ -1,9 +1,13 @@
-import sat.depth_avellaneda as enc1
-import sat.depth_partition as enc2
-from pysat.card import ITotalizer
+import time
 from sys import maxsize
 from threading import Timer
-import time
+
+import psutil
+from pysat.card import ITotalizer
+
+import limits
+import sat.depth_avellaneda as enc1
+import sat.depth_partition as enc2
 
 _switch_threshold = 10
 
@@ -37,32 +41,46 @@ def interrupt(s):
     s.interrupt()
 
 
-def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False):
-
+def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=True, check_mem=True):
     c_bound = start_bound
     clb = 1
     best_model = None
     best_depth = None
+    interrupted = []
+
+    def check_memory(s):
+        used = psutil.Process().memory_info().vms
+        free_memory = limits.mem_limit - used
+        print(free_memory)
+        if free_memory < 2000 * 1024 * 1024:
+            print("Caught")
+            interrupted.append(True)
+            s.interrupt()
+            print("Interrupted")
+            print(f"{s.get_status()}")
+        elif s.glucose is not None:  # TODO: Not a solver independent way to detect if the solver has been deleted...
+            Timer(1, check_memory, [s]).start()
 
     while clb < ub:
         print(f"Running {c_bound}")
         print('{:,}'.format(estimate_size(instance, c_bound)))
 
         with solver() as slv:
-            interrupted = []
+            if check_mem:
+                check_memory(slv)
             enc = enc2 if c_bound >= _switch_threshold else enc1
 
             try:
                 vs = enc.encode(instance, c_bound, slv)
             except MemoryError:
                 return best_model
-
+            print("Done")
             if timeout == 0:
                 solved = slv.solve()
             else:
                 def interrupt(s):
-                    s.interrupt()
                     interrupted.append(True)
+                    s.interrupt()
 
                 timer = Timer(timeout, interrupt, [slv])
                 timer.start()
@@ -83,6 +101,8 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False):
 
     if opt_size and best_model:
         with solver() as slv:
+            if check_mem:
+                check_memory(slv)
             enc = enc2 if best_depth >= _switch_threshold else enc1
             c_size_bound = best_model.root.get_leafs() - 1
             solved = True
@@ -98,7 +118,7 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False):
                 timer = Timer(timeout, interrupt, [slv])
                 timer.start()
 
-            while solved:
+            while solved and c_size_bound > 1:
                 print(f"Running {c_size_bound}")
                 solved = slv.solve_limited(expect_interrupt=True)
 

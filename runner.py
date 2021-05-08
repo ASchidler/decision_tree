@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import os
+import time
 
 import decision_tree
 import class_instance
@@ -16,13 +17,13 @@ import incremental.random_strategy as rs
 import incremental.maintain_strategy as ms
 import limits
 import resource
-
+import incremental.heuristic as heur
 
 # This is used for debugging, for experiments use proper memory limiting
 resource.setrlimit(resource.RLIMIT_AS, (23 * 1024 * 1024 * 1024 // 2, 12 * 1024 * 1024 * 1024))
 
 encodings = [se, da, dp, sn]
-strategies = [es.EntropyStrategy, rs.RandomStrategy, ms.MaintainingStrategy]
+strategies = [es.EntropyStrategy2, rs.RandomStrategy, ms.MaintainingStrategy]
 
 
 ap = argp.ArgumentParser(description="Python implementation for computing and improving decision trees.")
@@ -39,9 +40,12 @@ ap.add_argument("-t", dest="time_limit", action="store", default=900, type=int,
 ap.add_argument("-s", dest="strategy", action="store", default=0, choices=[0, 1, 2], type=int,
                 help="The strategy to use for incremental, recursive mode (0=random, 1=entropy, 2=maintaining)."
                 )
+ap.add_argument("-z", dest="size", action="store_true", default=False,
+                help="Decrease the size as well as the depth.")
 
 args = ap.parse_args()
 
+start_time = time.time()
 instance = parser.parse(args.instance, has_header=False)
 test_instance = instance
 if os.path.exists(args.instance[:-4]+"test"):
@@ -54,14 +58,16 @@ if args.reduce:
     class_instance.reduce(instance)
 
 if args.mode == 0:
-    tree = encoding.run(instance, Glucose3, timeout=args.time_limit, opt_size=True)
+    tree = encoding.run(instance, Glucose3, timeout=args.time_limit, opt_size=args.size, check_mem=False)
 elif args.mode == 1:
     strategy = strat(instance)
-    strategy.extend(25)
+    strategy.extend(5)
     tree = encoding.run_incremental(instance, Glucose3, strategy, args.time_limit, limits.size_limit)
 elif args.mode == 2:
-    strategy = es.EntropyStrategy(instance, stratified=True)
-    tree = encoding.run_limited(Glucose3, strategy, limits.size_limit, limits.sample_limit_short)
+    strategy = strat(instance)
+    strategy.extend(5)
+    tree = encoding.run_incremental(instance, Glucose3, strategy, args.time_limit, limits.size_limit)
+    #tree = encoding.run_limited(Glucose3, strategy, limits.size_limit, limits.sample_limit_short, start_bound=len(limits.sample_limit_short)-2, go_up=False)
 
     def add_nodes(c_root):
         if not c_root.is_leaf:
@@ -97,9 +103,15 @@ elif args.mode == 2:
                     for c_e in assigned[c_node.id]:
                         new_instance.add_example(instance.examples[c_e].copy())
                         new_instance.examples[-1].id = len(new_instance.examples)
-
+                    if args.reduce:
+                        class_instance.reduce(new_instance)
                     strategy = strat(new_instance)
-                    new_tree = encoding.run_limited(Glucose3, strategy, limits.size_limit, limits.sample_limit_short, timeout=limits.time_limits[0])
+                    strategy.extend(5)
+                    new_tree = encoding.run_incremental(new_instance, Glucose3, strategy, args.time_limit, limits.size_limit)
+                    #new_tree = encoding.run_limited(Glucose3, strategy, limits.size_limit, limits.sample_limit_short, go_up=False, start_bound=len(limits.sample_limit_short)-2, timeout=limits.time_limits[0])
+
+                    if args.reduce:
+                        new_instance.unreduce_instance(new_tree)
 
                     # Append new tree
                     old_id = c_node.id
@@ -140,6 +152,7 @@ if args.reduce:
 tree.check_consistency()
 
 print(f"Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
-      f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}")
+      f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
+      f"Time: {time.time() - start_time}")
 
 print(tree.as_string())

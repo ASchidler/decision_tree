@@ -27,8 +27,13 @@ class MaintainingStrategy:
 
         self.current_class_distribution = {c: 0 for c in self.classes.keys()}
         self.current_feature_distribution = {f: 0 for f in range(0, instance.num_features + 1)}
+        self.pool = []
 
-    def extend(self, n):
+    def pop(self):
+        popped = self.instance.examples.pop()
+        self.pool.append(popped)
+
+    def extend(self, n, tree=None):
         def add_ex(new_ex):
             self.instance.add_example(new_ex.copy())
             self.instance.examples[-1].id = len(self.instance.examples)
@@ -43,7 +48,10 @@ class MaintainingStrategy:
 
         while n > 0 and len(self.classes) > 0:
             n -= 1
-            if len(self.instance.examples) < len(self.classes):
+            if self.pool:
+                self.instance.add_example(self.pool.pop())
+                continue
+            elif len(self.instance.examples) < len(self.classes):
                 nxt_cls = next(x for x in self.classes.keys() if self.current_class_distribution[x] == 0)
                 ex = self.classes[nxt_cls].pop()
                 add_ex(ex)
@@ -63,6 +71,9 @@ class MaintainingStrategy:
 
                 for idx, ce in enumerate(self.classes[best_cls]):
                     c_val = 0
+                    if tree is not None and tree.decide(ce.features) != ce.cls:
+                        c_val = -self.instance.num_features
+
                     for f in range(1, self.original_instance.num_features+1):
                         c_val += self.feature_distribution[f] - (changes_t[f] if ce.features[f] else changes_f[f])
                     best_ex = min(best_ex, (c_val, idx))
