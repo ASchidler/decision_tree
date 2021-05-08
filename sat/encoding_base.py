@@ -53,7 +53,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Tr
 
             timer = None
             if timeout > 0:
-                timer = Timer(timeout, interrupt, [slv])
+                timer = Timer(timeout, interrupt, [slv, interrupted])
                 timer.start()
             solved = slv.solve_limited(expect_interrupt=True)
             if timer is not None:
@@ -91,7 +91,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Tr
             timer = None
 
             if timeout > 0:
-                timer = Timer(timeout, interrupt, [slv])
+                timer = Timer(timeout, interrupt, [slv, interrupted])
                 timer.start()
 
             while solved and c_size_bound > 1:

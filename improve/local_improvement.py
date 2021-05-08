@@ -159,10 +159,10 @@ signal.signal(signal.SIGSEGV, sig_handler)
 if args.method_prune != 3:
     if args.easy:
         ef.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,
-               timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time))
+               timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time), opt_size=args.size)
     else:
         df.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,
-               timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time))
+               timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time), opt_size=args.size)
     if args.method_prune == 1:
         pruning.prune_c45(tree, training_instance, args.ratio, m=args.min_samples)
     else:
@@ -171,10 +171,10 @@ else:
     new_training, holdout = split(training_instance, ratio_splitoff=args.ratio)
     if args.easy:
         ef.run(tree, new_training, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,
-               timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time))
+               timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time), opt_size=args.size)
     else:
         df.run(tree, new_training, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,
-               timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time))
+               timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time), opt_size=args.size)
 
     tree.clean(new_training, min_samples=args.min_samples)
     pruning.prune_reduced_error(tree, holdout)

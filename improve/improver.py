@@ -129,7 +129,8 @@ def stitch(old_tree, new_tree, root, instance):
     while q:
         c_q = q.pop()
         if c_q.is_leaf:
-            if not c_q.cls.startswith("-") and c_q.cls not in instance.classes:
+            # TODO: Find out what the second part did
+            if not c_q.cls.startswith("-"): #and c_q.cls not in instance.classes:
                 leaves.append(c_q)
                 hit_count[int(c_q.cls)].append(c_q)
         else:
@@ -179,32 +180,51 @@ def stitch(old_tree, new_tree, root, instance):
                 ids.append(c_q.id)
 
     # Stitch in new tree
-    q = [(root, new_tree.get_root())]
-    root.feature = new_tree.get_root().feature
-    root.left = None
-    root.right = None
+    if new_tree.root.is_leaf:
+        # Find parent
+        def find_parent(c_n, target_id):
+            if not c_n.is_leaf:
+                if c_n.left.id == target_id:
+                    return c_n, True
+                elif c_n.right.id == target_id:
+                    return c_n, False
+                ll = find_parent(c_n.left, target_id)
+                return ll if ll else find_parent(c_n.right, target_id)
+            return None
+        parent, is_left = find_parent(old_tree.root, root.id)
+        n_n = DecisionTreeLeaf(new_tree.root.cls, root.id)
+        if is_left:
+            parent.left = n_n
+        else:
+            parent.right = n_n
+        old_tree.nodes[root.id] = n_n
+    else:
+        q = [(root, new_tree.get_root())]
+        root.feature = new_tree.get_root().feature
+        root.left = None
+        root.right = None
 
-    while q:
-        o_r, n_r = q.pop()
+        while q:
+            o_r, n_r = q.pop()
 
-        if len(ids) < 2:  # Lower max. depth may still have more nodes
-            ids.append(len(old_tree.nodes))
-            ids.append(len(old_tree.nodes) + 1)
-            old_tree.nodes.append(None)
-            old_tree.nodes.append(None)
+            if len(ids) < 2:  # Lower max. depth may still have more nodes
+                ids.append(len(old_tree.nodes))
+                ids.append(len(old_tree.nodes) + 1)
+                old_tree.nodes.append(None)
+                old_tree.nodes.append(None)
 
-        for c_p, c_c in [(True, n_r.get_children()[True]), (False, n_r.get_children()[False])]:
-            if c_c.is_leaf:
-                if c_c.cls.startswith("-"):
-                    old_tree.add_leaf(ids.pop(), o_r.id, c_p, c_c.cls[1:])
-                else:
-                    if c_p:
-                        o_r.left = old_tree.nodes[int(c_c.cls)]
+            for c_p, c_c in [(True, n_r.get_children()[True]), (False, n_r.get_children()[False])]:
+                if c_c.is_leaf:
+                    if c_c.cls.startswith("-"):
+                        old_tree.add_leaf(ids.pop(), o_r.id, c_p, c_c.cls[1:])
                     else:
-                        o_r.right = old_tree.nodes[int(c_c.cls)]
-            else:
-                n_r = old_tree.add_node(ids.pop(), o_r.id, c_c.feature, c_p)
-                q.append((n_r, c_c))
+                        if c_p:
+                            o_r.left = old_tree.nodes[int(c_c.cls)]
+                        else:
+                            o_r.right = old_tree.nodes[int(c_c.cls)]
+                else:
+                    n_r = old_tree.add_node(ids.pop(), o_r.id, c_c.feature, c_p)
+                    q.append((n_r, c_c))
 
     # TODO: This is necessary if sub-trees are duplicated, but only has to be performed for the sub-tree
     old_tree.clean(instance)
