@@ -29,8 +29,8 @@ def _init_vars(instance, depth, vs, start=0):
     return g, d, pool
 
 
-def encode(instance, depth, solver, start=0, pool=None):
-    g, d, p = _init_vars(instance, depth, pool, start)
+def encode(instance, depth, solver, opt_size, start=0, vs=None):
+    g, d, p = _init_vars(instance, depth, vs, start)
 
     # Add level 0, all examples are in the same group
     for i in range(0, len(instance.examples)):
@@ -102,7 +102,7 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False):
     while clb < ub:
         print(f"Running {c_bound}")
         with solver() as slv:
-            vs = encode(instance, c_bound, slv)
+            vs = encode(instance, c_bound, slv, opt_size)
 
             if timeout == 0:
                 solved = slv.solve()
@@ -128,7 +128,7 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False):
         with solver() as slv:
             c_size_bound = best_model.root.get_leafs() - 1
             solved = True
-            vs = encode(instance, best_depth, slv)
+            vs = encode(instance, best_depth, slv, opt_size)
             card = encode_size(vs, instance, slv, best_depth)
 
             tot = ITotalizer(card, c_size_bound, top_id=vs["pool"].top+1)
@@ -185,7 +185,7 @@ def run_incremental(instance, solver, strategy, timeout, size_limit, start_bound
 
             solved = True
             try:
-                vs = encode(strategy.instance, c_bound, slv)
+                vs = encode(strategy.instance, c_bound, slv, False)
             except MemoryError:
                 solved = False
                 c_bound -= 1
@@ -218,7 +218,7 @@ def run_incremental(instance, solver, strategy, timeout, size_limit, start_bound
 
                     strategy.extend(increment)
                     try:
-                        encode(strategy.instance, c_bound, slv, len(strategy.instance.examples) - increment, vs)
+                        encode(strategy.instance, c_bound, slv, False, len(strategy.instance.examples) - increment, vs)
                     except MemoryError:
                         is_done = True
                         break
@@ -230,6 +230,17 @@ def run_incremental(instance, solver, strategy, timeout, size_limit, start_bound
 
     timer.cancel()
     return best_model
+
+
+def extend(slv, instance, vs, c_bound, increment, size_limit):
+    guess = estimate_size(instance, c_bound, len(instance.examples) - increment)
+
+    if guess > size_limit:
+        return None
+
+    encode(instance, c_bound, slv, False, len(instance.examples) - increment, vs)
+
+    return guess
 
 
 def _decode(model, instance, depth, vs):
@@ -358,4 +369,8 @@ def max_instances(num_features, limit):
 
 
 def lb():
+    return 1
+
+
+def increment():
     return 1

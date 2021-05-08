@@ -4,7 +4,7 @@ from collections import defaultdict
 import class_instance
 from pysat.solvers import Glucose3, Glucose4
 from decision_tree import DecisionTreeNode, DecisionTreeLeaf
-from sat import switching_encoding, depth_avellaneda, depth_partition
+from sat import switching_encoding, encoding_base
 
 # 500 Mio. takes ~ < 16 GB, 250 Mio. ~ < 12 GB, 200 Mio. sometimes goes over 8 GB
 literal_limit = 200 * 1000 * 1000 # 200 * 1000 * 1000
@@ -347,7 +347,7 @@ def _get_max_bound(size, sample_limit):
     return new_ub
 
 
-def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit):
+def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, opt_size=False):
     runner, slv = build_runner()
 
     prev_instance = None
@@ -381,7 +381,7 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
             return False, prev_idx
 
         # Solve instance
-        new_tree = runner.run(new_instance, slv, start_bound=min(new_ub, cd-1), timeout=time_limit, ub=min(new_ub, cd-1))
+        new_tree = encoding_base.run(runner, new_instance, slv, start_bound=min(new_ub, cd-1), timeout=time_limit, ub=min(new_ub, cd-1), opt_size=opt_size)
 
         # Either the branch is done, or
         if new_tree is None:
@@ -404,7 +404,7 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
     return False, prev_idx
 
 
-def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit):
+def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, opt_size=False):
     last_idx = path_idx
     while path_idx < len(path):
         c_d = depth_from(path[path_idx])
@@ -431,7 +431,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
     if len(new_instance.examples) == 0 or runner.estimate_size(new_instance, c_d-1) > literal_limit:
         return False, last_idx
 
-    new_tree = runner.run(new_instance, slv, start_bound=min(new_ub, c_d - 1), timeout=time_limit, ub=min(new_ub, c_d - 1))
+    new_tree = encoding_base.run(runner, new_instance, slv, start_bound=min(new_ub, c_d - 1), timeout=time_limit, ub=min(new_ub, c_d - 1), opt_size=opt_size)
     if new_tree is None:
         return False, last_idx
     else:
@@ -439,7 +439,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
         return True, last_idx
 
 
-def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit):
+def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, opt_size=False):
     runner, slv = build_runner()
 
     if path[path_idx].is_leaf:
@@ -482,8 +482,8 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_
     if len(last_instance[0].examples) == 0 or new_ub < 1:
         return False, path_idx
 
-    new_tree = runner.run(last_instance[0], slv, start_bound=min(new_ub, last_instance[3] - 1),
-                          timeout=time_limit, ub=min(new_ub, last_instance[3] - 1))
+    new_tree = encoding_base.run(runner, last_instance[0], slv, start_bound=min(new_ub, last_instance[3] - 1),
+                          timeout=time_limit, ub=min(new_ub, last_instance[3] - 1), opt_size=opt_size)
 
     if new_tree is not None:
         q = [new_tree.root]
@@ -539,7 +539,7 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
         if new_ub < 1:
             return False, prev_idx
 
-        new_tree = runner.run(prev_instance, slv, start_bound=min(new_ub, nd - 1), timeout=time_limit,
+        new_tree = encoding_base.run(runner, prev_instance, slv, start_bound=min(new_ub, nd - 1), timeout=time_limit,
                               ub=min(new_ub, nd - 1))
 
         if new_tree is not None:
@@ -551,7 +551,7 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
     return False, prev_idx
 
 
-def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit, depth_limit, time_limit):
+def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit, depth_limit, time_limit, opt_size=False):
     runner, slv = build_runner()
 
     # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
@@ -567,8 +567,8 @@ def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit, 
     if new_ub < 1:
         return False, path_idx
 
-    new_tree = runner.run(new_instance, slv, start_bound=min(new_ub, i_depth - 1), timeout=time_limit,
-                          ub=min(new_ub, i_depth - 1))
+    new_tree = encoding_base.run(runner, new_instance, slv, start_bound=min(new_ub, i_depth - 1), timeout=time_limit,
+                          ub=min(new_ub, i_depth - 1), opt_size=opt_size)
     if new_tree is not None:
         new_instance.unreduce_instance(new_tree)
 

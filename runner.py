@@ -17,6 +17,7 @@ import incremental.random_strategy as rs
 import incremental.maintain_strategy as ms
 import limits
 import resource
+import sat.encoding_base as eb
 import incremental.heuristic as heur
 
 # This is used for debugging, for experiments use proper memory limiting
@@ -38,7 +39,7 @@ ap.add_argument("-r", dest="reduce", action="store_true", default=False,
 ap.add_argument("-t", dest="time_limit", action="store", default=900, type=int,
                 help="The timelimit in seconds.")
 ap.add_argument("-s", dest="strategy", action="store", default=0, choices=[0, 1, 2], type=int,
-                help="The strategy to use for incremental, recursive mode (0=random, 1=entropy, 2=maintaining)."
+                help="The strategy to use for incremental, recursive mode (0=entropy, 1=random, 2=maintaining)."
                 )
 ap.add_argument("-z", dest="size", action="store_true", default=False,
                 help="Decrease the size as well as the depth.")
@@ -58,15 +59,16 @@ if args.reduce:
     class_instance.reduce(instance)
 
 if args.mode == 0:
-    tree = encoding.run(instance, Glucose3, timeout=args.time_limit, opt_size=args.size, check_mem=False)
+    tree = eb.run(encoding, instance, Glucose3, timeout=args.time_limit, opt_size=args.size, check_mem=False)
+    # encoding.run(instance, Glucose3, timeout=args.time_limit, opt_size=args.size, check_mem=False)
 elif args.mode == 1:
     strategy = strat(instance)
     strategy.extend(5)
-    tree = encoding.run_incremental(instance, Glucose3, strategy, args.time_limit, limits.size_limit)
+    tree = eb.run_incremental(encoding, instance, Glucose3, strategy, args.time_limit, limits.size_limit)
 elif args.mode == 2:
     strategy = strat(instance)
     strategy.extend(5)
-    tree = encoding.run_incremental(instance, Glucose3, strategy, args.time_limit, limits.size_limit)
+    tree = eb.run_incremental(encoding, instance, Glucose3, strategy, args.time_limit, limits.size_limit)
     #tree = encoding.run_limited(Glucose3, strategy, limits.size_limit, limits.sample_limit_short, start_bound=len(limits.sample_limit_short)-2, go_up=False)
 
     def add_nodes(c_root):
@@ -107,7 +109,7 @@ elif args.mode == 2:
                         class_instance.reduce(new_instance)
                     strategy = strat(new_instance)
                     strategy.extend(5)
-                    new_tree = encoding.run_incremental(new_instance, Glucose3, strategy, args.time_limit, limits.size_limit)
+                    new_tree = eb.run_incremental(encoding, new_instance, Glucose3, strategy, args.time_limit, limits.size_limit, opt_size=args.size, check_mem=True)
                     #new_tree = encoding.run_limited(Glucose3, strategy, limits.size_limit, limits.sample_limit_short, go_up=False, start_bound=len(limits.sample_limit_short)-2, timeout=limits.time_limits[0])
 
                     if args.reduce:

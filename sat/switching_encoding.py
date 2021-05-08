@@ -1,11 +1,3 @@
-import time
-from sys import maxsize
-from threading import Timer
-
-import psutil
-from pysat.card import ITotalizer
-
-import limits
 import sat.depth_avellaneda as enc1
 import sat.depth_partition as enc2
 
@@ -41,114 +33,20 @@ def interrupt(s):
     s.interrupt()
 
 
-def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=True, check_mem=True):
-    c_bound = start_bound
-    clb = 1
-    best_model = None
-    best_depth = None
-    interrupted = []
-
-    def check_memory(s):
-        used = psutil.Process().memory_info().vms
-        free_memory = limits.mem_limit - used
-        print(free_memory)
-        if free_memory < 2000 * 1024 * 1024:
-            print("Caught")
-            interrupted.append(True)
-            s.interrupt()
-            print("Interrupted")
-            print(f"{s.get_status()}")
-        elif s.glucose is not None:  # TODO: Not a solver independent way to detect if the solver has been deleted...
-            Timer(1, check_memory, [s]).start()
-
-    while clb < ub:
-        print(f"Running {c_bound}")
-        print('{:,}'.format(estimate_size(instance, c_bound)))
-
-        with solver() as slv:
-            if check_mem:
-                check_memory(slv)
-            enc = enc2 if c_bound >= _switch_threshold else enc1
-
-            try:
-                vs = enc.encode(instance, c_bound, slv)
-            except MemoryError:
-                return best_model
-            print("Done")
-            if timeout == 0:
-                solved = slv.solve()
-            else:
-                def interrupt(s):
-                    interrupted.append(True)
-                    s.interrupt()
-
-                timer = Timer(timeout, interrupt, [slv])
-                timer.start()
-                solved = slv.solve_limited(expect_interrupt=True)
-                timer.cancel()
-
-            if interrupted:
-                break
-            elif solved:
-                model = {abs(x): x > 0 for x in slv.get_model()}
-                best_model = enc._decode(model, instance, c_bound, vs)
-                best_depth = c_bound
-                ub = c_bound
-                c_bound -= 1
-            else:
-                c_bound += 1
-                clb = c_bound + 1
-
-    if opt_size and best_model:
-        with solver() as slv:
-            if check_mem:
-                check_memory(slv)
-            enc = enc2 if best_depth >= _switch_threshold else enc1
-            c_size_bound = best_model.root.get_leafs() - 1
-            solved = True
-            vs = enc.encode(instance, best_depth, slv)
-            card = enc.encode_size(vs, instance, slv, best_depth)
-
-            tot = ITotalizer(card, c_size_bound, top_id=vs["pool"].top+1)
-            slv.append_formula(tot.cnf)
-
-            timer = None
-
-            if timeout > 0:
-                timer = Timer(timeout, interrupt, [slv])
-                timer.start()
-
-            while solved and c_size_bound > 1:
-                print(f"Running {c_size_bound}")
-                solved = slv.solve_limited(expect_interrupt=True)
-
-                if solved:
-                    model = {abs(x): x > 0 for x in slv.get_model()}
-                    best_model = enc._decode(model, instance, best_depth, vs)
-                    c_size_bound -= 1
-                    slv.add_clause([-tot.rhs[c_size_bound]])
-                else:
-                    break
-
-        if timer is not None:
-            timer.cancel()
-
-    return best_model
+def encode(instance, c_bound, slv, opt_size):
+    enc = enc2 if c_bound >= _switch_threshold else enc1
+    vs = enc.encode(instance, c_bound, slv, opt_size)
+    return vs
 
 
-def run_incremental(instance, solver, strategy, timeout, size_limit, start_bound=1, increment=5, ubound=maxsize):
-    start_time = time.time()
-    best_model = enc1.run_incremental(instance, solver, strategy, timeout, size_limit, start_bound, increment, _switch_threshold - 1)
-    elapsed = time.time() - start_time
+def _decode(model, instance, best_depth, vs):
+    enc = enc2 if best_depth >= _switch_threshold else enc1
+    return enc._decode(model, instance, best_depth, vs)
 
-    best_model2 = None
-    if elapsed < timeout:
-        best_model2 = enc2.run_incremental(instance, solver, strategy, timeout-elapsed, size_limit, _switch_threshold, increment)
 
-    if best_model2 is not None:
-        return best_model2
-
-    return best_model
+def extend(slv, instance, vs, c_bound, increment, size_limit):
+    enc = enc2 if c_bound >= _switch_threshold else enc1
+    return enc.extend(slv, instance, vs, c_bound, increment, size_limit)
 
 
 def estimate_size(instance, depth):
@@ -156,3 +54,13 @@ def estimate_size(instance, depth):
 
     return enc2.estimate_size(instance, depth) if depth >= _switch_threshold \
         else enc1.estimate_size(instance, depth)
+
+
+def encode_size(vs, instance, solver, depth):
+    return enc2.encode_size(vs, instance, solver, depth) if depth >= _switch_threshold \
+        else enc1.encode_size(vs, instance, solver, depth)
+
+
+def increment():
+    return 1
+

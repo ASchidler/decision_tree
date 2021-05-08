@@ -210,8 +210,10 @@ def _encode_feature(data, instance, num_nodes, solver):
         solver.add_clause([*clause])
 
 
-def _encode_examples(data, instance, num_nodes, solver):
-    for e in instance.examples:
+def _encode_examples(data, instance, num_nodes, solver, start=0):
+    for ie in range(start, len(instance.examples)):
+        e = instance.examples[ie]
+
         for j in range(1, num_nodes + 1):
             # If the class of the leaf differs from the class of the example, at least one
             # node on the way must discriminate against the example, otherwise the example
@@ -287,7 +289,7 @@ def _improve(data, num_nodes, solver):
     #solver.add_clause([tau[1][1]])
 
 
-def _encode(instance, num_nodes, solver, improve=True):
+def encode(instance, num_nodes, solver, opt_size, improve=True):
     classes = set()
     for e in instance.examples:
         classes.add(e.cls)
@@ -362,6 +364,21 @@ def _uniquify_classes(data, instance, num_nodes, class_map, solver):
                 solver.add_clause([*clause])
 
 
+def extend(slv, instance, vs, c_bound, increment, size_limit):
+    f = instance.num_features
+    guess = increment * c_bound * (f + 1) * len(instance.classes)
+    if guess > size_limit:
+        return None
+
+    _encode_examples(vs, instance, c_bound, slv, len(instance.examples)-increment)
+    return guess
+
+
+def encode_size(vs, instance, solver, dl):
+    solver.add_clause([-1])
+    solver.add_clause([1])
+
+
 def run(instance, solver, start_bound=3, timeout=0, ub=maxsize, opt_size=False):
     c_bound = start_bound
     best_model = None
@@ -370,7 +387,7 @@ def run(instance, solver, start_bound=3, timeout=0, ub=maxsize, opt_size=False):
     while c_lb < ub:
         print(f"Running {c_bound}")
         with solver() as slv:
-            data = _encode(instance, c_bound, slv)
+            data = encode(instance, c_bound, slv)
 
             if timeout == 0:
                 solved = slv.solve()
@@ -384,7 +401,7 @@ def run(instance, solver, start_bound=3, timeout=0, ub=maxsize, opt_size=False):
                 timer.cancel()
             if solved:
                 model = {abs(x): x > 0 for x in slv.get_model()}
-                best_model = _decode(data, model, instance, c_bound)
+                best_model = _decode(model, instance, c_bound, data)
                 ub = c_bound
                 c_bound -= 2
             else:
@@ -394,7 +411,7 @@ def run(instance, solver, start_bound=3, timeout=0, ub=maxsize, opt_size=False):
     return best_model
 
 
-def _decode(data, model, instance, num_nodes):
+def _decode(model, instance, num_nodes, data):
     # TODO: This could be faster, but for debugging purposes, check for consistency
     tree = DecisionTree(instance.num_features, num_nodes)
     # Set root
@@ -515,6 +532,10 @@ def new_bound(tree, instance):
 
 def lb():
     return 3
+
+
+def increment():
+    return 2
 
 
 def max_instances(num_features, limit):

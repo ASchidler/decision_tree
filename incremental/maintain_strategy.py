@@ -33,19 +33,23 @@ class MaintainingStrategy:
         popped = self.instance.examples.pop()
         self.pool.append(popped)
 
+    def add_ex(self, cls):
+        if len(self.classes[cls]) == 0:
+            raise RuntimeError("Class empty")
+
+        new_ex = self.classes[cls].pop()
+        self.instance.add_example(new_ex.copy())
+        self.instance.examples[-1].id = len(self.instance.examples)
+        self.current_class_distribution[new_ex.cls] += 1
+
+        if len(self.classes[new_ex.cls]) == 0:
+            self.classes.pop(new_ex.cls)
+
+        for cf in range(1, self.original_instance.num_features + 1):
+            if new_ex.features[cf]:
+                self.current_feature_distribution[cf] += 1
+
     def extend(self, n, tree=None):
-        def add_ex(new_ex):
-            self.instance.add_example(new_ex.copy())
-            self.instance.examples[-1].id = len(self.instance.examples)
-            self.current_class_distribution[new_ex.cls] += 1
-
-            if len(self.classes[new_ex.cls]) == 0:
-                self.classes.pop(new_ex.cls)
-
-            for cf in range(1, self.original_instance.num_features + 1):
-                if new_ex.features[cf]:
-                    self.current_feature_distribution[cf] += 1
-
         while n > 0 and len(self.classes) > 0:
             n -= 1
             if self.pool:
@@ -53,8 +57,7 @@ class MaintainingStrategy:
                 continue
             elif len(self.instance.examples) < len(self.classes):
                 nxt_cls = next(x for x in self.classes.keys() if self.current_class_distribution[x] == 0)
-                ex = self.classes[nxt_cls].pop()
-                add_ex(ex)
+                self.add_ex(nxt_cls)
             else:
                 best_cls = (2, None)
                 for cls in self.classes:
@@ -78,5 +81,4 @@ class MaintainingStrategy:
                         c_val += self.feature_distribution[f] - (changes_t[f] if ce.features[f] else changes_f[f])
                     best_ex = min(best_ex, (c_val, idx))
                 self.classes[best_cls][-1], self.classes[best_cls][best_ex[1]] = self.classes[best_cls][best_ex[1]], self.classes[best_cls][-1]
-                best_ex = self.classes[best_cls].pop()
-                add_ex(best_ex)
+                self.add_ex(best_cls)
