@@ -20,6 +20,10 @@ import resource
 import sat.encoding_base as eb
 import incremental.heuristic as heur
 
+instance_path = "datasets/split"
+instance_validation_path = "datasets/validate"
+validation_ratios = [0, 20, 30]
+
 # This is used for debugging, for experiments use proper memory limiting
 resource.setrlimit(resource.RLIMIT_AS, (23 * 1024 * 1024 * 1024 // 2, 12 * 1024 * 1024 * 1024))
 
@@ -43,11 +47,39 @@ ap.add_argument("-s", dest="strategy", action="store", default=0, choices=[0, 1,
                 )
 ap.add_argument("-z", dest="size", action="store_true", default=False,
                 help="Decrease the size as well as the depth.")
+ap.add_argument("-d", dest="validation", action="store", default=0, type=int,
+                help="Use data with validation set, 1=20% holdout, 2=30% holdout.")
 
 args = ap.parse_args()
 
+if args.validation == 0:
+    fls = list(x for x in os.listdir(instance_path) if x.endswith(".data"))
+else:
+    fls = list(
+        x for x in os.listdir(instance_validation_path) if x.endswith(f"{validation_ratios[args.validation]}.data"))
+
+fls.sort()
+
+# if args.choices:
+#     for i, cf in enumerate(fls):
+#         print(f"{i+1}: {cf}")
+#     exit(0)
+
+try:
+    target_instance_idx = int(args.instance)
+
+    if target_instance_idx > len(fls):
+        print(f"Only {len(fls)} files are known.")
+        exit(1)
+
+    target_instance = fls[target_instance_idx-1][:-5]
+except ValueError:
+    target_instance = args.instance[:-5] if args.instance.endswith(".names") or args.instance.endswith(".data") else args.instance
+
+print(f"{target_instance}")
+
 start_time = time.time()
-instance = parser.parse(args.instance, has_header=False)
+instance = parser.parse(os.path.join(instance_path, target_instance + ".data"), has_header=False)
 test_instance = instance
 if os.path.exists(args.instance[:-4]+"test"):
     test_instance = parser.parse(args.instance[:-4] + "test")
@@ -153,7 +185,7 @@ if args.reduce:
     instance.unreduce_instance(tree)
 tree.check_consistency()
 
-print(f"Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
+print(f"END Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
       f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
       f"Time: {time.time() - start_time}")
 

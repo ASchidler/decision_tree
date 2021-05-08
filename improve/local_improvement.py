@@ -53,6 +53,8 @@ ap.add_argument("-d", dest="validation", action="store", default=0, type=int,
                 help="Use data with validation set, 1=20% holdout, 2=30% holdout.")
 ap.add_argument("-z", dest="size", action="store_true", default=False,
                 help="Decrease the size as well as the depth.")
+ap.add_argument("-y", dest="easy", action="store_true", default=False,
+                help="Use easy operations first")
 
 args = ap.parse_args()
 
@@ -155,18 +157,25 @@ def sig_handler(signum, frame):
 signal.signal(signal.SIGSEGV, sig_handler)
 
 if args.method_prune != 3:
-    # df.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,
-    #        timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time))
-    ef.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,
-           timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time))
+    if args.easy:
+        ef.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,
+               timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time))
+    else:
+        df.run(tree, training_instance, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,
+               timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time))
     if args.method_prune == 1:
         pruning.prune_c45(tree, training_instance, args.ratio, m=args.min_samples)
     else:
         tree.clean(training_instance, min_samples=args.min_samples)
 else:
     new_training, holdout = split(training_instance, ratio_splitoff=args.ratio)
-    df.run(tree, new_training, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,
-           timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time))
+    if args.easy:
+        ef.run(tree, new_training, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,
+               timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time))
+    else:
+        df.run(tree, new_training, test_instance, limit_idx=args.limit_idx, pt=args.print_tree,
+               timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time))
+
     tree.clean(new_training, min_samples=args.min_samples)
     pruning.prune_reduced_error(tree, holdout)
 
