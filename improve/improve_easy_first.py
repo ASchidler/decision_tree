@@ -102,14 +102,18 @@ def run(tree, instance, test, limit_idx=1, pt=False, timelimit=0, opt_size=False
     assigned = tree.assign_samples(instance)
     tree_size = tree.get_nodes()
     while tree_size > len(c_ignore_reduce):
+        allow_reduction = False
         pth = find_deepest_leaf(tree, c_ignore)
-        if pth is None:
-            return
 
-        allow_reduction = (tree_size == len(c_ignore))
+        if pth is None:
+            allow_reduction = True
+            pth = find_deepest_leaf(tree, c_ignore_reduce)
+            if pth is None:
+                return
 
         while pth:
             root = pth.pop()
+
             if (not allow_reduction and root.id in c_ignore) or (allow_reduction and root.id in c_ignore_reduce):
                 continue
 
@@ -143,7 +147,6 @@ def run(tree, instance, test, limit_idx=1, pt=False, timelimit=0, opt_size=False
             if 0 < timelimit < (time.time() - start_time):
                 return
 
-
             if not allow_reduction:
                 c_ignore.add(root.id)
             else:
@@ -161,8 +164,6 @@ def run(tree, instance, test, limit_idx=1, pt=False, timelimit=0, opt_size=False
                 break
             else:
                 print("None")
-
-
 
         # def find_mid(root, assigned):
         #     if root.id in c_ignore:
@@ -237,6 +238,3 @@ def run(tree, instance, test, limit_idx=1, pt=False, timelimit=0, opt_size=False
         #             return select_idx, assigned
         #
         #     find_leaf(tree.root, tree.assign_samples(instance))
-
-
-

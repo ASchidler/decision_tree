@@ -1,7 +1,7 @@
 from class_instance import ClassificationInstance, ClassificationExample
 
 
-def parse(filename, has_header=True):
+def parse(filename, has_header=False):
     instance = ClassificationInstance()
     id = 1
     mappings = {}

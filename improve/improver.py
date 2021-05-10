@@ -337,7 +337,7 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
 
                 if reduce:
                     # key = new_instance.min_key(randomize=True)
-                    class_instance.reduce(new_instance, randomized_runs=1)
+                    class_instance.reduce(new_instance, randomized_runs=1, slow=len(new_instance.examples) < 5000)
                 else:
                     class_instance.reduce(new_instance, min_key=features)
 
@@ -520,7 +520,7 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_
     return False, path_idx
 
 
-def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit):
+def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, opt_size=False):
     runner, slv = build_runner()
 
     prev_instance = None
@@ -540,7 +540,7 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
         if len(new_instance.examples) == 0:
             break
 
-        class_instance.reduce(new_instance, randomized_runs=1)
+        class_instance.reduce(new_instance, randomized_runs=1, slow=len(new_instance.examples) < 5000)
 
         if runner.estimate_size(new_instance, c_d-1) > literal_limit:
             break
@@ -560,7 +560,7 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
             return False, prev_idx
 
         new_tree = encoding_base.run(runner, prev_instance, slv, start_bound=min(new_ub, nd - 1), timeout=time_limit,
-                              ub=min(new_ub, nd - 1))
+                              ub=min(new_ub, nd - 1), opt_size=opt_size)
 
         if new_tree is not None:
             prev_instance.unreduce_instance(new_tree)

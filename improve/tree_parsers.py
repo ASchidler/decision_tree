@@ -119,8 +119,13 @@ def parse_iti_tree(tree_path, instance):
 def parse_internal_tree(tree_path, instance):
     with open(tree_path) as tf:
         lines = []
-        for _, l in enumerate(tf):
-            lines.append(l)
+        for _, cl in enumerate(tf):
+            cl = cl.strip()
+            if len(cl) > 0:
+                lines.append(cl)
+
+    if len(lines) == 0:
+        return None
 
     tree = decision_tree.DecisionTree(instance.num_features, len(lines))
 
