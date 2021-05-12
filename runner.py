@@ -79,7 +79,10 @@ except ValueError:
 print(f"{target_instance}")
 
 start_time = time.time()
-instance = parser.parse(os.path.join(instance_path, target_instance + ".data"), has_header=False)
+if args.validation == 0:
+    instance = parser.parse(os.path.join(instance_path, target_instance + ".data"), has_header=False)
+else:
+    instance = parser.parse(os.path.join(instance_validation_path, target_instance + ".data"), has_header=False)
 test_instance = instance
 if os.path.exists(args.instance[:-4]+"test"):
     test_instance = parser.parse(args.instance[:-4] + "test")

@@ -1,3 +1,4 @@
+import sys
 from collections import defaultdict
 import class_instance
 
@@ -65,7 +66,7 @@ class MaintainingStrategy:
                     best_cls = min(best_cls, (p_new - self.class_distribution[cls], cls))
                 best_cls = best_cls[1]
 
-                best_ex = (2, None)
+                best_ex = (sys.maxsize, None)
                 changes_t = [0]
                 changes_f = [0]
                 for f in range(1, self.original_instance.num_features+1):

@@ -3,11 +3,11 @@ from collections import defaultdict
 from decision_tree import DecisionTreeLeaf
 from sys import maxsize
 from scipy.stats import norm
-from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold
 from class_instance import ClassificationInstance
 from collections import deque
 
-ccp_default_alpha = 0.05
+ccp_default_alpha = 0.1
 c45_default_c = 0.2
 c45_default_m = 2
 
@@ -211,7 +211,7 @@ def prune_c45_optimized(tree, instance, subtree_raise=True, simple=False, valida
         x = [e.features for e in instance.examples]
         y = [e.cls for e in instance.examples]
 
-        folds = list(KFold().split(x, y))
+        folds = list(StratifiedKFold().split(x, y))
         for c_fold_training, c_fold_test in folds:
             new_training = ClassificationInstance()
             new_test = ClassificationInstance()
@@ -434,7 +434,7 @@ def cost_complexity(tree, instance, simple=False, validation_instance=None):
         x = [e.features for e in instance.examples]
         y = [e.cls for e in instance.examples]
 
-        folds = list(KFold().split(x, y))
+        folds = list(StratifiedKFold().split(x, y))
         for c_fold_training, c_fold_test in folds:
             new_training = ClassificationInstance()
             new_test = ClassificationInstance()
