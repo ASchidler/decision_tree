@@ -80,6 +80,7 @@ class MaintainingStrategy:
 
                     for f in range(1, self.original_instance.num_features+1):
                         c_val += self.feature_distribution[f] - (changes_t[f] if ce.features[f] else changes_f[f])
-                    best_ex = min(best_ex, (c_val, idx))
+                        if best_ex[0] > c_val:
+                            best_ex = (c_val, idx)
                 self.classes[best_cls][-1], self.classes[best_cls][best_ex[1]] = self.classes[best_cls][best_ex[1]], self.classes[best_cls][-1]
                 self.add_ex(best_cls)
