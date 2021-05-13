@@ -7,7 +7,7 @@ from sklearn.model_selection import StratifiedKFold
 from class_instance import ClassificationInstance
 from collections import deque
 
-ccp_default_alpha = 0.1
+ccp_default_alpha = 0.05
 c45_default_c = 0.2
 c45_default_m = 2
 
@@ -94,6 +94,7 @@ def prune_reduced_error(tree, pruning_instance, subtree_raise=True):
                     return r_raise, node.right
 
     rec_subtree_replace(tree.root)
+    return tree.get_accuracy(pruning_instance.examples)
 
 
 def prune_c45(tree, instance, ratio, m=2, subtree_raise=True):
@@ -272,6 +273,7 @@ def prune_c45_optimized(tree, instance, subtree_raise=True, simple=False, valida
         last_accuracies.append(c_accuracy)
 
     prune_c45(tree, instance, best_c, best_m, subtree_raise)
+    return best_accuracy
 
 
 def _cost_complexity_alphas(tree, instance):
@@ -314,9 +316,9 @@ def _cost_complexity_alphas(tree, instance):
             return maxsize, node.id
         else:
             min_alpha = min(do_pass(node.left), do_pass(node.right))
-            rt = errors[node.id] / len(assigned[node.id])
-            branch = branch_error[node.id] / len(assigned[node.id])
-            c_alpha = (rt - branch) / (leafs[node.id] - 1)
+            rt = errors[node.id]
+            branch = branch_error[node.id]
+            c_alpha = (rt - branch) / (leafs[node.id] - 1) / len(instance.examples)#len(assigned[node.id])
 
             if c_alpha < min_alpha[0]:
                 return c_alpha, node.id
@@ -397,9 +399,9 @@ def _cost_complexity_prune(tree, instance, test_instance, original_instance, alp
             branch_error[node.id] += be_correction
             leafs[node.id] -= l_correction
 
-            rt = errors[node.id] / len(assigned[node.id])
-            branch = branch_error[node.id] / len(assigned[node.id])
-            c_alpha = (rt - branch) / (leafs[node.id] - 1)
+            rt = errors[node.id]
+            branch = branch_error[node.id]
+            c_alpha = (rt - branch) / (leafs[node.id] - 1) / len(instance.examples) # len(assigned[node.id])
 
             if c_alpha <= alpha:
                 new_leaf = DecisionTreeLeaf(classes[node.id], node.id)
@@ -455,5 +457,6 @@ def cost_complexity(tree, instance, simple=False, validation_instance=None):
         for i in range(0, len(accuracies)):
             accuracies[i] += results[i]
 
-    best_alpha, _ = max(list(enumerate(accuracies)), key=lambda k: k[1])
+    best_alpha, best_accuracy = max(list(enumerate(accuracies)), key=lambda k: k[1])
     _cost_complexity_prune(tree, instance, instance, instance, [alphas[best_alpha]])
+    return best_accuracy
