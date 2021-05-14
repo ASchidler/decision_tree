@@ -203,7 +203,7 @@ def prune_c45(tree, instance, ratio, m=2, subtree_raise=True):
     tree.clean(instance, min_samples=m)
 
 
-def prune_c45_optimized(tree, instance, subtree_raise=True, simple=False, validation_instance=None):
+def prune_c45_optimized(tree, instance, subtree_raise=True, simple=False, validation_instance=None, validation_tree=None, validation_training=None):
     if simple:
         return prune_c45(tree, instance, c45_default_c, c45_default_m, subtree_raise)
 
@@ -228,13 +228,13 @@ def prune_c45_optimized(tree, instance, subtree_raise=True, simple=False, valida
                 c_example.id = new_id
             new_instances.append((new_training, new_test))
     else:
-        new_instances.append((instance, validation_instance))
+        new_instances.append((validation_training, validation_instance))
 
     def get_accuracy(c_val, m_val):
         acc = 0.0
         sz = 0
         for new_training, new_test in new_instances:
-            new_tree = tree.copy()
+            new_tree = tree.copy() if validation_tree is None else validation_tree.copy()
             new_tree.clean(new_training)
             prune_c45(new_tree, new_training, c_val, m_val, subtree_raise)
             acc += new_tree.get_accuracy(new_test.examples)
@@ -255,7 +255,7 @@ def prune_c45_optimized(tree, instance, subtree_raise=True, simple=False, valida
 
         c_c += 0.01 if c_c < 0.05 else 0.05
 
-    max_m = len(instance.examples) // 5 * 4
+    max_m = len((instance if validation_training is None else validation_training).examples) // 5 * 4
     m_values = [1, 2, 3, 4, *[x for x in range(5, min(50, max_m) + 1, 5)]]
     last_accuracies = deque(maxlen=5)
     for c_m in m_values:
@@ -425,11 +425,12 @@ def _cost_complexity_prune(tree, instance, test_instance, original_instance, alp
     return results
 
 
-def cost_complexity(tree, instance, simple=False, validation_instance=None):
+def cost_complexity(tree, instance, simple=False, validation_instance=None, validation_tree=None, validation_training=None):
+    tree.clean(instance)
     if simple:
         return _cost_complexity_prune(tree, instance, instance, instance, [ccp_default_alpha])
 
-    alphas = _cost_complexity_alphas(tree, instance)
+    alphas = _cost_complexity_alphas(tree if validation_tree is None else validation_tree, instance if validation_training is None else validation_training)
 
     new_instances = []
     if not validation_instance:
@@ -447,11 +448,11 @@ def cost_complexity(tree, instance, simple=False, validation_instance=None):
                 new_test.add_example(instance.examples[c_id])
             new_instances.append((new_training, new_test))
     else:
-        new_instances.append((instance, validation_instance))
+        new_instances.append((validation_training, validation_instance))
 
     accuracies = [0 for _ in alphas]
     for new_training, new_test in new_instances:
-        new_tree = tree.copy()
+        new_tree = tree.copy() if validation_tree is None else validation_tree.copy()
         new_tree.clean(new_training)
         results = _cost_complexity_prune(new_tree, new_training, new_test, instance, alphas)
         for i in range(0, len(accuracies)):
