@@ -148,6 +148,8 @@ def prune_c45(tree, instance, ratio, m=2, subtree_raise=True):
         else:
             l_result, l_repl = c45_prune_replace_red(node.left)
             r_result, r_repl = c45_prune_replace_red(node.right)
+            # To few samples at leaf
+            prune_m = (len(l_result) == 1 and l_result[0][1] < m) or (len(r_result) == 1 and r_result[0][1] < m)
             results = l_result + r_result
 
             # Commit the pruning reported by children
@@ -188,7 +190,7 @@ def prune_c45(tree, instance, ratio, m=2, subtree_raise=True):
                     if c_min is None or c_min[0] > new_e:
                         c_min = (new_e, c_child, new_results)
 
-            if replace_e >= child_e and (c_min is None or c_min[0] >= child_e):
+            if replace_e >= child_e and (c_min is None or c_min[0] >= child_e) and not prune_m:
                 return results, None
             else:
                 # Prune

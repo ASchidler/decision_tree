@@ -24,7 +24,9 @@ tree_path = "datasets/trees"
 instance_path = "datasets/split"
 tree_validation_path = "datasets/validate-trees"
 instance_validation_path = "datasets/validate"
+sat_path = "datasets/rec"
 validation_ratios = [0, 20, 30]
+heuristics = {0: "Weka", 1: "ITI", 2: "CART", 3: "SAT"}
 
 ap = argp.ArgumentParser(description="Python implementation for computing and improving decision trees.")
 ap.add_argument("instance", type=str)
@@ -55,6 +57,8 @@ ap.add_argument("-z", dest="size", action="store_true", default=False,
                 help="Decrease the size as well as the depth.")
 ap.add_argument("-y", dest="easy", action="store_true", default=False,
                 help="Use easy operations first")
+ap.add_argument("-g", dest="strategy", action="store", default=0, type=int,
+                help="Strategy SAT tree to load.")
 
 args = ap.parse_args()
 
@@ -76,6 +80,7 @@ try:
 
     if target_instance_idx > len(fls):
         print(f"Only {len(fls)} files are known.")
+        sys.stdout.flush()
         exit(1)
 
     target_instance = fls[target_instance_idx-1][:-5]
@@ -99,6 +104,8 @@ elif args.alg == 1:
     tree = parse_iti_tree(os.path.join(tree_path, target_instance + tree_infix + ".iti"), training_instance)
 elif args.alg == 2:
     tree = parse_internal_tree(os.path.join(tree_path, target_instance + tree_infix + ".cart"), training_instance)
+elif args.alg == 3:
+    tree = parse_internal_tree(os.path.join(sat_path, target_instance + f".20{args.strategy}.dt"), training_instance)
 else:
     raise RuntimeError(f"Unknown DT algorithm {args.alg}")
 
@@ -109,7 +116,7 @@ if args.print_tree:
         f.write(decision_tree.dot_export(tree))
 
 print(f"{target_instance}: Features {training_instance.num_features}\tExamples {len(training_instance.examples)}\t"
-      f"Optimize 'Depth'\tHeuristic {'Weka' if args.alg == 0 else ('ITI' if args.alg == 1 else 'CART')}")
+      f"Optimize 'Depth'\tHeuristic {heuristics[args.alg]}")
 
 
 def exit_timeout():

@@ -12,21 +12,27 @@ def check_memory(s, done):
 
     if free_memory < 2000 * 1024 * 1024:
         print("Caught memout")
-        done.append(True)
-        s.interrupt()
-        print(f"{s.get_status()}")
+        interrupt(s, done)
     elif s.glucose is not None:  # TODO: Not a solver independent way to detect if the solver has been deleted...
         Timer(1, check_memory, [s, done]).start()
 
 
 def interrupt(s, done, set_done=True):
-    s.interrupt()
+    print("Interrupted")
     if set_done:
         done.append(True)
+    s.interrupt()
+    Timer(5, check_interrupt, [s]).start()
+
+
+def check_interrupt(s):
+    if s.glucose is not None:  # TODO: Not a solver independent way to detect if the solver has been deleted...
+        s.interrupt()
+        Timer(5, check_interrupt, [s]).start()
 
 
 def mini_interrupt(s):
-    # Increments the current bound
+    # Increments the current bound, without cancelling
     interrupt(s, None, set_done=False)
 
 
@@ -49,7 +55,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Tr
                 vs = enc.encode(instance, c_bound, slv, opt_size)
             except MemoryError:
                 return best_model
-            print("Done")
+            print("Done Encoding")
 
             timer = None
             if timeout > 0:
@@ -58,7 +64,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Tr
             solved = slv.solve_limited(expect_interrupt=True)
             if timer is not None:
                 timer.cancel()
-
+            print("Done solving")
             if interrupted:
                 break
             elif solved:
@@ -84,7 +90,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Tr
                 card = enc.encode_size(vs, instance, slv, best_depth)
             except MemoryError:
                 return best_model
-
+            print("Done encoding")
             tot = ITotalizer(card, c_size_bound, top_id=vs["pool"].top+1)
             slv.append_formula(tot.cnf)
 
@@ -97,7 +103,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Tr
             while solved and c_size_bound > 1:
                 print(f"Running {c_size_bound}")
                 solved = slv.solve_limited(expect_interrupt=True)
-
+                print("Solved")
                 if solved:
                     model = {abs(x): x > 0 for x in slv.get_model()}
                     best_model = enc._decode(model, instance, best_depth, vs)
