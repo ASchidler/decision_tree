@@ -118,7 +118,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Tr
     return best_model
 
 
-def run_incremental(enc, instance, solver, strategy, timeout, size_limit, start_bound=1, increment=5, ubound=maxsize, opt_size=True, check_mem=False):
+def run_incremental(enc, instance, solver, strategy, timeout, size_limit, start_bound=1, increment=5, ubound=maxsize, opt_size=True, check_mem=True):
     start_time = time.time()
     c_bound = start_bound
     best_model = (0.0, None)

@@ -131,6 +131,7 @@ def exit_timeout():
           f"Avg {tree.get_avg_depth():03.4f}\t"
           f"Nodes {tree.get_nodes()}")
     print(tree.as_string())
+    sys.stdout.flush()
     exit(1)
 
 
@@ -158,6 +159,7 @@ def sig_handler(signum, frame):
           f"Nodes {tree.get_nodes()}")
 
     print(tree.as_string())
+    sys.stdout.flush()
     exit(1)
 
 
@@ -194,6 +196,7 @@ print(f"Time: End\t\t"
       f"Nodes {tree.get_nodes()}")
 
 print(tree.as_string())
+sys.stdout.flush()
 
 if timer:
     timer.cancel()
