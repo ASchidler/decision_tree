@@ -12,17 +12,20 @@ c45_default_c = 0.2
 c45_default_m = 2
 
 
-def prune_reduced_error(tree, pruning_instance, subtree_raise=True):
+def prune_reduced_error(tree, instance, pruning_instance, subtree_raise=True):
     # First remove empty branches
     tree.clean(pruning_instance)
     assigned = tree.assign_samples(pruning_instance)
 
     def raise_assign(child, samples):
         if child.is_leaf:
-            incorrect = 0
+            c_classes = defaultdict(int)
             for s in samples:
-                if pruning_instance.examples[s].cls != child.cls:
-                    incorrect += 1
+                c_classes[pruning_instance.examples[s].cls] += 1
+            if len(c_classes) == 0:
+                return 0
+            best_cls = max(c_classes.items(), key=lambda x: x[1])[0]
+            incorrect = sum(x[1] for x in c_classes.items() if x[0] != best_cls)
             return incorrect
         else:
             l_samples = []
@@ -89,11 +92,14 @@ def prune_reduced_error(tree, pruning_instance, subtree_raise=True):
                     return replace_error, new_leaf
                 elif l_raise < r_raise:
                     # TODO: Remove deleted sub-tree from node list
+                    node.left.reclassify([pruning_instance.examples[x] for x in assigned[node.id]])
                     return l_raise, node.left
                 else:
+                    node.right.reclassify([pruning_instance.examples[x] for x in assigned[node.id]])
                     return r_raise, node.right
 
     rec_subtree_replace(tree.root)
+    tree.root.reclassify(instance.examples)
     return tree.get_accuracy(pruning_instance.examples)
 
 
@@ -113,14 +119,19 @@ def prune_c45(tree, instance, ratio, m=2, subtree_raise=True):
 
     def c45_reassign(child, samples):
         if child.is_leaf:
-            incorrect = 0
+            c_classes = defaultdict(int)
             for s in samples:
-                if instance.examples[s].cls != child.cls:
-                    incorrect += 1
+                c_classes[instance.examples[s].cls] += 1
 
-            e = calc_confidence(len(samples), incorrect) if len(samples) > 0 else 0
+            if len(samples) > 0:
+                best_cls = max(c_classes.items(), key=lambda x: x[1])[0]
+                incorrect = sum(x[1] for x in c_classes.items() if x[0] != best_cls)
 
-            return [(incorrect, len(samples), e)]
+                e = calc_confidence(len(samples), incorrect)
+
+                return [(incorrect, len(samples), e)]
+            else:
+                return [(0, 0, 0)]
         else:
             l_samples = []
             r_samples = []
@@ -148,7 +159,7 @@ def prune_c45(tree, instance, ratio, m=2, subtree_raise=True):
         else:
             l_result, l_repl = c45_prune_replace_red(node.left)
             r_result, r_repl = c45_prune_replace_red(node.right)
-            # To few samples at leaf
+            # Too few samples at leaf
             prune_m = (len(l_result) == 1 and l_result[0][1] < m) or (len(r_result) == 1 and r_result[0][1] < m)
             results = l_result + r_result
 
@@ -180,7 +191,7 @@ def prune_c45(tree, instance, ratio, m=2, subtree_raise=True):
                 for c_child in [node.left, node.right]:
                     new_incorrect = 0
                     new_total = 0
-                    new_assigned = {}
+
                     new_results = c45_reassign(c_child, assigned[node.id])
 
                     for i, t, e in new_results:
@@ -194,8 +205,10 @@ def prune_c45(tree, instance, ratio, m=2, subtree_raise=True):
                 return results, None
             else:
                 # Prune
-                if c_min is not None and c_min[0] < replace_e:
+                if c_min is not None and c_min[0] < replace_e and not prune_m:
                     # TODO: Remove implicitly deleted nodes...
+                    # Reclassify should suffice at the end for the whole tree
+                    # c_min[1].reclassify([instance.examples[x] for x in assigned[node.id]])
                     return c_min[2], c_min[1]
                 else:
                     tree.nodes[node.id] = DecisionTreeLeaf(cls, node.id)
@@ -239,6 +252,7 @@ def prune_c45_optimized(tree, instance, subtree_raise=True, simple=False, valida
             new_tree = tree.copy() if validation_tree is None else validation_tree.copy()
             new_tree.clean(new_training)
             prune_c45(new_tree, new_training, c_val, m_val, subtree_raise)
+            new_tree.root.reclassify(new_training.examples)
             acc += new_tree.get_accuracy(new_test.examples)
             sz += new_tree.get_nodes()
         return acc, sz
@@ -251,7 +265,7 @@ def prune_c45_optimized(tree, instance, subtree_raise=True, simple=False, valida
     c_c = 0.01
     while c_c < 0.5:
         accuracy, _ = get_accuracy(c_c, best_m)
-        if accuracy > best_accuracy:
+        if accuracy >= best_accuracy:
             best_c = c_c
             best_accuracy = accuracy
 
@@ -265,7 +279,7 @@ def prune_c45_optimized(tree, instance, subtree_raise=True, simple=False, valida
         if c_accuracy < 0.001:
             break
 
-        if c_accuracy > best_accuracy:
+        if c_accuracy >= best_accuracy:
             best_accuracy = c_accuracy
             best_m = c_m
         elif (new_sz // len(new_instances) == 1) or (
@@ -275,6 +289,7 @@ def prune_c45_optimized(tree, instance, subtree_raise=True, simple=False, valida
         last_accuracies.append(c_accuracy)
 
     prune_c45(tree, instance, best_c, best_m, subtree_raise)
+    tree.root.reclassify(instance.examples)
     return best_accuracy
 
 
@@ -457,9 +472,11 @@ def cost_complexity(tree, instance, simple=False, validation_instance=None, vali
         new_tree = tree.copy() if validation_tree is None else validation_tree.copy()
         new_tree.clean(new_training)
         results = _cost_complexity_prune(new_tree, new_training, new_test, instance, alphas)
+        new_tree.root.reclassify(new_training.examples)
         for i in range(0, len(accuracies)):
             accuracies[i] += results[i]
 
     best_alpha, best_accuracy = max(list(enumerate(accuracies)), key=lambda k: k[1])
     _cost_complexity_prune(tree, instance, instance, instance, [alphas[best_alpha]])
+    tree.root.reclassify(instance.examples)
     return best_accuracy

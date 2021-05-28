@@ -3,7 +3,6 @@ from collections import defaultdict
 from class_instance import ClassificationInstance, ClassificationExample
 import random
 from sys import maxsize
-random.seed(1)
 
 
 class RandomStrategy:

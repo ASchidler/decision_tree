@@ -1,4 +1,5 @@
 import os
+from collections import defaultdict
 
 
 class DecisionTreeNode:
@@ -18,6 +19,18 @@ class DecisionTreeNode:
     def __lt__(self, other):
         return self.id < other.id
 
+    def reclassify(self, samples):
+        l_samples = []
+        r_samples = []
+        for c_e in samples:
+            if c_e.features[self.feature]:
+                l_samples.append(c_e)
+            else:
+                r_samples.append(c_e)
+
+        self.left.reclassify(l_samples)
+        self.right.reclassify(r_samples)
+
 
 class DecisionTreeLeaf:
     def __init__(self, cls, id):
@@ -30,6 +43,14 @@ class DecisionTreeLeaf:
 
     def get_leafs(self):
         return 1
+
+    def reclassify(self, samples):
+        c_classes = defaultdict(int)
+        for c_e in samples:
+            c_classes[c_e.cls] += 1
+        if len(c_classes) == 0:
+            return
+        self.cls = max(c_classes.items(), key=lambda x: x[1])[0]
 
 
 class DecisionTree:

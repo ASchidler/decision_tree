@@ -61,6 +61,11 @@ def encode_size(vs, instance, solver, depth):
         else enc1.encode_size(vs, instance, solver, depth)
 
 
+def estimate_size_add(instance, dl):
+    return enc2.estimate_size_add(instance, dl) if dl >= _switch_threshold \
+        else enc1.estimate_size_add(instance, dl)
+
+
 def increment():
     return 1
 

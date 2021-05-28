@@ -18,7 +18,7 @@ import signal
 start_time = time.time()
 random.seed = 1
 # This is used for debugging, for experiments use proper memory limiting
-resource.setrlimit(resource.RLIMIT_AS, (12 * 1024 * 1024 * 1024, 25 * 1024 * 1024 * 1024 // 2))
+resource.setrlimit(resource.RLIMIT_AS, (12 * 1024 * 1024 * 1024, 12 * 1024 * 1024 * 1024))
 
 tree_path = "datasets/trees"
 instance_path = "datasets/split"
@@ -163,7 +163,7 @@ def sig_handler(signum, frame):
     exit(1)
 
 
-signal.signal(signal.SIGSEGV, sig_handler)
+#signal.signal(signal.SIGSEGV, sig_handler)
 
 if args.method_prune != 3:
     if args.easy:
@@ -186,7 +186,7 @@ else:
                timelimit=0 if args.time_limit == 0 else args.time_limit - (time.time() - start_time), opt_size=args.size)
 
     tree.clean(new_training, min_samples=args.min_samples)
-    pruning.prune_reduced_error(tree, holdout)
+    pruning.prune_reduced_error(tree, training_instance, holdout)
 
 print(f"Time: End\t\t"
       f"Training {tree.get_accuracy(training_instance.examples):.4f}\t"

@@ -84,8 +84,8 @@ if args.validation == 0:
 else:
     instance = parser.parse(os.path.join(instance_validation_path, target_instance + ".data"), has_header=False)
 test_instance = instance
-if os.path.exists(args.instance[:-4]+"test"):
-    test_instance = parser.parse(args.instance[:-4] + "test")
+if os.path.exists(os.path.join(instance_path, target_instance+".test")):
+    test_instance = parser.parse(os.path.join(instance_path, target_instance + ".test"))
 
 encoding = encodings[args.encoding]
 strat = strategies[args.strategy]
@@ -100,12 +100,14 @@ elif args.mode == 1:
     strategy = strat(instance)
     strategy.extend(5)
     tree = eb.run_incremental(encoding, instance, Glucose3, strategy, args.time_limit, limits.size_limit, opt_size=args.size)
+    tree.root.reclassify(instance.examples)
 elif args.mode == 2:
+    import pruning
     strategy = strat(instance)
     strategy.extend(5)
     tree = eb.run_incremental(encoding, instance, Glucose3, strategy, args.time_limit, limits.size_limit, opt_size=args.size)
     #tree = encoding.run_limited(Glucose3, strategy, limits.size_limit, limits.sample_limit_short, start_bound=len(limits.sample_limit_short)-2, go_up=False)
-
+    tree.root.reclassify(instance.examples)
     def add_nodes(c_root):
         if not c_root.is_leaf:
             for c_child, c_pol in [(c_root.left, True), (c_root.right, False)]:
@@ -119,7 +121,8 @@ elif args.mode == 2:
                     add_nodes(c_child)
 
     changed = True
-    while changed:
+    while changed and tree.get_accuracy(instance.examples) < 0.9999999:
+        #pruning.prune_c45(tree, instance, 0.2)
         print(f"Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
               f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}")
         # TODO: It is more efficient to just reassign the samples that were associated with the replaced leaf
@@ -146,7 +149,7 @@ elif args.mode == 2:
                     strategy.extend(5)
                     new_tree = eb.run_incremental(encoding, new_instance, Glucose3, strategy, args.time_limit, limits.size_limit, opt_size=args.size, check_mem=True)
                     #new_tree = encoding.run_limited(Glucose3, strategy, limits.size_limit, limits.sample_limit_short, go_up=False, start_bound=len(limits.sample_limit_short)-2, timeout=limits.time_limits[0])
-
+                    new_tree.root.reclassify(new_instance.examples)
                     if args.reduce:
                         new_instance.unreduce_instance(new_tree)
 

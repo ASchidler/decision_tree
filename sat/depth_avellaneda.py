@@ -117,6 +117,11 @@ def encode_size(vs, instance, solver, dl):
     return card_vars
 
 
+def estimate_size_add(instance, dl):
+    c = len(instance.classes)
+    return 2 ** dl * c * 2 + (2 ** dl) ** 2 * 3
+
+
 def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False):
     c_bound = start_bound
     c_lb = 1

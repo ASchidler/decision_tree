@@ -530,6 +530,10 @@ def new_bound(tree, instance):
     return min(len(tree.nodes) - 1, 2 * 2**instance.num_features - 1)
 
 
+def estimate_size_add(instance, dl):
+    return 0
+
+
 def lb():
     return 3
 
