@@ -19,8 +19,10 @@ def _init_var(instance, limit, class_map):
     f = {}
     for i in range(1, 2**limit):
         f[i] = {}
-        for j in range(1, instance.feature_indices + 1):
-            f[i][j] = pool.id(f"f{i}_{j}")
+        for cf in range(1, instance.num_features + 1):
+            # We don't need an entry for the last variable, as <= maxval is redundant
+            for j in range(0, len(instance.domains[cf]) - (0 if cf in instance.is_categorical else 1)):
+                f[i][instance.feature_idx[cf] + j] = pool.id(f"f{i}_{instance.feature_idx[cf] + j}")
 
     c_vars = len(next(iter(class_map.values())))
     c = {}
@@ -47,10 +49,12 @@ def encode(instance, limit, solver, opt_size=False):
     # each node has a feature
     for i in range(1, 2**limit):
         clause = []
-        for f1 in range(1, instance.feature_indices + 1):
-            clause.append(f[i][f1])
-            for f2 in range(f1+1, instance.feature_indices + 1):
-                solver.add_clause([-f[i][f1], -f[i][f2]])
+
+        for f1, f1v in f[i].items():
+            clause.append(f1v)
+            for f2, f2v in f[i].items():
+                if f2 > f1:
+                    solver.add_clause([-f1v, -f2v])
         solver.add_clause(clause)
 
     for i in range(0, len(instance.examples)):
@@ -75,7 +79,7 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, solver):
     for f in range(1, instance.num_features + 1):
         base_idx = instance.feature_idx[f]
         is_cat = f in instance.is_categorical
-        for i2 in range(0, len(instance.domains[f])):
+        for i2 in range(0, len(instance.domains[f]) - (0 if f in instance.is_categorical else 1)):
             if (not is_cat and example.features[f] > instance.domains[f][i2]) or (is_cat and example.features[f] != instance.domains[f][i2]):
                 solver.add_clause([*clause, -x[e_idx][lvl], -fs[q][base_idx + i2]])
     n_cl = list(clause)
@@ -85,7 +89,7 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, solver):
     for f in range(1, instance.num_features + 1):
         base_idx = instance.feature_idx[f]
         is_cat = f in instance.is_categorical
-        for i2 in range(0, len(instance.domains[f])):
+        for i2 in range(0, len(instance.domains[f]) - (0 if f in instance.is_categorical else 1)):
             if (not is_cat and example.features[f] <= instance.domains[f][i2]) or (is_cat and example.features[f] == instance.domains[f][i2]):
                 solver.add_clause([*clause, x[e_idx][lvl], -fs[q][base_idx + i2]])
     n_cl2 = list(clause)
@@ -275,8 +279,8 @@ def _decode(model, instance, limit, vs):
     # Find features
     for i in range(1, num_leafs):
         f_found = False
-        for f in range(1, instance.feature_indices+1):
-            if model[fs[i][f]]:
+        for f, fv in fs[i].items():
+            if model[fv]:
                 if f_found:
                     print(f"ERROR: double features found for node {i}, features {f} and {tree.nodes[i].feature}")
                 f_found = True

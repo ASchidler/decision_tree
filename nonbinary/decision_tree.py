@@ -96,7 +96,7 @@ class DecisionTree:
 
         def add_node(n, d):
             indent = ''.join("-" for _ in range(0, d))
-            n_id = f"c({n.cls})" if n.is_leaf else f"a({n.feature}): {n.threshold}"
+            n_id = f"c({n.cls})" if n.is_leaf else f"a({n.feature}){' =' if n.is_categorical else ' <='} {n.threshold}"
             lines.append(indent + "" + n_id)
             if not n.is_leaf:
                 add_node(n.left, d+1)
