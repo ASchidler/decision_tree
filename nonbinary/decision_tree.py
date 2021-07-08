@@ -115,15 +115,15 @@ class DecisionTree:
     def clean(self, examples, min_samples=1):
         assigned = self.assign(examples)
 
-        def clean_sub(node):
+        def clean_sub(node, p_f, p_t, p_left):
             if node.is_leaf:
                 if node.id not in assigned or len(assigned[node.id]) < min_samples:
                     self.nodes[node.id] = None
                     return True, None
                 return None
             else:
-                result_l = clean_sub(node.left)
-                result_r = clean_sub(node.right)
+                result_l = clean_sub(node.left, node.feature, node.threshold, True)
+                result_r = clean_sub(node.right, node.feature, node.threshold, False)
 
                 if result_l:
                     if result_l[1]:
@@ -137,6 +137,22 @@ class DecisionTree:
                         return True, node.left
 
                 if node.left.is_leaf and node.right.is_leaf and node.right.cls == node.left.cls:
+                    self.nodes[node.id] = None
                     return True, node.left
+                if p_f and node.feature == p_f and node.threshold == p_t:
+                    self.nodes[node.id] = None
 
-        clean_sub(self.root)
+                    if p_left:
+                        t_node = node.left
+                        r_node = node.right
+                    else:
+                        t_node = node.right
+                        r_node = node.left
+                    c_nodes = [r_node]
+                    while c_nodes:
+                        c_node = c_nodes.pop()
+                        self.nodes[c_node.id] = None
+                        if not c_node.is_leaf:
+                            c_nodes.extend([c_node.left, c_node.right])
+                    return True, t_node
+        clean_sub(self.root, None, None, None)
