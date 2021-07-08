@@ -23,7 +23,7 @@ class ClassificationInstance:
         for i in range(1, self.num_features+1):
             if len(self.domains[i]) <= 2:
                 self.is_binary.add(i)
-            if any(isinstance(x, str) for x in self.domains[i]):
+            if any(isinstance(x, str) and x != "?" for x in self.domains[i]):
                 self.is_categorical.add(i)
             self.feature_idx[i] = c_idx
             c_idx += len(self.domains[i])
@@ -40,7 +40,8 @@ class ClassificationInstance:
         e.id = len(self.examples)
         self.examples.append(e)
         for i in range(1, self.num_features+1):
-            self.domains[i].add(e.features[i])
+            if e.features[i] != "?":
+                self.domains[i].add(e.features[i])
         self.classes.add(e.cls)
 
 

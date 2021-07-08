@@ -1,0 +1,14 @@
+0, 1.
+age: continuous.
+sex: continuous.
+cp: continuous.
+trestbps: continuous.
+chol: continuous.
+fbs: continuous.
+restecg: continuous.
+thalach: continuous.
+exang: continuous.
+oldpeak: continuous.
+slope: continuous.
+ca: continuous.
+thal: continuous.

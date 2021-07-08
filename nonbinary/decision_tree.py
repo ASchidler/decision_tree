@@ -14,8 +14,10 @@ class DecisionTreeNode:
         self.is_categorical = is_categorical
 
     def decide(self, e):
-        if (not self.is_categorical and e.features[self.feature] <= self.threshold) or \
-            (self.is_categorical and e.features[self.feature] == self.threshold):
+        # TODO: Find better solution for missing values...
+        if (isinstance(e.features[self.feature], str) and e.features[self.feature] == "?") \
+                or (self.is_categorical and e.features[self.feature] == self.threshold)\
+                or (not self.is_categorical and e.features[self.feature] <= self.threshold):
             return self.left.decide(e)
         else:
             return self.right.decide(e)

@@ -53,10 +53,11 @@ def encode(instance, limit, slv, opt_size=False):
     # each node has a feature
     for i in range(1, 2**limit):
         clause = []
-        for f1 in range(1, instance.num_features + 1):
-            clause.append(f[i][f1])
-            for f2 in range(f1+1, instance.num_features + 1):
-                slv.add(z3.Or([z3.Not(f[i][f1]), z3.Not(f[i][f2])]))
+        for f1, f1v in f[i].items():
+            clause.append(f1v)
+            for f2, f2v in f[i].items():
+                if f2 > f1:
+                    slv.add(z3.Or([z3.Not(f1v), z3.Not(f2v)]))
 
             # In case of binary features, we can fix the threshold to the middle
             # if instance.is_binary[f1]:
@@ -85,14 +86,26 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, slv, t):
 
     example = instance.examples[e_idx]
     for f in range(1, instance.num_features + 1):
-        slv.add(z3.Or([*clause, z3.Not(x[e_idx][lvl]), example.features[f] <= t[q], z3.Not(fs[q][f])]))
+        if f in instance.is_categorical:
+            for c_i in range(0, len(instance.domains[f])):
+                if instance.domains[f][c_i] != example.features[f]:
+                    slv.add(z3.Or([*clause, z3.Not(x[e_idx][lvl]), c_i != t[q], z3.Not(fs[q][f])]))
+                else:
+                    slv.add(z3.Or([*clause, z3.Not(x[e_idx][lvl]), c_i == t[q], z3.Not(fs[q][f])]))
+        else:
+            slv.add(z3.Or([*clause, z3.Not(x[e_idx][lvl]), example.features[f] <= t[q], z3.Not(fs[q][f])]))
 
     n_cl = list(clause)
     n_cl.append(z3.Not(x[e_idx][lvl]))
     _alg1(instance, e_idx, limit, lvl+1, 2 * q + 1, n_cl, fs, x, slv, t)
 
     for f in range(1, instance.num_features + 1):
-        slv.add(z3.Or([*clause, x[e_idx][lvl], example.features[f] > t[q], z3.Not(fs[q][f])]))
+        if f in instance.is_categorical:
+            for c_i in range(0, len(instance.domains[f])):
+                if instance.domains[f][c_i] == example.features[f]:
+                    slv.add(z3.Or([*clause, x[e_idx][lvl], c_i != t[q], z3.Not(fs[q][f])]))
+        else:
+            slv.add(z3.Or([*clause, x[e_idx][lvl], example.features[f] > t[q], z3.Not(fs[q][f])]))
 
     n_cl2 = list(clause)
     n_cl2.append(x[e_idx][lvl])
@@ -234,10 +247,13 @@ def _decode(model, instance, limit, vs):
                 if f_found:
                     print(f"ERROR: double features found for node {i}, features {f} and {tree.nodes[i].feature}")
                 else:
+                    if f in instance.is_categorical:
+                        if threshold.is_integer() and threshold < len(instance.domains[f]):
+                            threshold = instance.domains[f][int(threshold)]
                     if i == 1:
-                        tree.set_root(f, threshold)
+                        tree.set_root(f, threshold, f in instance.is_categorical)
                     else:
-                        tree.add_node(f, threshold, i//2, i % 2 == 1)
+                        tree.add_node(f, threshold, i//2, i % 2 == 1, f in instance.is_categorical)
 
     for c_c, c_v in class_map.items():
         for i in range(0, num_leafs):
