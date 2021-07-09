@@ -1,0 +1,14 @@
+0, 1.
+age: continuous.
+sex: continuous.
+chest: continuous.
+resting_blood_pressure: continuous.
+serum_cholestoral: continuous.
+fasting_blood_sugar: continuous.
+resting_electrocardiographic_results: continuous.
+maximum_heart_rate_achieved: continuous.
+exercise_induced_angina: continuous.
+oldpeak: continuous.
+slope: continuous.
+number_of_major_vessels: continuous.
+thal: continuous.

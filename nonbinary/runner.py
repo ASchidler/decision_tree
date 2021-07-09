@@ -14,7 +14,7 @@ import sat.depth_partition as dp
 import sat.size_narodytska as sn
 import sat.switching_encoding as se
 
-instance_path = "datasets/split"
+instance_path = "nonbinary/instances"
 instance_validation_path = "datasets/validate"
 validation_ratios = [0, 20, 30]
 
@@ -28,6 +28,8 @@ ap = argp.ArgumentParser(description="Python implementation for computing and im
 ap.add_argument("instance", type=str)
 ap.add_argument("-r", dest="reduce", action="store_true", default=False,
                 help="Use support set based reduction. Decreases instance size, but tree may be sub-optimal.")
+ap.add_argument("-c", dest="categorical", action="store_true", default=False,
+                help="Treat all features as categorical, this means a one hot encoding as in previous encodings.")
 ap.add_argument("-t", dest="time_limit", action="store", default=900, type=int,
                 help="The timelimit in seconds.")
 ap.add_argument("-z", dest="size", action="store_true", default=False,
@@ -35,6 +37,8 @@ ap.add_argument("-z", dest="size", action="store_true", default=False,
 ap.add_argument("-d", dest="validation", action="store", default=0, type=int,
                 help="Use data with validation set, 1=20% holdout, 2=30% holdout.")
 ap.add_argument("-s", dest="use_smt", action="store_true", default=False)
+ap.add_argument("-l", dest="slice", action="store", default=1, type=int, choices=[1, 2, 3, 4, 5],
+                help="Which slice to use from the five cross validation sets.")
 
 args = ap.parse_args()
 
@@ -65,10 +69,11 @@ except ValueError:
 print(f"{target_instance}")
 
 start_time = time.time()
-if args.validation == 0:
-    instance = nonbinary_instance.parse(os.path.join(instance_path, target_instance + ".data"))
-else:
-    instance = nonbinary_instance.parse(os.path.join(instance_validation_path, target_instance + ".data"))
+instance, test_instance, _ = nonbinary_instance.parse(instance_path, target_instance,  os.path.join(instance_path, target_instance + ".data"))
+
+if args.categorical:
+    instance.is_categorical = {x for x in range(1, instance.num_features+1)}
+
 test_instance = instance
 if os.path.exists(os.path.join(instance_path, target_instance+".test")):
     test_instance = nonbinary_instance.parse(os.path.join(instance_path, target_instance + ".test"))

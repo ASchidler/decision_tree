@@ -1,0 +1,11 @@
+rain,cool,normal,false,+
+overcast,cool,normal,true,+
+sunny,cool,normal,false,+
+rain,mild,normal,false,+
+sunny,mild,normal,true,+
+overcast,mild,high,true,+
+overcast,hot,normal,false,+
+sunny,hot,high,false,-
+sunny,hot,high,true,-
+rain,cool,normal,true,-
+sunny,mild,high,false,-
