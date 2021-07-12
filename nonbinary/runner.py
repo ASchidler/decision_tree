@@ -9,14 +9,11 @@ import incremental.entropy_strategy as es
 import incremental.maintain_strategy as ms
 import incremental.random_strategy as rs
 import nonbinary.depth_avellaneda_sat as nbs
+import nonbinary.depth_avellaneda_sat2 as nbs2
 import nonbinary.depth_avellaneda_smt as nbt
-import sat.depth_partition as dp
-import sat.size_narodytska as sn
-import sat.switching_encoding as se
 
 instance_path = "nonbinary/instances"
 instance_validation_path = "datasets/validate"
-validation_ratios = [0, 20, 30]
 
 # This is used for debugging, for experiments use proper memory limiting
 resource.setrlimit(resource.RLIMIT_AS, (23 * 1024 * 1024 * 1024 // 2, 12 * 1024 * 1024 * 1024))
@@ -34,19 +31,16 @@ ap.add_argument("-t", dest="time_limit", action="store", default=900, type=int,
                 help="The timelimit in seconds.")
 ap.add_argument("-z", dest="size", action="store_true", default=False,
                 help="Decrease the size as well as the depth.")
-ap.add_argument("-d", dest="validation", action="store", default=0, type=int,
-                help="Use data with validation set, 1=20% holdout, 2=30% holdout.")
+ap.add_argument("-d", dest="validation", action="store_true", default=False,
+                help="Use data with validation set.")
 ap.add_argument("-s", dest="use_smt", action="store_true", default=False)
-ap.add_argument("-l", dest="slice", action="store", default=1, type=int, choices=[1, 2, 3, 4, 5],
+ap.add_argument("-l", dest="slice", action="store", default=1, type=int,
                 help="Which slice to use from the five cross validation sets.")
-
+ap.add_argument("-a", dest="alt_sat", action="store_true", default=False,
+                help="Use alternative SAT encoding.")
 args = ap.parse_args()
 
-if args.validation == 0:
-    fls = list(x for x in os.listdir(instance_path) if x.endswith(".data"))
-else:
-    fls = list(
-        x for x in os.listdir(instance_validation_path) if x.endswith(f"{validation_ratios[args.validation]}.data"))
+fls = list(x for x in os.listdir(instance_path) if x.endswith(".data"))
 
 fls.sort()
 
@@ -62,14 +56,17 @@ try:
         print(f"Only {len(fls)} files are known.")
         exit(1)
 
-    target_instance = fls[target_instance_idx-1][:-5]
+    parts = fls[target_instance_idx-1][:-5].split(".")
+    target_instance = ".".join(parts[:-1])
+    args.slice = int(parts[-1])
+
 except ValueError:
     target_instance = args.instance[:-5] if args.instance.endswith(".names") or args.instance.endswith(".data") else args.instance
 
-print(f"{target_instance}")
+print(f"Instance: {target_instance}, {args}")
 
 start_time = time.time()
-instance, test_instance, _ = nonbinary_instance.parse(instance_path, target_instance, args.slice)
+instance, test_instance, validation_instance = nonbinary_instance.parse(instance_path, target_instance, args.slice)
 
 if args.categorical:
     instance.is_categorical = {x for x in range(1, instance.num_features+1)}
@@ -79,7 +76,10 @@ tree = None
 if args.use_smt:
     tree = nbt.run(instance)
 else:
-    tree = nbs.run(instance, Glucose3)
+    if args.alt_sat:
+        tree = nbs2.run(instance, Glucose3)
+    else:
+        tree = nbs.run(instance, Glucose3)
     # encoding.run(instance, Glucose3, timeout=args.time_limit, opt_size=args.size, check_mem=False)
 
 if tree is None:

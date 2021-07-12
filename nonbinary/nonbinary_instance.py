@@ -61,13 +61,13 @@ def parse(path, filename, slice, use_validation=False, use_test=True):
         test_file = _parse_file([os.path.join(path, filename + ".test")])
         target_files.pop()
     elif use_test:
-        target_idx = (slice + 3) % len(target_files) + 1
+        target_idx = (slice + 3) % len(target_files)
         test_file = _parse_file([os.path.join(path, target_files[target_idx])])
         target_files.pop(target_idx)
 
     validation_file = None
     if use_validation:
-        target_idx = (slice + 2) % len(target_files) + 1
+        target_idx = (slice + 2) % len(target_files)
         validation_file = _parse_file([os.path.join(path, target_files[target_idx])])
         target_files.pop(target_idx)
 
