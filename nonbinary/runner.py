@@ -1,6 +1,7 @@
 import argparse as argp
 import os
 import resource
+import sys
 import time
 
 from pysat.solvers import Glucose3
@@ -64,6 +65,7 @@ except ValueError:
     target_instance = args.instance[:-5] if args.instance.endswith(".names") or args.instance.endswith(".data") else args.instance
 
 print(f"Instance: {target_instance}, {args}")
+sys.stdout.flush()
 
 start_time = time.time()
 instance, test_instance, validation_instance = nonbinary_instance.parse(instance_path, target_instance, args.slice)

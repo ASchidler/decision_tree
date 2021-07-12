@@ -32,7 +32,7 @@ for fl in sorted(os.listdir(base_path)):
         for i in range(1, slices+1):
             shutil.copy(fl_path[:-4] + "names", fl_path[:-4] + f"{i}.names")
             with open(fl_path[:-4] + f"{i}.data", "w") as outp:
-                for c_i in x_slices[i-1][0]:
+                for c_i in x_slices[i-1][1]:
                     outp.write(",".join(x[c_i]) + f"," + y[c_i] + os.linesep)
 
         os.remove(fl_path)

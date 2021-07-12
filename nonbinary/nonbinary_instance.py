@@ -59,7 +59,6 @@ def parse(path, filename, slice, use_validation=False, use_test=True):
         if slice != 1:
             raise RuntimeError("File has an existing test set, slice cannot be different than 1")
         test_file = _parse_file([os.path.join(path, filename + ".test")])
-        target_files.pop()
     elif use_test:
         target_idx = (slice + 3) % len(target_files)
         test_file = _parse_file([os.path.join(path, target_files[target_idx])])

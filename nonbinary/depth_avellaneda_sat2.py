@@ -1,5 +1,5 @@
 import itertools
-from sys import maxsize
+from sys import maxsize, stdout
 from threading import Timer
 
 from pysat.formula import IDPool
@@ -163,7 +163,8 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False):
     best_depth = None
 
     while c_lb < ub:
-        print(f"Running {c_bound}")
+        print(f"Running depth {c_bound}")
+        stdout.flush()
         with solver() as slv:
             vs = encode(instance, c_bound, slv)
 
@@ -198,7 +199,8 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False):
             slv.append_formula(tot.cnf)
 
             while solved:
-                print(f"Running {c_size_bound}")
+                print(f"Running size {c_size_bound}")
+                stdout.flush()
                 if timeout == 0:
                     solved = slv.solve()
                 else:

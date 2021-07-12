@@ -1,12 +1,2 @@
-overcast,hot,high,false,+
-rain,mild,high,false,+
-rain,cool,normal,false,+
-overcast,cool,normal,true,+
-sunny,cool,normal,false,+
-rain,mild,normal,false,+
-sunny,mild,normal,true,+
-overcast,mild,high,true,+
-rain,mild,high,true,-
-sunny,hot,high,false,-
-sunny,hot,high,true,-
-rain,cool,normal,true,-
+overcast,hot,normal,false,+
+sunny,mild,high,false,-
