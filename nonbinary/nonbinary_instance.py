@@ -47,25 +47,31 @@ class ClassificationInstance:
         self.classes.add(e.cls)
 
 
-def parse(path, filename, slice, use_validation=False):
-    indices = set(range(1, 6))
-    has_test = False
+def parse(path, filename, slice, use_validation=False, use_test=True):
+    target_files = [x for x in os.listdir(path) if x.startswith(filename + ".") and x.endswith(".data")]
+    if len(target_files) == 0:
+        raise RuntimeError("No data files found with this name.")
+
+    target_files.sort()
+
+    test_file = None
     if os.path.exists(os.path.join(path, filename + ".test")):
         if slice != 1:
             raise RuntimeError("File has an existing test set, slice cannot be different than 1")
         test_file = _parse_file([os.path.join(path, filename + ".test")])
-        has_test = True
-        indices.remove(5)
-    else:
-        test_file = _parse_file([os.path.join(path, filename + f".{(slice + 3) % 5 + 1}.data")])
-        indices.remove((slice + 3) % 5 + 1)
+        target_files.pop()
+    elif use_test:
+        target_idx = (slice + 3) % len(target_files) + 1
+        test_file = _parse_file([os.path.join(path, target_files[target_idx])])
+        target_files.pop(target_idx)
 
     validation_file = None
     if use_validation:
-        validation_file = _parse_file([os.path.join(path, filename + f".{(slice + 2) % len(indices) + 1}.data")])
-        indices.remove((slice + 2) % len(indices) + 1)
+        target_idx = (slice + 2) % len(target_files) + 1
+        validation_file = _parse_file([os.path.join(path, target_files[target_idx])])
+        target_files.pop(target_idx)
 
-    data_file = _parse_file([os.path.join(path, filename + f".{x}.data") for x in indices])
+    data_file = _parse_file([os.path.join(path, x) for x in target_files])
 
     return data_file, test_file, validation_file
 

@@ -69,14 +69,10 @@ except ValueError:
 print(f"{target_instance}")
 
 start_time = time.time()
-instance, test_instance, _ = nonbinary_instance.parse(instance_path, target_instance,  os.path.join(instance_path, target_instance + ".data"))
+instance, test_instance, _ = nonbinary_instance.parse(instance_path, target_instance, args.slice)
 
 if args.categorical:
     instance.is_categorical = {x for x in range(1, instance.num_features+1)}
-
-test_instance = instance
-if os.path.exists(os.path.join(instance_path, target_instance+".test")):
-    test_instance = nonbinary_instance.parse(os.path.join(instance_path, target_instance + ".test"))
 
 tree = None
 
