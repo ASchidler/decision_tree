@@ -11,6 +11,7 @@ import incremental.maintain_strategy as ms
 import incremental.random_strategy as rs
 import nonbinary.depth_avellaneda_sat as nbs
 import nonbinary.depth_avellaneda_sat2 as nbs2
+import nonbinary.depth_avellaneda_sat3 as nbs3
 import nonbinary.depth_avellaneda_smt as nbt
 
 instance_path = "nonbinary/instances"
@@ -39,6 +40,8 @@ ap.add_argument("-l", dest="slice", action="store", default=1, type=int,
                 help="Which slice to use from the five cross validation sets.")
 ap.add_argument("-a", dest="alt_sat", action="store_true", default=False,
                 help="Use alternative SAT encoding.")
+ap.add_argument("-y", dest="hybrid", action="store_true", default="False",
+                help="Use hybrid mode, allowing for <= and =.")
 args = ap.parse_args()
 
 fls = list(x for x in os.listdir(instance_path) if x.endswith(".data"))
@@ -78,7 +81,9 @@ tree = None
 if args.use_smt:
     tree = nbt.run(instance)
 else:
-    if args.alt_sat:
+    if args.hybrid:
+        tree = nbs3.run(instance, Glucose3)
+    elif args.alt_sat:
         tree = nbs2.run(instance, Glucose3)
     else:
         tree = nbs.run(instance, Glucose3)
