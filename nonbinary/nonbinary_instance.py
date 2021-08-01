@@ -1,4 +1,6 @@
 import os
+import random
+
 
 class Example:
     def __init__(self, inst, features, cls):
@@ -46,6 +48,38 @@ class ClassificationInstance:
                 self.domains[i].add(e.features[i])
         self.classes.add(e.cls)
 
+    def _verify_support_set(self, supset):
+        for i in range(0, len(self.examples)):
+            for j in range(i+1, len(self.examples)):
+                if self.examples[i].cls != self.examples[j].cls:
+                    found = False
+                    for c_f in range(1, self.num_features + 1):
+                        if self.examples[i][c_f] != self.examples[j][c_f] and c_f in supset:
+                            found = True
+                            break
+                    if not found:
+                        raise RuntimeError("Not a real support set.")
+
+    def min_key_random(self, randomize=True):
+        supset = set()
+        features = list(range(1, self.num_features + 1))
+
+        if randomize:
+            random.shuffle(features)
+        for i in range(0, len(self.examples)):
+            for j in range(i+1, len(self.examples)):
+                if self.examples[i].cls != self.examples[j].cls:
+                    found = False
+                    for c_f in supset:
+                        if self.examples[i][c_f] != self.examples[j][c_f]:
+                            found = True
+                    if not found:
+                        for c_f in reversed(features)
+
+    def min_key_removal(self, randomize=True):
+        pass
+
+    def min_key_greedy(self):
 
 def parse(path, filename, slice, use_validation=False, use_test=True):
     target_files = [x for x in os.listdir(path) if x.startswith(filename + ".") and x.endswith(".data")]

@@ -12,6 +12,7 @@ class DecisionTreeNode:
         self.id = i
         self.tree = tree
         self.is_categorical = is_categorical
+        self.parent = None
 
     def decide(self, e):
         # TODO: Find better solution for missing values...
@@ -35,6 +36,7 @@ class DecisionTreeLeaf:
         self.cls = c
         self.id = i
         self.tree = tree
+        self.parent = None
 
     def decide(self, e):
         return self.cls, self
@@ -63,15 +65,18 @@ class DecisionTree:
 
     def add_node(self, f, t, parent, is_left, is_categorical=False):
         new_node = DecisionTreeNode(f, t, len(self.nodes), self, is_categorical)
+        new_node.parent = self.nodes[parent]
         if is_left:
             self.nodes[parent].left = new_node
         else:
             self.nodes[parent].right = new_node
+
         self.nodes.append(new_node)
         return new_node
 
     def add_leaf(self, c, parent, is_left):
         new_leaf = DecisionTreeLeaf(c, len(self.nodes), self)
+        new_leaf.parent = self.nodes[parent]
         if is_left:
             self.nodes[parent].left = new_leaf
         else:

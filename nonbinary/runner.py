@@ -40,7 +40,7 @@ ap.add_argument("-l", dest="slice", action="store", default=1, type=int,
                 help="Which slice to use from the five cross validation sets.")
 ap.add_argument("-a", dest="alt_sat", action="store_true", default=False,
                 help="Use alternative SAT encoding.")
-ap.add_argument("-y", dest="hybrid", action="store_true", default="False",
+ap.add_argument("-y", dest="hybrid", action="store_true", default=False,
                 help="Use hybrid mode, allowing for <= and =.")
 args = ap.parse_args()
 
