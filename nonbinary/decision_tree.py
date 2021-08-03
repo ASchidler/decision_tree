@@ -29,6 +29,12 @@ class DecisionTreeNode:
     def get_nodes(self):
         return self.left.get_nodes() + self.right.get_nodes() + 1
 
+    def remap(self, mapping):
+        if self.feature in mapping:
+            self.feature = mapping[self.feature]
+        self.left.remap(mapping)
+        self.right.remap(mapping)
+
 
 class DecisionTreeLeaf:
     def __init__(self, c, i, tree):
@@ -46,6 +52,9 @@ class DecisionTreeLeaf:
 
     def get_nodes(self):
         return 1
+
+    def remap(self, mapping):
+        return
 
 
 class DecisionTree:

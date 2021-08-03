@@ -73,6 +73,12 @@ sys.stdout.flush()
 start_time = time.time()
 instance, test_instance, validation_instance = nonbinary_instance.parse(instance_path, target_instance, args.slice)
 
+print(f"{instance.num_features}, {len(instance.examples)}")
+key = instance.min_key_random()
+print(f"{len(key)}")
+instance.reduce(key)
+print(f"{instance.num_features}, {len(instance.examples)}")
+
 if args.categorical:
     instance.is_categorical = {x for x in range(1, instance.num_features+1)}
 
@@ -95,6 +101,8 @@ if tree is None:
 
 #tree.check_consistency()
 
+instance.unreduce(tree)
+print(f"{instance.num_features}, {len(instance.examples)}")
 print(f"END Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
       f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
       f"Time: {time.time() - start_time}")
