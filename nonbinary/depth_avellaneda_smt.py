@@ -147,7 +147,7 @@ def estimate_size_add(instance, dl):
     return 2 ** dl * c * 2 + (2 ** dl) ** 2 * 3
 
 
-def run(instance, start_bound=1, obs=None, timeout=0, ub=maxsize, opt_size=False):
+def run(instance, slv, start_bound=1, obs=None, timeout=0, ub=maxsize, opt_size=False):
     c_bound = start_bound
     c_lb = 1
     best_model = None
@@ -268,7 +268,7 @@ def _decode(model, instance, limit, vs):
                 tree.add_leaf(c_c, (num_leafs + i)//2, i % 2 == 1)
 
     #_reduce_tree(tree, instance)
-    tree.clean(instance.examples)
+    tree.clean(instance)
     return tree
 
 

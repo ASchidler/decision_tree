@@ -13,15 +13,24 @@ class DecisionTreeNode:
         self.tree = tree
         self.is_categorical = is_categorical
         self.parent = None
+        self.count_left = 0
+        self.count_right = 0
+
+    def _decide(self, e):
+        # TODO: Find better solution for missing values...
+        if e.features[self.feature] == "?":
+            if self.count_right > self.count_left:
+                return self.right
+            else:
+                return self.left
+        if (self.is_categorical and e.features[self.feature] == self.threshold) \
+                or (not self.is_categorical and e.features[self.feature] <= self.threshold):
+            return self.left
+        else:
+            return self.right
 
     def decide(self, e):
-        # TODO: Find better solution for missing values...
-        if (isinstance(e.features[self.feature], str) and e.features[self.feature] == "?") \
-                or (self.is_categorical and e.features[self.feature] == self.threshold)\
-                or (not self.is_categorical and e.features[self.feature] <= self.threshold):
-            return self.left.decide(e)
-        else:
-            return self.right.decide(e)
+        return self._decide(e).decide(e)
 
     def get_depth(self):
         return max(self.left.get_depth(), self.right.get_depth()) + 1
@@ -34,6 +43,14 @@ class DecisionTreeNode:
             self.feature = mapping[self.feature]
         self.left.remap(mapping)
         self.right.remap(mapping)
+
+    def get_children(self):
+        return [self.left, self.right]
+
+    def get_path(self, e):
+        pth = self._decide(e).get_path(e)
+        pth.append(self)
+        return pth
 
 
 class DecisionTreeLeaf:
@@ -56,11 +73,15 @@ class DecisionTreeLeaf:
     def remap(self, mapping):
         return
 
+    def get_path(self, e):
+        return [self]
+
 
 class DecisionTree:
     def __init__(self):
         self.root = None
         self.nodes = [None]
+        self.c_idx = 1
 
     def set_root_leaf(self, c):
         self.root = DecisionTreeLeaf(c, 1, self)
@@ -72,25 +93,37 @@ class DecisionTree:
         self.nodes.append(self.root)
         return self.root
 
-    def add_node(self, f, t, parent, is_left, is_categorical=False):
-        new_node = DecisionTreeNode(f, t, len(self.nodes), self, is_categorical)
-        new_node.parent = self.nodes[parent]
-        if is_left:
-            self.nodes[parent].left = new_node
-        else:
-            self.nodes[parent].right = new_node
+    def _get_id(self):
+        while self.c_idx < len(self.nodes) and self.nodes[self.c_idx]:
+            self.c_idx += 1
+        if self.c_idx >= len(self.nodes):
+            self.nodes.append(None)
+        return self.c_idx
 
-        self.nodes.append(new_node)
+    def add_node(self, f, t, parent_id, is_left, is_categorical=False):
+        c_id = self._get_id()
+
+        new_node = DecisionTreeNode(f, t, c_id, self, is_categorical)
+        new_node.parent = self.nodes[parent_id]
+
+        if is_left:
+            self.nodes[parent_id].left = new_node
+        else:
+            self.nodes[parent_id].right = new_node
+
+        self.nodes[c_id] = new_node
         return new_node
 
-    def add_leaf(self, c, parent, is_left):
-        new_leaf = DecisionTreeLeaf(c, len(self.nodes), self)
-        new_leaf.parent = self.nodes[parent]
+    def add_leaf(self, c, parent_id, is_left):
+        c_id = self._get_id()
+        new_leaf = DecisionTreeLeaf(c, c_id, self)
+        new_leaf.parent = self.nodes[parent_id]
+
         if is_left:
-            self.nodes[parent].left = new_leaf
+            self.nodes[parent_id].left = new_leaf
         else:
-            self.nodes[parent].right = new_leaf
-        self.nodes.append(new_leaf)
+            self.nodes[parent_id].right = new_leaf
+        self.nodes[c_id] = new_leaf
         return new_leaf
 
     def get_accuracy(self, examples):
@@ -121,15 +154,16 @@ class DecisionTree:
         add_node(self.root, 0)
         return os.linesep.join(lines)
 
-    def assign(self, examples):
+    def assign(self, instance):
         assigned = defaultdict(list)
-        for e in examples:
-            _, node = self.root.decide(e)
-            assigned[node.id].append(e)
+        for e in instance.examples:
+            pth = self.root.get_path(e)
+            for c_node in pth:
+                assigned[c_node.id].append(e)
         return assigned
 
-    def clean(self, examples, min_samples=1):
-        assigned = self.assign(examples)
+    def clean(self, instance, min_samples=1):
+        assigned = self.assign(instance)
 
         def clean_sub(node, p_f, p_t, p_left):
             if node.is_leaf:

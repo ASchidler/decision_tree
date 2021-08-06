@@ -335,7 +335,7 @@ def _decode(model, instance, limit, vs):
                 tree.add_leaf(c_c, (num_leafs + i)//2, i % 2 == 1)
 
     #_reduce_tree(tree, instance)
-    tree.clean(instance.examples)
+    tree.clean(instance)
     return tree
 
 

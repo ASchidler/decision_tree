@@ -3,6 +3,8 @@ import os
 import resource
 import sys
 import time
+import improve_strategy
+import tree_parsers
 
 from pysat.solvers import Glucose3
 import nonbinary_instance
@@ -42,6 +44,11 @@ ap.add_argument("-a", dest="alt_sat", action="store_true", default=False,
                 help="Use alternative SAT encoding.")
 ap.add_argument("-y", dest="hybrid", action="store_true", default=False,
                 help="Use hybrid mode, allowing for <= and =.")
+ap.add_argument("-w", dest="weka", action="store_false", default=True,
+                help="Use CART instead of WEKA trees.")
+ap.add_argument("-m", dest="slim", action="store_true", default=True,
+                help="Use local improvement instead of exact results.")
+
 args = ap.parse_args()
 
 fls = list(x for x in os.listdir(instance_path) if x.endswith(".data"))
@@ -73,27 +80,34 @@ sys.stdout.flush()
 start_time = time.time()
 instance, test_instance, validation_instance = nonbinary_instance.parse(instance_path, target_instance, args.slice)
 
-print(f"{instance.num_features}, {len(instance.examples)}")
-key = instance.min_key_random()
-print(f"{len(key)}")
-instance.reduce(key)
-print(f"{instance.num_features}, {len(instance.examples)}")
+if args.reduce:
+    print(f"{instance.num_features}, {len(instance.examples)}")
+    instance.reduce_with_key()
+    print(f"{instance.num_features}, {len(instance.examples)}")
 
 if args.categorical:
     instance.is_categorical = {x for x in range(1, instance.num_features+1)}
 
 tree = None
-
 if args.use_smt:
-    tree = nbt.run(instance)
+    enc = nbt
 else:
     if args.hybrid:
-        tree = nbs3.run(instance, Glucose3)
+        enc = nbs3
     elif args.alt_sat:
-        tree = nbs2.run(instance, Glucose3)
+        enc = nbs2
     else:
-        tree = nbs.run(instance, Glucose3)
-    # encoding.run(instance, Glucose3, timeout=args.time_limit, opt_size=args.size, check_mem=False)
+        enc = nbs
+
+if args.slim:
+    algo = "w" if args.weka else "c"
+    tree = tree_parsers.parse_internal_tree(f"nonbinary/results/trees/unpruned/{target_instance}.{args.slice}.{algo}.dt")
+    print(f"START Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
+          f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
+          f"Time: {time.time() - start_time}")
+    improve_strategy.run(tree, instance, test_instance, Glucose3, enc, timelimit=args.time_limit)
+else:
+    tree = enc.run(instance, Glucose3)
 
 if tree is None:
     print("No tree found.")

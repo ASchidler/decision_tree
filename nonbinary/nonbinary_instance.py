@@ -1,6 +1,7 @@
 import os
 import random
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, getcontext
+
 
 class Example:
     def __init__(self, inst, features, cls):
@@ -8,6 +9,9 @@ class Example:
         self.features = [None, *features]
         self.instance = inst
         self.id = None
+
+    def copy(self, instance):
+        return Example(instance, self.features[1:], self.cls)
 
 
 class ClassificationInstance:
@@ -155,6 +159,19 @@ class ClassificationInstance:
 
         return supset
 
+    def reduce_with_key(self, randomized_runs=2):
+        keys = []
+        keys.append(self.min_key_random())
+        keys.append(self.min_key_removal())
+        for _ in range(0, randomized_runs):
+            keys.append(self.min_key_random(randomize=True))
+            keys.append(self.min_key_removal(randomize=True))
+
+        keys.append(self.min_key_greedy())
+
+        key = min(keys, key=lambda x: len(x))
+        self.reduce(key)
+
     def test_key(self, key):
         for i in range(0, len(self.examples)):
             for j in range(i + 1, len(self.examples)):
@@ -198,6 +215,8 @@ class ClassificationInstance:
         for c_e in self.examples:
             for c_k, c_v in self.reduced_map.items():
                 c_e.features[c_k], c_e.features[c_v] = c_e.features[c_v], c_e.features[c_k]
+        for c_k, c_v in self.reduced_map.items():
+            self.domains[c_k], self.domains[c_v] = self.domains[c_v], self.domains[c_k]
 
         self.num_features = len(key)
 
@@ -241,10 +260,40 @@ class ClassificationInstance:
         for c_e in self.examples:
             for c_k, c_v in reverse_lookup.items():
                 c_e.features[c_k], c_e.features[c_v] = c_e.features[c_v], c_e.features[c_k]
+        for c_k, c_v in reverse_lookup.items():
+            self.domains[c_k], self.domains[c_v] = self.domains[c_v], self.domains[c_k]
         self.reduced_map = None
 
         self.reduced_original_num_features = None
         self.reduced_key = None
+
+    def export_c45(self, path, write_names=True):
+        with open(path, "w") as outp:
+            for c_e in self.examples:
+                for c_f in c_e.features[1:]:
+                    outp.write(f"{c_f},")
+                outp.write(f"{c_e.cls}{os.linesep}")
+        if write_names:
+            with open(path[:-4] + "names", "w") as outp:
+                # Class
+                for c_i, c_v in enumerate(self.classes):
+                    if c_i != 0:
+                        outp.write(",")
+                    outp.write(f"{c_v}")
+                outp.write("." + os.linesep)
+
+                for c_i, c_d in enumerate(self.domains[1:]):
+                    is_cat = any(isinstance(x, str) for x in c_d)
+
+                    outp.write(f"att{c_i + 1}: ")
+                    if not is_cat:
+                        outp.write("continuous." + os.linesep)
+                    else:
+                        for c_di, c_v in enumerate(c_d):
+                            if c_di != 0:
+                                outp.write(",")
+                            outp.write(f"{c_v}")
+                        outp.write("." + os.linesep)
 
 
 def parse(path, filename, slice, use_validation=False, use_test=True):
@@ -257,7 +306,7 @@ def parse(path, filename, slice, use_validation=False, use_test=True):
     test_file = None
     if os.path.exists(os.path.join(path, filename + ".test")):
         if slice != 1:
-            raise RuntimeError("File has an existing test set, slice cannot be different than 1")
+            raise FileNotFoundError("File has an existing test set, slice cannot be different than 1")
         test_file = _parse_file([os.path.join(path, filename + ".test")])
     elif use_test:
         target_idx = (slice + 3) % len(target_files)
@@ -277,6 +326,7 @@ def parse(path, filename, slice, use_validation=False, use_test=True):
 
 def _parse_file(filenames):
     instance = ClassificationInstance()
+    getcontext().prec = 6
 
     for filename in filenames:
         with open(filename, "r") as f:
@@ -294,7 +344,13 @@ def _parse_file(filenames):
                         fd = int(fd)
                     except ValueError:
                         try:
-                            fd = Decimal(fd)
+                            decimals = len(fd.split(".")[-1])
+                            if decimals <= 6:
+                                fd = Decimal(fd)
+                            else:
+                                # Truncate after 6 decimals, since weka does this
+                                Decimal(fd)
+                                fd = Decimal(fd[:-(decimals-6)])
                         except ValueError:
                             pass
                         except InvalidOperation:

@@ -295,20 +295,25 @@ def _decode(model, instance, limit, vs):
                 if f_found:
                     print(f"ERROR: double features found for node {i}, features {f} and {tree.nodes[i].feature}")
                 f_found = True
-                for r_f in range(2, instance.num_features+1):
-                    real_f = None
-                    if f >= instance.feature_idx[r_f - 1] and f < instance.feature_idx[r_f]:
-                        real_f = r_f - 1
-                    elif r_f == instance.num_features:
-                        real_f = r_f
 
-                    if real_f is not None:
-                        tsh = instance.domains[real_f][f - instance.feature_idx[real_f]]
-                        if i == 1:
-                            tree.set_root(real_f, tsh, real_f in instance.is_categorical or model[es[i]])
-                        else:
-                            tree.add_node(real_f, tsh, i // 2, i % 2 == 1, real_f in instance.is_categorical or model[es[i]])
-                        break
+                if instance.num_features == 1:
+                    real_f = 1
+                    tsh = instance.domains[1][f - instance.feature_idx[1]]
+                else:
+                    for r_f in range(2, instance.num_features+1):
+                        real_f = None
+                        if f >= instance.feature_idx[r_f - 1] and f < instance.feature_idx[r_f]:
+                            real_f = r_f - 1
+                        elif r_f == instance.num_features:
+                            real_f = r_f
+                        if real_f is not None:
+                            tsh = instance.domains[real_f][f - instance.feature_idx[real_f]]
+                            break
+
+                    if i == 1:
+                        tree.set_root(real_f, tsh, real_f in instance.is_categorical or model[es[i]])
+                    else:
+                        tree.add_node(real_f, tsh, i // 2, i % 2 == 1, real_f in instance.is_categorical or model[es[i]])
         if not f_found:
             print(f"ERROR: No feature found for node {i}")
 
@@ -323,7 +328,7 @@ def _decode(model, instance, limit, vs):
                 tree.add_leaf(c_c, (num_leafs + i)//2, i % 2 == 1)
 
     #_reduce_tree(tree, instance)
-    tree.clean(instance.examples)
+    tree.clean(instance)
     return tree
 
 
