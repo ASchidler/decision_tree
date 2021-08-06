@@ -46,7 +46,7 @@ ap.add_argument("-y", dest="hybrid", action="store_true", default=False,
                 help="Use hybrid mode, allowing for <= and =.")
 ap.add_argument("-w", dest="weka", action="store_false", default=True,
                 help="Use CART instead of WEKA trees.")
-ap.add_argument("-m", dest="slim", action="store_true", default=True,
+ap.add_argument("-m", dest="slim", action="store_true", default=False,
                 help="Use local improvement instead of exact results.")
 
 args = ap.parse_args()

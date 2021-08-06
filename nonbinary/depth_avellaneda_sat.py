@@ -223,55 +223,6 @@ def extend(slv, instance, vs, c_bound, increment, size_limit):
     return guess
 
 
-def run_limited(solver, strategy, size_limit, limit, start_bound=1, go_up=True, timeout=0):
-    c_bound = start_bound
-    best_model = None
-    strategy.extend(limit[c_bound])
-
-    while True:
-        print(f"Running {c_bound}")
-        with solver() as slv:
-            while estimate_size(strategy.instance, c_bound) > size_limit and len(strategy.instance.examples) > 1:
-                strategy.pop()
-
-            vs = encode(strategy.instance, c_bound, slv)
-            timed_out = []
-            if timeout == 0:
-                solved = slv.solve()
-            else:
-                def interrupt(s):
-                    s.interrupt()
-                    timed_out.append(True)
-
-                timer = Timer(timeout, interrupt, [slv])
-                timer.start()
-                solved = slv.solve_limited(expect_interrupt=True)
-                timer.cancel()
-
-            if solved:
-                model = {abs(x): x > 0 for x in slv.get_model()}
-                best_model = _decode(model, strategy.instance, c_bound, vs)
-
-                if go_up:
-                    break
-
-                strategy.extend(limit[c_bound-1] - limit[c_bound])
-                c_bound -= 1
-            else:
-                if go_up:
-                    if c_bound == len(limit) or timed_out:
-                        for _ in range(0, 5):
-                            strategy.pop()
-                    else:
-                        for _ in range(0, limit[c_bound] - limit[c_bound] + 1):
-                            strategy.pop()
-                        c_bound += 1
-                else:
-                    break
-
-    return best_model
-
-
 def _decode(model, instance, limit, vs):
     class_map = vs['class_map']
     fs = vs["f"]
@@ -286,7 +237,7 @@ def _decode(model, instance, limit, vs):
         for f, fv in fs[i].items():
             if model[fv]:
                 if f_found:
-                    print(f"ERROR: double features found for node {i}, features {f} and {tree.nodes[i].feature}")
+                    raise RuntimeError(f"ERROR: double features found for node {i}, features {f} and {tree.nodes[i].feature}")
                 f_found = True
                 real_f = None
 
@@ -322,63 +273,8 @@ def _decode(model, instance, limit, vs):
             if all_right:
                 tree.add_leaf(c_c, (num_leafs + i)//2, i % 2 == 1)
 
-    #_reduce_tree(tree, instance)
     tree.clean(instance)
     return tree
-
-
-def _reduce_tree(tree, instance):
-    assigned = {tree.root.id: list(instance.examples)}
-    q = [tree.root]
-    p = {tree.root.id: None}
-    leafs = []
-
-    while q:
-        c_n = q.pop()
-        examples = assigned[c_n.id]
-
-        if not c_n.is_leaf:
-            p[c_n.left.id] = c_n.id
-            p[c_n.right.id] = c_n.id
-            assigned[c_n.left.id] = []
-            assigned[c_n.right.id] = []
-
-            for e in examples:
-                if e.features[c_n.feature]:
-                    assigned[c_n.left.id].append(e)
-                else:
-                    assigned[c_n.right.id].append(e)
-
-            q.append(c_n.right)
-            q.append(c_n.left)
-        else:
-            leafs.append(c_n)
-
-    for lf in leafs:
-        # May already be deleted
-        if tree.nodes[lf.id] is None:
-            continue
-
-        if len(assigned[lf.id]) == 0:
-            c_p = tree.nodes[p[lf.id]]
-            o_n = c_p.right if c_p.left.id == lf.id else c_p.left
-            if p[c_p.id] is None:
-                tree.root = o_n
-                p[o_n.id] = None
-            else:
-                c_pp = tree.nodes[p[c_p.id]]
-                if c_pp.left.id == c_p.id:
-                    c_pp.left = o_n
-                else:
-                    c_pp.right = o_n
-                p[o_n.id] = c_pp.id
-
-            tree.nodes[lf.id] = None
-            tree.nodes[c_p.id] = None
-
-
-def check_consistency(self, model, instance, num_nodes, tree):
-    pass
 
 
 def new_bound(tree, instance):
@@ -409,7 +305,7 @@ def estimate_size(instance, depth):
     c = len(instance.classes)
     lc = len(bin(c-1)) - 2  #ln(c)
     s = len(instance.examples)
-    f = instance.num_features
+    f = sum(len(x) for x in instance.domains)
 
     forbidden_c = (2**lc - c) * d2 * lc
     alg1_lits = s * sum(2**i * f * (i+2) for i in range(0, depth))

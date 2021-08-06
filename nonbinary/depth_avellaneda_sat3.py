@@ -310,10 +310,10 @@ def _decode(model, instance, limit, vs):
                             tsh = instance.domains[real_f][f - instance.feature_idx[real_f]]
                             break
 
-                    if i == 1:
-                        tree.set_root(real_f, tsh, real_f in instance.is_categorical or model[es[i]])
-                    else:
-                        tree.add_node(real_f, tsh, i // 2, i % 2 == 1, real_f in instance.is_categorical or model[es[i]])
+                if i == 1:
+                    tree.set_root(real_f, tsh, real_f in instance.is_categorical or model[es[i]])
+                else:
+                    tree.add_node(real_f, tsh, i // 2, i % 2 == 1, real_f in instance.is_categorical or model[es[i]])
         if not f_found:
             print(f"ERROR: No feature found for node {i}")
 
@@ -327,63 +327,8 @@ def _decode(model, instance, limit, vs):
             if all_right:
                 tree.add_leaf(c_c, (num_leafs + i)//2, i % 2 == 1)
 
-    #_reduce_tree(tree, instance)
     tree.clean(instance)
     return tree
-
-
-def _reduce_tree(tree, instance):
-    assigned = {tree.root.id: list(instance.examples)}
-    q = [tree.root]
-    p = {tree.root.id: None}
-    leafs = []
-
-    while q:
-        c_n = q.pop()
-        examples = assigned[c_n.id]
-
-        if not c_n.is_leaf:
-            p[c_n.left.id] = c_n.id
-            p[c_n.right.id] = c_n.id
-            assigned[c_n.left.id] = []
-            assigned[c_n.right.id] = []
-
-            for e in examples:
-                if e.features[c_n.feature]:
-                    assigned[c_n.left.id].append(e)
-                else:
-                    assigned[c_n.right.id].append(e)
-
-            q.append(c_n.right)
-            q.append(c_n.left)
-        else:
-            leafs.append(c_n)
-
-    for lf in leafs:
-        # May already be deleted
-        if tree.nodes[lf.id] is None:
-            continue
-
-        if len(assigned[lf.id]) == 0:
-            c_p = tree.nodes[p[lf.id]]
-            o_n = c_p.right if c_p.left.id == lf.id else c_p.left
-            if p[c_p.id] is None:
-                tree.root = o_n
-                p[o_n.id] = None
-            else:
-                c_pp = tree.nodes[p[c_p.id]]
-                if c_pp.left.id == c_p.id:
-                    c_pp.left = o_n
-                else:
-                    c_pp.right = o_n
-                p[o_n.id] = c_pp.id
-
-            tree.nodes[lf.id] = None
-            tree.nodes[c_p.id] = None
-
-
-def check_consistency(self, model, instance, num_nodes, tree):
-    pass
 
 
 def new_bound(tree, instance):
@@ -414,7 +359,7 @@ def estimate_size(instance, depth):
     c = len(instance.classes)
     lc = len(bin(c-1)) - 2  #ln(c)
     s = len(instance.examples)
-    f = instance.num_features
+    f = sum(len(x) for x in instance.domains)
 
     forbidden_c = (2**lc - c) * d2 * lc
     alg1_lits = s * sum(2**i * f * (i+2) for i in range(0, depth))

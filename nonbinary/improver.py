@@ -174,6 +174,7 @@ def stitch(old_tree, new_tree, root, instance):
                 s_q.append((c_child.right, new_child, False))
 
     used_leaves = set()
+    duplicated = False
 
     # Stitch in new tree
     if new_tree.root.is_leaf:
@@ -205,13 +206,14 @@ def stitch(old_tree, new_tree, root, instance):
                                 o_r.right = old_tree.nodes[int(c_c.cls)]
                         else:
                             duplicate(o_r, leaf_id, c_p)
+                            duplicated = True
                 else:
                     n_r = old_tree.add_node(c_c.feature, c_c.threshold, o_r.id, c_p, c_c.is_categorical)
                     q.append((n_r, c_c))
 
-    if instance is not None:
-        # TODO: This is necessary if sub-trees are duplicated, but only has to be performed for the sub-tree
-        old_tree.clean(instance)
+    # if instance is not None and duplicated:
+    #     # TODO: This is necessary if sub-trees are duplicated, but only has to be performed for the sub-tree
+    #     old_tree.clean(instance)
 
 
 def _get_max_bound(size, sample_limit):
@@ -252,9 +254,11 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
         return False, last_idx
 
     new_tree = encoding.run(new_instance, slv, start_bound=min(new_ub, c_d - 1), timeout=time_limit, ub=min(new_ub, c_d - 1), opt_size=opt_size)
+
     if new_tree is None:
         return False, last_idx
     else:
+        print(f"{new_tree.get_accuracy(new_instance.examples)}")
         stitch(tree, new_tree, node, None)
         return True, last_idx
 
@@ -312,65 +316,6 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
             return True, prev_idx
 
     return False, prev_idx
-
-
-def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False):
-    if path[path_idx].is_leaf:
-        return False, path_idx
-
-    c_parent = path[path_idx]
-    last_instance = None
-
-    for r in range(1, depth_limit+1):
-        c_instance = build_unique_set(c_parent, assigned[c_parent.id], instance.examples, r)
-        if c_instance is None:
-            break
-        if encoding.estimate_size(c_instance[0], r-1) > literal_limit:
-            break
-        if len(c_instance[0].examples) > sample_limit[c_instance[3]]:
-            if last_instance is not None or len(c_instance[0].examples) > sample_limit[1]:
-                break
-
-        last_instance = c_instance
-
-    if last_instance is None or last_instance[3] <= 1:
-        return False, path_idx
-
-    classes = set()
-    class_map = {}
-    for cl in last_instance[2]:
-        if tree.nodes[cl].is_leaf:
-            for al in assigned[cl]:
-                class_map[al+1] = f"-{tree.nodes[cl].cls}"
-        else:
-            for al in assigned[cl]:
-                class_map[al + 1] = f"{cl}"
-
-    for c_ex in last_instance[0].examples:
-        c_ex.cls = class_map[c_ex.id]
-        classes.add(c_ex.cls)
-    last_instance[0].classes = classes
-
-    new_ub = _get_max_bound(len(last_instance[0].examples), sample_limit)
-    if len(last_instance[0].examples) == 0 or new_ub < 1:
-        return False, path_idx
-
-    new_tree = encoding.run(last_instance[0], slv, start_bound=min(new_ub, last_instance[3] - 1),
-                          timeout=time_limit, ub=min(new_ub, last_instance[3] - 1), opt_size=opt_size)
-
-    if new_tree is not None:
-        q = [new_tree.root]
-        while q:
-            c_q = q.pop()
-            if not c_q.is_leaf:
-                c_q.feature = last_instance[1][c_q.feature]
-                q.append(c_q.left)
-                q.append(c_q.right)
-        # Stitch the new tree in the middle
-        stitch(tree, new_tree, c_parent, instance)
-        return True, path_idx
-
-    return False, path_idx
 
 
 def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False):
@@ -440,7 +385,9 @@ def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_li
 
     new_tree = encoding.run(new_instance, slv, start_bound=min(new_ub, i_depth - 1), timeout=time_limit,
                           ub=min(new_ub, i_depth - 1), opt_size=opt_size)
+
     if new_tree is not None:
+        print(f"{new_tree.get_accuracy(new_instance.examples)}")
         new_instance.unreduce(new_tree)
 
         # Stitch the new tree in the middle

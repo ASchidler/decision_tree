@@ -165,44 +165,52 @@ class DecisionTree:
     def clean(self, instance, min_samples=1):
         assigned = self.assign(instance)
 
-        def clean_sub(node, p_f, p_t, p_left):
+        def clean_sub(node):
             if node.is_leaf:
-                if node.id not in assigned or len(assigned[node.id]) < min_samples:
+                return
+            clean_sub(node.left)
+            clean_sub(node.right)
+
+            # Case one, two few examples
+            replace_left = node.left.is_leaf and (node.left.id not in assigned or len(assigned[node.left.id]) < min_samples)
+            # Case two, both leaves have the same class
+            replace_left = replace_left or (node.left.is_leaf and node.right.is_leaf and node.left.cls == node.right.cls)
+            replace_right = node.right.is_leaf and (node.right.id not in assigned or len(assigned[node.right.id]) < min_samples)
+
+            if node.parent is not None:
+                if replace_left or replace_right:
+                    self.c_idx = 1
+                    is_left = node.parent.left.id == node.id
+
                     self.nodes[node.id] = None
-                    return True, None
-                return None
+                    if replace_left:
+                        self.nodes[node.left.id] = None
+                        node.right.parent = node.parent
+                        assigned[node.right.id] = assigned[node.id]
+                        if is_left:
+                            node.parent.left = node.right
+                        else:
+                            node.parent.right = node.right
+                    elif replace_right:
+                        self.nodes[node.right.id] = None
+                        assigned[node.left.id] = assigned[node.id]
+                        if is_left:
+                            node.parent.left = node.left
+                        else:
+                            node.parent.right = node.left
+            # Special case root
             else:
-                result_l = clean_sub(node.left, node.feature, node.threshold, True)
-                result_r = clean_sub(node.right, node.feature, node.threshold, False)
+                if replace_left:
+                    self.c_idx = 1
+                    self.nodes[node.id] = self.nodes[node.right.id]
+                    self.nodes[node.right.id] = None
+                    assigned[node.right.id] = assigned[node.id]
+                    self.root = node.right
+                elif replace_right:
+                    self.c_idx = 1
+                    self.nodes[node.id] = self.nodes[node.left.id]
+                    self.nodes[node.left.id] = None
+                    assigned[node.left.id] = assigned[node.id]
+                    self.root = node.left
 
-                if result_l:
-                    if result_l[1]:
-                        node.left = result_l[1]
-                    else:
-                        return True, node.right
-                elif result_r:
-                    if result_r[1]:
-                        node.right = result_r[1]
-                    else:
-                        return True, node.left
-
-                if node.left.is_leaf and node.right.is_leaf and node.right.cls == node.left.cls:
-                    self.nodes[node.id] = None
-                    return True, node.left
-                if p_f and node.feature == p_f and node.threshold == p_t:
-                    self.nodes[node.id] = None
-
-                    if p_left:
-                        t_node = node.left
-                        r_node = node.right
-                    else:
-                        t_node = node.right
-                        r_node = node.left
-                    c_nodes = [r_node]
-                    while c_nodes:
-                        c_node = c_nodes.pop()
-                        self.nodes[c_node.id] = None
-                        if not c_node.is_leaf:
-                            c_nodes.extend([c_node.left, c_node.right])
-                    return True, t_node
-        clean_sub(self.root, None, None, None)
+        clean_sub(self.root)
