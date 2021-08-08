@@ -24,6 +24,15 @@ if pruning == 0:
 elif pruning == 1:
     parameters = ["-C", "0.25", "-M", "2"]
 
+
+class WekaNode:
+    def __init__(self, feat=None, threshold=None, is_cat=None, cls=None):
+        self.cls = cls
+        self.feat = feat
+        self.threshold = [threshold]
+        self.children = []
+        self.is_cat = is_cat
+
 def parse_weka_tree(lines):
     wtree = DecisionTree()
     # Single leaf tree, edge case
@@ -36,6 +45,7 @@ def parse_weka_tree(lines):
         wtree.root = c_leaf
         return wtree
 
+    root = None
     c_id = 1
     l_depth = -1
     stack = []
@@ -55,34 +65,63 @@ def parse_weka_tree(lines):
                     print(f"Parser error, line should start with att, starts with {c_line}.")
                     exit(1)
 
+                t_str = c_line.split(" ")[2].replace(":", "")  # remove the : at the end
+                try:
+                    threshold = int(t_str)
+                except ValueError:
+                    try:
+                        threshold = Decimal(t_str)
+                    except InvalidOperation:
+                        threshold = t_str
+
                 if depth > l_depth:
                     feature = int(c_line[3:c_line.find(" ")])
-                    t_str = c_line.split(" ")[2].replace(":", "")  # remove the : at the end
-                    try:
-                        threshold = int(t_str)
-                    except ValueError:
-                        try:
-                            threshold = Decimal(t_str)
-                        except InvalidOperation:
-                            threshold = t_str
+
                     is_cat = c_line.split(" ")[1].strip() == "="
                     if cp is not None:
-                        node = wtree.add_node(feature, threshold, cp.id, cp.left is None, is_cat)
+                        node = WekaNode(feat=feature, threshold=threshold, is_cat=is_cat)
+                        cp.children.append(node)
                     else:
-                        node = wtree.set_root(feature, threshold, is_cat)
+                        root = WekaNode(feat=feature, threshold=threshold, is_cat=is_cat)
+                        node = root
                     stack.append(node)
                     c_id += 1
                     cp = node
+                else:
+                    cp.threshold.append(threshold)
 
                 if c_line.find(":") > -1:
                     pos = c_line.index(":")
                     pos2 = c_line.index(" ", pos+2)
                     cls = c_line[pos + 2:pos2]
-                    wtree.add_leaf(cls, cp.id, cp.left is None)
+                    cp.children.append(WekaNode(cls=cls))
                     c_id += 1
 
                 l_depth = depth
                 break
+
+    def construct_tree(cn, parent, cp):
+            if cn.cls is not None:
+                if parent is None:
+                    wtree.set_root_leaf(cn.cls)
+                else:
+                    wtree.add_leaf(cn.cls, parent, cp)
+            else:
+                cn.threshold.reverse()
+                cn.children.reverse()
+
+                if parent is None:
+                    n_n = wtree.set_root(cn.feat, cn.threshold.pop(), cn.is_cat)
+                else:
+                    n_n = wtree.add_node(cn.feat, cn.threshold.pop(), parent, cp, cn.is_cat)
+                construct_tree(cn.children.pop(), n_n.id, True)
+
+                if len(cn.threshold) == 1:
+                    construct_tree(cn.children.pop(), n_n.id, False)
+                else:
+                    construct_tree(cn, n_n.id, False)
+
+    construct_tree(root, None, None)
     return wtree
 
 
@@ -107,7 +146,7 @@ def get_tree(instance_path, params):
     return mt.group(1).strip().splitlines()
 
 
-fls = {".".join(x.split(".")[:-2]) for x in list(os.listdir(pth)) if x.endswith(".data") and x.startswith("meteo")}
+fls = {".".join(x.split(".")[:-2]) for x in list(os.listdir(pth)) if x.endswith(".data")}
 fls = sorted(fls)
 
 for fl in fls:

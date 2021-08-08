@@ -354,10 +354,14 @@ def _parse_file(filenames):
                                 # Truncate after 6 decimals, since weka does this
                                 Decimal(fd)
                                 fd = Decimal(fd[:-(decimals-6)])
-                        except ValueError:
-                            pass
                         except InvalidOperation:
-                            pass
+                            try:
+                                # Special case to catch scientific notation
+                                fd = float(fd)
+                                # Round to 6 decimals
+                                fd = Decimal(int(fd * 1000000) / 1000000.0)
+                            except ValueError:
+                                pass
 
                     example.append(fd)
 

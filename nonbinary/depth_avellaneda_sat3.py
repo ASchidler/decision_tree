@@ -174,7 +174,7 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False):
 
     if opt_size and best_model:
         with solver() as slv:
-            c_size_bound = best_model.root.get_leafs() - 1
+            c_size_bound = best_model.root.get_leaves() - 1
             solved = True
             vs = encode(instance, best_depth, slv)
             card = encode_size(vs, instance, slv, best_depth)
@@ -229,55 +229,6 @@ def extend(slv, instance, vs, c_bound, increment, size_limit):
     return guess
 
 
-def run_limited(solver, strategy, size_limit, limit, start_bound=1, go_up=True, timeout=0):
-    c_bound = start_bound
-    best_model = None
-    strategy.extend(limit[c_bound])
-
-    while True:
-        print(f"Running {c_bound}")
-        with solver() as slv:
-            while estimate_size(strategy.instance, c_bound) > size_limit and len(strategy.instance.examples) > 1:
-                strategy.pop()
-
-            vs = encode(strategy.instance, c_bound, slv)
-            timed_out = []
-            if timeout == 0:
-                solved = slv.solve()
-            else:
-                def interrupt(s):
-                    s.interrupt()
-                    timed_out.append(True)
-
-                timer = Timer(timeout, interrupt, [slv])
-                timer.start()
-                solved = slv.solve_limited(expect_interrupt=True)
-                timer.cancel()
-
-            if solved:
-                model = {abs(x): x > 0 for x in slv.get_model()}
-                best_model = _decode(model, strategy.instance, c_bound, vs)
-
-                if go_up:
-                    break
-
-                strategy.extend(limit[c_bound-1] - limit[c_bound])
-                c_bound -= 1
-            else:
-                if go_up:
-                    if c_bound == len(limit) or timed_out:
-                        for _ in range(0, 5):
-                            strategy.pop()
-                    else:
-                        for _ in range(0, limit[c_bound] - limit[c_bound] + 1):
-                            strategy.pop()
-                        c_bound += 1
-                else:
-                    break
-
-    return best_model
-
-
 def _decode(model, instance, limit, vs):
     class_map = vs['class_map']
     fs = vs["f"]
@@ -293,8 +244,9 @@ def _decode(model, instance, limit, vs):
         for f, fv in fs[i].items():
             if model[fv]:
                 if f_found:
-                    print(f"ERROR: double features found for node {i}, features {f} and {tree.nodes[i].feature}")
+                    raise RuntimeError(f"ERROR: double features found for node {i}, features {f} and {tree.nodes[i].feature}")
                 f_found = True
+                real_f = None
 
                 if instance.num_features == 1:
                     real_f = 1

@@ -214,9 +214,8 @@ def stitch(old_tree, new_tree, root, instance):
                     q.append((n_r, c_c))
 
     if instance is not None and duplicated:
-        old_tree.check()
-        print("Clean")
         # TODO: This is necessary if sub-trees are duplicated, but only has to be performed for the sub-tree
+        old_tree.check()
         old_tree.clean(instance)
         old_tree.check()
 
@@ -263,7 +262,6 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
     if new_tree is None:
         return False, last_idx
     else:
-        print(f"{new_tree.get_accuracy(new_instance.examples)}")
         stitch(tree, new_tree, node, None)
         return True, last_idx
 
@@ -392,7 +390,6 @@ def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_li
                           ub=min(new_ub, i_depth - 1), opt_size=opt_size)
 
     if new_tree is not None:
-        print(f"{new_tree.get_accuracy(new_instance.examples)}")
         new_instance.unreduce(new_tree)
 
         # Stitch the new tree in the middle

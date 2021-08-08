@@ -190,7 +190,7 @@ def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False):
 
     if opt_size and best_model:
         with solver() as slv:
-            c_size_bound = best_model.root.get_leafs() - 1
+            c_size_bound = best_model.root.get_leaves()
             solved = True
             vs = encode(instance, best_depth, slv)
             card = encode_size(vs, instance, slv, best_depth)

@@ -52,6 +52,9 @@ class DecisionTreeNode:
         pth.append(self)
         return pth
 
+    def get_leaves(self):
+        return self.left.get_leaves() + self.right.get_leaves()
+
 
 class DecisionTreeLeaf:
     def __init__(self, c, i, tree):
@@ -68,6 +71,9 @@ class DecisionTreeLeaf:
         return 0
 
     def get_nodes(self):
+        return 1
+
+    def get_leaves(self):
         return 1
 
     def remap(self, mapping):
