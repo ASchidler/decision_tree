@@ -188,6 +188,7 @@ def stitch(old_tree, new_tree, root, instance):
         q = [(root, new_tree.root)]
         root.feature = new_tree.root.feature
         root.threshold = new_tree.root.threshold
+        root.is_categorical = new_tree.root.is_categorical
 
         while q:
             o_r, n_r = q.pop()
@@ -215,9 +216,7 @@ def stitch(old_tree, new_tree, root, instance):
 
     if instance is not None and duplicated:
         # TODO: This is necessary if sub-trees are duplicated, but only has to be performed for the sub-tree
-        old_tree.check()
         old_tree.clean(instance)
-        old_tree.check()
 
 
 def _get_max_bound(size, sample_limit):
