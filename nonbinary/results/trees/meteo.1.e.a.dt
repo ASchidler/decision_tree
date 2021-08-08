@@ -1,0 +1,13 @@
+a(1) = overcast
+-a(1) = rain
+--c(-)
+--a(1) = overcast
+---c(+)
+---c(-)
+-a(1) = rain
+--a(4) = false
+---c(+)
+---c(-)
+--a(2) = hot
+---c(-)
+---c(+)

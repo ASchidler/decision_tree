@@ -1,0 +1,11 @@
+a(4) = 28
+-a(2) = 18
+--c(elephant)
+--a(3) = 22
+---c(elephant)
+---c(mouse)
+-a(2) = 10
+--a(3) = 26
+---c(elephant)
+---c(mouse)
+--c(elephant)
