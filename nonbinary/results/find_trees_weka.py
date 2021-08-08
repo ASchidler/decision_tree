@@ -65,11 +65,11 @@ def parse_weka_tree(lines):
                             threshold = Decimal(t_str)
                         except InvalidOperation:
                             threshold = t_str
-
+                    is_cat = c_line.split(" ")[1].strip() == "="
                     if cp is not None:
-                        node = wtree.add_node(feature, threshold, cp.id, cp.left is None, isinstance(threshold, str))
+                        node = wtree.add_node(feature, threshold, cp.id, cp.left is None, is_cat)
                     else:
-                        node = wtree.set_root(feature, threshold, isinstance(threshold, str))
+                        node = wtree.set_root(feature, threshold, is_cat)
                     stack.append(node)
                     c_id += 1
                     cp = node
@@ -107,7 +107,7 @@ def get_tree(instance_path, params):
     return mt.group(1).strip().splitlines()
 
 
-fls = {".".join(x.split(".")[:-2]) for x in list(os.listdir(pth)) if x.endswith(".data")}
+fls = {".".join(x.split(".")[:-2]) for x in list(os.listdir(pth)) if x.endswith(".data") and x.startswith("meteo")}
 fls = sorted(fls)
 
 for fl in fls:

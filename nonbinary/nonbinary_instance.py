@@ -217,6 +217,7 @@ class ClassificationInstance:
                 c_e.features[c_k], c_e.features[c_v] = c_e.features[c_v], c_e.features[c_k]
         for c_k, c_v in self.reduced_map.items():
             self.domains[c_k], self.domains[c_v] = self.domains[c_v], self.domains[c_k]
+        self.finish()
 
         self.num_features = len(key)
 
@@ -262,10 +263,12 @@ class ClassificationInstance:
                 c_e.features[c_k], c_e.features[c_v] = c_e.features[c_v], c_e.features[c_k]
         for c_k, c_v in reverse_lookup.items():
             self.domains[c_k], self.domains[c_v] = self.domains[c_v], self.domains[c_k]
+            self.feature_idx[c_k], self.feature_idx[c_v] = self.feature_idx[c_v], self.feature_idx[c_k]
         self.reduced_map = None
 
         self.reduced_original_num_features = None
         self.reduced_key = None
+        self.finish()
 
     def export_c45(self, path, write_names=True):
         with open(path, "w") as outp:

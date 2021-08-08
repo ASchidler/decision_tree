@@ -177,8 +177,8 @@ class DecisionTree:
             replace_left = replace_left or (node.left.is_leaf and node.right.is_leaf and node.left.cls == node.right.cls)
             replace_right = node.right.is_leaf and (node.right.id not in assigned or len(assigned[node.right.id]) < min_samples)
 
-            if node.parent is not None:
-                if replace_left or replace_right:
+            if replace_left or replace_right:
+                if node.parent is not None:
                     self.c_idx = 1
                     is_left = node.parent.left.id == node.id
 
@@ -193,24 +193,59 @@ class DecisionTree:
                             node.parent.right = node.right
                     elif replace_right:
                         self.nodes[node.right.id] = None
+                        node.left.parent = node.parent
                         assigned[node.left.id] = assigned[node.id]
                         if is_left:
                             node.parent.left = node.left
                         else:
                             node.parent.right = node.left
-            # Special case root
-            else:
-                if replace_left:
+                # Special case root
+                else:
                     self.c_idx = 1
-                    self.nodes[node.id] = self.nodes[node.right.id]
-                    self.nodes[node.right.id] = None
-                    assigned[node.right.id] = assigned[node.id]
-                    self.root = node.right
-                elif replace_right:
-                    self.c_idx = 1
-                    self.nodes[node.id] = self.nodes[node.left.id]
-                    self.nodes[node.left.id] = None
-                    assigned[node.left.id] = assigned[node.id]
-                    self.root = node.left
+                    if replace_left:
+                        self.nodes[node.id] = self.nodes[node.right.id]
+                        self.nodes[node.right.id] = None
+                        self.nodes[node.left.id] = None
+                        node.right.id = node.id
+                        node.right.parent = None
+                        assigned[node.right.id] = assigned[node.id]
+                        self.root = node.right
+                    elif replace_right:
+                        self.nodes[node.id] = self.nodes[node.left.id]
+                        self.nodes[node.left.id] = None
+                        self.nodes[node.right.id] = None
+                        node.left.id = node.id
+                        node.left.parent = None
+                        assigned[node.left.id] = assigned[node.id]
+                        self.root = node.left
 
         clean_sub(self.root)
+
+    def check(self):
+        """Perform a sanity check."""
+        q = [self.root]
+        nodes = set()
+
+        while q:
+            c_n = q.pop()
+            if c_n.id in nodes:
+                print("Duplicate node id or loop")
+            nodes.add(c_n.id)
+
+            if self.nodes[c_n.id] != c_n:
+                print("Node id doesn't match node")
+
+            if not c_n.is_leaf:
+                q.extend(c_n.get_children())
+                if c_n.left is None or c_n.right is None:
+                    print("Child is none")
+
+            if c_n.parent is not None and not (c_n.parent.left.id == c_n.id or c_n.parent.right.id == c_n.id):
+                print("Invalid parent/child relationship")
+
+            if c_n.parent is None and c_n != self.root:
+                print("Double root")
+
+        if any(x.id not in nodes for x in self.nodes if x is not None):
+            print("Superfluous nodes")
+

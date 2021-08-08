@@ -105,6 +105,7 @@ if args.slim:
     print(f"START Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
           f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
           f"Time: {time.time() - start_time}")
+
     improve_strategy.run(tree, instance, test_instance, Glucose3, enc, timelimit=args.time_limit)
 else:
     tree = enc.run(instance, Glucose3)

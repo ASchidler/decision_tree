@@ -202,8 +202,10 @@ def stitch(old_tree, new_tree, root, instance):
                             used_leaves.add(leaf_id)
                             if c_p:
                                 o_r.left = old_tree.nodes[int(c_c.cls)]
+                                old_tree.nodes[int(c_c.cls)].parent = o_r
                             else:
                                 o_r.right = old_tree.nodes[int(c_c.cls)]
+                                old_tree.nodes[int(c_c.cls)].parent = o_r
                         else:
                             duplicate(o_r, leaf_id, c_p)
                             duplicated = True
@@ -211,9 +213,12 @@ def stitch(old_tree, new_tree, root, instance):
                     n_r = old_tree.add_node(c_c.feature, c_c.threshold, o_r.id, c_p, c_c.is_categorical)
                     q.append((n_r, c_c))
 
-    # if instance is not None and duplicated:
-    #     # TODO: This is necessary if sub-trees are duplicated, but only has to be performed for the sub-tree
-    #     old_tree.clean(instance)
+    if instance is not None and duplicated:
+        old_tree.check()
+        print("Clean")
+        # TODO: This is necessary if sub-trees are duplicated, but only has to be performed for the sub-tree
+        old_tree.clean(instance)
+        old_tree.check()
 
 
 def _get_max_bound(size, sample_limit):
