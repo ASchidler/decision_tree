@@ -29,6 +29,21 @@ class DecisionTreeNode:
         else:
             return self.right
 
+    def train(self, samples):
+        ls = []
+        rs = []
+
+        for e in samples:
+            target = self._decide(e)
+            if target.id == self.left.id:
+                ls.append(e)
+            else:
+                rs.append(e)
+        self.count_left = len(ls)
+        self.count_right = len(rs)
+        self.left.train(ls)
+        self.right.train(rs)
+
     def decide(self, e):
         return self._decide(e).decide(e)
 
@@ -63,9 +78,13 @@ class DecisionTreeLeaf:
         self.id = i
         self.tree = tree
         self.parent = None
+        self.count = 0
 
     def decide(self, e):
         return self.cls, self
+
+    def train(self, samples):
+        self.count = len(samples)
 
     def get_depth(self):
         return 0
@@ -98,6 +117,9 @@ class DecisionTree:
         self.root = DecisionTreeNode(f, t, 1, self, is_categorical)
         self.nodes.append(self.root)
         return self.root
+
+    def train(self, instance):
+        self.root.train(instance.examples)
 
     def _get_id(self):
         while self.c_idx < len(self.nodes) and self.nodes[self.c_idx]:

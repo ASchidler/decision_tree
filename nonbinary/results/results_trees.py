@@ -30,6 +30,8 @@ def parse_file(fl, experiment):
                     flags += "a"
                 elif cfs[0] == "categorical" and cfs[1] == "True":
                     flags += "c"
+                elif cfs[0] == "hybrid" and cfs[1] == "True":
+                    flags += "y"
                 elif cfs[0] == "size" and cfs[1] == "True":
                     flags += "z"
                 elif cfs[0] == "slice":
@@ -53,11 +55,11 @@ def parse_file(fl, experiment):
             flags = "0"
 
         if len(tree_data) > 0:
-            out_path = os.path.join("trees", out_file+".dt")
+            out_path = os.path.join("trees", f"{experiment}", out_file+".dt")
             with open(out_path, "w") as out_file:
                 out_file.write("".join(tree_data))
         elif depth_lb > 0:
-            out_path = os.path.join("trees", out_file+".info")
+            out_path = os.path.join("trees", f"{experiment}", out_file+".info")
             with open(out_path, "w") as out_file:
                 out_file.write(f"{depth_lb}{os.linesep}{size_ub}{os.linesep}")
 

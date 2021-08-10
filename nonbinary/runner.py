@@ -11,7 +11,7 @@ import nonbinary_instance
 import incremental.entropy_strategy as es
 import incremental.maintain_strategy as ms
 import incremental.random_strategy as rs
-import nonbinary.depth_avellaneda_sat as nbs
+import nonbinary.depth_avellaneda_satx as nbs
 import nonbinary.depth_avellaneda_sat2 as nbs2
 import nonbinary.depth_avellaneda_sat3 as nbs3
 import nonbinary.depth_avellaneda_smt as nbt

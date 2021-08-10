@@ -5,7 +5,7 @@ from collections import defaultdict
 import nonbinary.nonbinary_instance as nbi
 import pruning
 
-experiment = "e"
+experiment = "s"
 flags = set()
 
 
@@ -20,20 +20,23 @@ class TreeData:
 files = defaultdict(lambda: defaultdict(lambda: defaultdict(TreeData)))
 sizes = defaultdict(list)
 
-for c_file in sorted(os.listdir("trees")):
+for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
+    if c_file.find(".") < 0:
+        continue
     file_fields = c_file.split(".")
     file_name = file_fields[0]
     flags.add(file_fields[3])
     if c_file.endswith(".info"):
-        with open(os.path.join("trees", c_file)) as info_file:
+        with open(os.path.join("trees", experiment, c_file)) as info_file:
             files[file_name][file_fields[3]][file_fields[1]].depth_lb = int(info_file.readline().strip())
     elif c_file.endswith(".dt"):
         instance, instance_test, _ = nbi.parse("../instances", file_name, int(file_fields[1]))
-        tree = tp.parse_internal_tree(os.path.join("trees", c_file))
+        tree = tp.parse_internal_tree(os.path.join("trees", experiment, c_file))
 
         sizes[file_name].append((len(instance.examples), instance.num_features, len(instance.classes)))
 
         if tree is not None:
+            tree.train(instance)
             files[file_name][file_fields[3]][file_fields[1]].nodes = tree.get_nodes()
             files[file_name][file_fields[3]][file_fields[1]].depth = tree.get_depth()
             files[file_name][file_fields[3]][file_fields[1]].training = tree.get_accuracy(instance.examples)

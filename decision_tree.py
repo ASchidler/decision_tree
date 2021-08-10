@@ -59,6 +59,9 @@ class DecisionTree:
         self.root = None
         self.nodes = [None for _ in range(0, num_nodes + 1)] # Indexing starts at 1
 
+    def train(self, instance):
+        self.root.train(instance)
+
     def copy(self):
         new_tree = DecisionTree(self.num_features, len(self.nodes)-1)
 
