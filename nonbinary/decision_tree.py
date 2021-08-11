@@ -70,6 +70,9 @@ class DecisionTreeNode:
     def get_leaves(self):
         return self.left.get_leaves() + self.right.get_leaves()
 
+    def get_extended_leaves(self):
+        return self.left.get_extended_leaves() + self.right.get_extended_leaves()
+
 
 class DecisionTreeLeaf:
     def __init__(self, c, i, tree):
@@ -100,6 +103,9 @@ class DecisionTreeLeaf:
 
     def get_path(self, e):
         return [self]
+
+    def get_extended_leaves(self):
+        return 0 if self.cls.startswith("-") or self.cls == "EmptyLeaf" else 1
 
 
 class DecisionTree:
@@ -203,7 +209,9 @@ class DecisionTree:
             replace_left = node.left.is_leaf and (node.left.id not in assigned or len(assigned[node.left.id]) < min_samples)
             # Case two, both leaves have the same class
             replace_left = replace_left or (node.left.is_leaf and node.right.is_leaf and node.left.cls == node.right.cls)
+            replace_left = replace_left or (node.left.is_leaf and node.left.cls == "EmptyLeaf")
             replace_right = node.right.is_leaf and (node.right.id not in assigned or len(assigned[node.right.id]) < min_samples)
+            replace_right = replace_right or (node.right.is_leaf and node.right.cls == "EmptyLeaf")
 
             if replace_left or replace_right:
                 if node.parent is not None:

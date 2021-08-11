@@ -11,10 +11,12 @@ import nonbinary_instance
 import incremental.entropy_strategy as es
 import incremental.maintain_strategy as ms
 import incremental.random_strategy as rs
-import nonbinary.depth_avellaneda_satx as nbs
+import nonbinary.depth_avellaneda_sat as nbs
 import nonbinary.depth_avellaneda_sat2 as nbs2
 import nonbinary.depth_avellaneda_sat3 as nbs3
 import nonbinary.depth_avellaneda_smt as nbt
+import nonbinary.depth_avellaneda_base as base
+from threading import Timer
 
 instance_path = "nonbinary/instances"
 instance_validation_path = "datasets/validate"
@@ -35,6 +37,8 @@ ap.add_argument("-t", dest="time_limit", action="store", default=900, type=int,
                 help="The timelimit in seconds.")
 ap.add_argument("-z", dest="size", action="store_true", default=False,
                 help="Decrease the size as well as the depth.")
+ap.add_argument("-e", dest="slim_opt", action="store_true", default=False,
+                help="Optimize away extension leaves.")
 ap.add_argument("-d", dest="validation", action="store_true", default=False,
                 help="Use data with validation set.")
 ap.add_argument("-s", dest="use_smt", action="store_true", default=False)
@@ -48,6 +52,7 @@ ap.add_argument("-w", dest="weka", action="store_false", default=True,
                 help="Use CART instead of WEKA trees.")
 ap.add_argument("-m", dest="slim", action="store_true", default=False,
                 help="Use local improvement instead of exact results.")
+
 
 args = ap.parse_args()
 
@@ -78,6 +83,26 @@ print(f"Instance: {target_instance}, {args}")
 sys.stdout.flush()
 
 start_time = time.time()
+
+def exit_timeout():
+    # TODO: There is a race condition in case the tree is currently changing. This should rarely be the case, as
+    # this takes a lot shorter than reduction +
+    print(f"Timeout: {time.time() - start_time}")
+    #tree.clean(instance, min_samples=args.min_samples)
+    print(f"Time: End\t\t"
+          f"Training {tree.get_accuracy(instance.examples):.4f}\t"
+          f"Test {tree.get_accuracy(test_instance.examples):.4f}\t"
+          f"Depth {tree.get_depth():03}\t"
+          f"Nodes {tree.get_nodes()}")
+    print(tree.as_string())
+    sys.stdout.flush()
+    exit(1)
+
+timer = None
+if args.time_limit > 0:
+    timer = Timer(args.time_limit * 1.1 - (time.time() - start_time), exit_timeout)
+    timer.start()
+
 instance, test_instance, validation_instance = nonbinary_instance.parse(instance_path, target_instance, args.slice)
 
 if args.reduce:
@@ -106,9 +131,9 @@ if args.slim:
           f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
           f"Time: {time.time() - start_time}")
 
-    improve_strategy.run(tree, instance, test_instance, Glucose3, enc, timelimit=args.time_limit, opt_size=False)
+    improve_strategy.run(tree, instance, test_instance, Glucose3, enc, timelimit=args.time_limit, opt_size=args.size, opt_slim=args.slim_opt)
 else:
-    tree = enc.run(instance, Glucose3)
+    tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size)
 
 if tree is None:
     print("No tree found.")
@@ -123,3 +148,6 @@ print(f"END Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
       f"Time: {time.time() - start_time}")
 
 print(tree.as_string())
+
+if timer is not None:
+    timer.cancel()

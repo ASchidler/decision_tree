@@ -5,7 +5,7 @@ from collections import defaultdict
 import nonbinary.nonbinary_instance as nbi
 import pruning
 
-experiment = "s"
+experiment = "z"
 flags = set()
 
 
@@ -15,10 +15,11 @@ class TreeData:
         self.depth = None
         self.training = None
         self.test = None
-        self.depth_lb = None
 
 files = defaultdict(lambda: defaultdict(lambda: defaultdict(TreeData)))
 sizes = defaultdict(list)
+
+original = defaultdict(lambda: defaultdict(TreeData))
 
 for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
     if c_file.find(".") < 0:
@@ -26,10 +27,7 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
     file_fields = c_file.split(".")
     file_name = file_fields[0]
     flags.add(file_fields[3])
-    if c_file.endswith(".info"):
-        with open(os.path.join("trees", experiment, c_file)) as info_file:
-            files[file_name][file_fields[3]][file_fields[1]].depth_lb = int(info_file.readline().strip())
-    elif c_file.endswith(".dt"):
+    if c_file.endswith(".dt"):
         instance, instance_test, _ = nbi.parse("../instances", file_name, int(file_fields[1]))
         tree = tp.parse_internal_tree(os.path.join("trees", experiment, c_file))
 
@@ -43,13 +41,20 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
             files[file_name][file_fields[3]][file_fields[1]].test = tree.get_accuracy(instance_test.examples)
 
             print(f"Parsed {c_file}")
+            if file_fields[1] not in original[file_name]:
+                tree2 = tp.parse_internal_tree(os.path.join("trees", "unpruned", f"{file_name}.{file_fields[1]}.w.dt"))
+                tree2.train(instance)
+                original[file_name][file_fields[1]].nodes = tree2.get_nodes()
+                original[file_name][file_fields[1]].depth = tree2.get_depth()
+                original[file_name][file_fields[1]].training = tree2.get_accuracy(instance.examples)
+                original[file_name][file_fields[1]].test = tree2.get_accuracy(instance_test.examples)
         else:
             print(f"No tree in {c_file}")
 
 with open(f"results_{experiment}.csv", "w") as outf:
-    outf.write("Instance;E;F;C")
+    outf.write("Instance;E;F;C;Nodes;Depth;Train Acc; Test Acc")
     for c_f in sorted(flags):
-        outf.write(f";{c_f} Solved;{c_f} Depth LB;{c_f} Nodes;{c_f} Depth;{c_f} Train Acc;{c_f} Test Acc")
+        outf.write(f";{c_f} Solved;{c_f} Nodes;{c_f} Depth;{c_f} Train Acc;{c_f} Test Acc")
     outf.write(os.linesep)
 
     for c_file in sorted(files.keys()):
@@ -58,6 +63,22 @@ with open(f"results_{experiment}.csv", "w") as outf:
             continue
         outf.write(f"{c_file}")
         outf.write(f";{sum(x[0] for x in c_sizes)/len(c_sizes)};{max(x[1] for x in c_sizes)};{max(x[2] for x in c_sizes)}")
+
+        c_data = original[c_file].values()
+        sums = [0, 0, 0, 0]
+        cnt = 0
+        for c_data_entry in c_data:
+            if c_data_entry.nodes is not None:
+                cnt += 1
+                sums[0] += c_data_entry.nodes
+                sums[1] += c_data_entry.depth
+                sums[2] += c_data_entry.training
+                sums[3] += c_data_entry.test
+        for c_s_entry in range(0, len(sums)):
+            if cnt == 0:
+                outf.write(f";{-1}")
+            else:
+                outf.write(f";{sums[c_s_entry] / cnt}")
         print(c_file)
         for c_f in sorted(flags):
             if c_f not in files[c_file]:
@@ -65,21 +86,18 @@ with open(f"results_{experiment}.csv", "w") as outf:
                 continue
 
             c_data = files[c_file][c_f].values()
-            sums = [0, 0, 0, 0, 0]
+            sums = [0, 0, 0, 0]
             cnt = 0
             for c_data_entry in c_data:
-                if c_data_entry.depth_lb is not None:
-                    sums[0] += c_data_entry.depth_lb
                 if c_data_entry.nodes is not None:
                     cnt += 1
-                    sums[1] += c_data_entry.nodes
-                    sums[2] += c_data_entry.depth
-                    sums[3] += c_data_entry.training
-                    sums[4] += c_data_entry.test
+                    sums[0] += c_data_entry.nodes
+                    sums[1] += c_data_entry.depth
+                    sums[2] += c_data_entry.training
+                    sums[3] += c_data_entry.test
 
             outf.write(f";{cnt}")
-            outf.write(f";{sums[0] / len(c_data)}")
-            for c_s_entry in range(1, len(sums)):
+            for c_s_entry in range(0, len(sums)):
                 if cnt == 0:
                     outf.write(f";{-1}")
                 else:

@@ -78,7 +78,7 @@ def clear_ignore(ignore, root):
             q.append(c_n.right)
 
 
-def run(tree, instance, test, slv, enc, limit_idx=1, timelimit=0, opt_size=False):
+def run(tree, instance, test, slv, enc, limit_idx=1, timelimit=0, opt_size=False, opt_slim=False):
     sample_limit = [sample_limit_short, sample_limit_mid, sample_limit_long][limit_idx]
     time_limit = time_limits[limit_idx]
     depth_limit = depth_limits[limit_idx]

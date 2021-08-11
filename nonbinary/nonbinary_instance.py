@@ -162,12 +162,16 @@ class ClassificationInstance:
     def reduce_with_key(self, randomized_runs=2):
         keys = []
         keys.append(self.min_key_random())
-        keys.append(self.min_key_removal())
+
+        if len(self.examples) < 7500:
+            keys.append(self.min_key_removal())
         for _ in range(0, randomized_runs):
             keys.append(self.min_key_random(randomize=True))
-            keys.append(self.min_key_removal(randomize=True))
+            if len(self.examples) < 7500:
+                keys.append(self.min_key_removal(randomize=True))
 
-        keys.append(self.min_key_greedy())
+        if len(self.examples) < 5000:
+            keys.append(self.min_key_greedy())
 
         key = min(keys, key=lambda x: len(x))
         self.reduce(key)

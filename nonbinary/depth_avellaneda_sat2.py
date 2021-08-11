@@ -156,93 +156,23 @@ def estimate_size_add(instance, dl):
     return 2 ** dl * c * 2 + (2 ** dl) ** 2 * 3
 
 
-def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False):
-    c_bound = start_bound
-    c_lb = 1
-    best_model = None
-    best_depth = None
+def encode_extended_leaf_size(vs, instance, solver, dl):
+    pool = vs["pool"]
+    card_vars = []
+    c = vs["c"]
+    cm = vs["class_map"]
 
-    while c_lb < ub:
-        print(f"Running depth {c_bound}")
-        stdout.flush()
-        with solver() as slv:
-            vs = encode(instance, c_bound, slv)
+    for c_n in range(0, 2 ** dl):
+        for cls, vals in cm.items():
+            if not cls.startswith("-"):
+                clause = []
+                for i in range(0, len(vals)):
+                    clause.append(-c[c_n][i] if vals[i] else c[c_n][i])
+                clause.append(pool.id(f"e{c_n}"))
+                solver.add_clause(clause)
 
-            if timeout == 0:
-                solved = slv.solve()
-            else:
-                def interrupt(s):
-                    s.interrupt()
-
-                timer = Timer(timeout, interrupt, [slv])
-                timer.start()
-                solved = slv.solve_limited(expect_interrupt=True)
-                timer.cancel()
-            if solved:
-                model = {abs(x): x > 0 for x in slv.get_model()}
-                best_model = _decode(model, instance, c_bound, vs)
-                best_depth = c_bound
-                ub = c_bound
-                c_bound -= 1
-            else:
-                c_bound += 1
-                c_lb = c_bound
-
-    if opt_size and best_model:
-        with solver() as slv:
-            c_size_bound = best_model.root.get_leaves()
-            solved = True
-            vs = encode(instance, best_depth, slv)
-            card = encode_size(vs, instance, slv, best_depth)
-
-            tot = ITotalizer(card, c_size_bound, top_id=vs["pool"].top+1)
-            slv.append_formula(tot.cnf)
-
-            while solved:
-                print(f"Running size {c_size_bound}")
-                stdout.flush()
-                if timeout == 0:
-                    solved = slv.solve()
-                else:
-                    def interrupt(s):
-                        s.interrupt()
-
-                    timer = Timer(timeout, interrupt, [slv])
-                    timer.start()
-                    solved = slv.solve_limited(expect_interrupt=True)
-                    timer.cancel()
-
-                if solved:
-                    model = {abs(x): x > 0 for x in slv.get_model()}
-                    best_model = _decode(model, instance, best_depth, vs)
-                    c_size_bound -= 1
-                    slv.add_clause([-tot.rhs[c_size_bound]])
-                else:
-                    break
-
-    return best_model
-
-
-def extend(slv, instance, vs, c_bound, increment, size_limit):
-    c = len(instance.classes)
-    lc = len(bin(c - 1)) - 2  # ln(c)
-    f = instance.num_features
-    d2 = 2 ** c_bound
-
-    alg1_lits = increment * sum(2 ** i * f * (i + 2) for i in range(0, c_bound))
-    guess = alg1_lits + increment * d2 * (c_bound + 1) * lc
-
-    if guess > size_limit:
-        return None
-
-    for e_idx in range(len(instance.examples) - increment, len(instance.examples)):
-        vs["x"][e_idx] = {}
-        for x2 in range(0, c_bound):
-            vs["x"][e_idx][x2] = vs["pool"].id(f"x{e_idx}{x2}")
-        _alg1(instance, e_idx, c_bound, 0, 1, list(), vs["f"], vs["x"], slv)
-        _alg2(instance, e_idx, c_bound, 0, 1, list(), vs["class_map"], vs["x"], vs["c"], slv)
-
-    return guess
+        card_vars.append(pool.id(f"e{c_n}"))
+    return card_vars
 
 
 def _decode(model, instance, limit, vs):

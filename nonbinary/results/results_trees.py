@@ -32,8 +32,8 @@ def parse_file(fl, experiment):
                     flags += "c"
                 elif cfs[0] == "hybrid" and cfs[1] == "True":
                     flags += "y"
-                elif cfs[0] == "size" and cfs[1] == "True":
-                    flags += "z"
+                # elif cfs[0] == "size" and cfs[1] == "True":
+                #     flags += "z"
                 elif cfs[0] == "slice":
                     c_slice = int(cfs[1])
                 elif cfs[0] == "use_smt" and cfs[1] == "True":
