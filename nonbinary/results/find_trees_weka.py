@@ -154,6 +154,9 @@ for fl in fls:
     for c_slice in range(1, 6):
         print(f"{c_slice}")
 
+        if os.path.exists(f"nonbinary/results/trees/unpruned/{fl}.{c_slice}.w.dt"):
+            continue
+
         try:
             instance, instance_test, instance_validation = parse(pth, fl, c_slice, use_validation=use_validation)
         except FileNotFoundError:

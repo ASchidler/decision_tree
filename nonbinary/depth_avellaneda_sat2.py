@@ -31,7 +31,8 @@ def _init_var(instance, limit, class_map):
     for i in range(1, 2**limit):
         f[i] = {}
         for cf in range(1, instance.num_features + 1):
-            f[i][cf] = pool.id(f"f{i}_{cf}")
+            if len(instance.domains[cf]) > 0:
+                f[i][cf] = pool.id(f"f{i}_{cf}")
 
     c_vars = len(next(iter(class_map.values())))
     c = {}
@@ -95,6 +96,9 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, d, solver):
 
     example = instance.examples[e_idx]
     for f in range(1, instance.num_features + 1):
+        if len(instance.domains[f]) == 0:
+            continue
+
         is_cat = f in instance.is_categorical
         for i2 in range(0, len(d[q])):
             if i2 < len(instance.domains[f]) - 1:
@@ -109,12 +113,15 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, d, solver):
     _alg1(instance, e_idx, limit, lvl+1, 2 * q + 1, n_cl, fs, x, d, solver)
 
     for f in range(1, instance.num_features + 1):
+        if len(instance.domains[f]) == 0:
+            continue
+
         is_cat = f in instance.is_categorical
         for i2 in range(0, len(d[q])):
             if i2 < len(instance.domains[f]) - 1:
-                if example.features[f] != "?":
-                    if (not is_cat and example.features[f] <= instance.domains[f][i2]) or (is_cat and example.features[f] == instance.domains[f][i2]):
-                        solver.add_clause([*clause, x[e_idx][lvl], -d[q][i2], -fs[q][f]])
+                c_val = example.features[f] if example.features[f] != "?" else instance.domains_max[f]
+                if (not is_cat and c_val <= instance.domains[f][i2]) or (is_cat and c_val == instance.domains[f][i2]):
+                    solver.add_clause([*clause, x[e_idx][lvl], -d[q][i2], -fs[q][f]])
 
     n_cl2 = list(clause)
     n_cl2.append(x[e_idx][lvl])

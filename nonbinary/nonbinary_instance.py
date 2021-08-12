@@ -1,7 +1,7 @@
 import os
 import random
 from decimal import Decimal, InvalidOperation, getcontext
-
+from collections import defaultdict
 
 class Example:
     def __init__(self, inst, features, cls):
@@ -21,6 +21,8 @@ class ClassificationInstance:
         self.num_features = -1
         self.classes = set()
         self.domains = []
+        self.domain_counts = []
+        self.domains_max = []
         self.is_binary = set()
         self.is_categorical = set()
         self.feature_idx = dict()
@@ -32,6 +34,7 @@ class ClassificationInstance:
 
     def finish(self):
         c_idx = 1
+        self.domains_max = [0 for _ in range(0, self.num_features + 1)]
         for i in range(1, self.num_features+1):
             if len(self.domains[i]) <= 2:
                 self.is_binary.add(i)
@@ -40,12 +43,15 @@ class ClassificationInstance:
             self.feature_idx[i] = c_idx
             c_idx += len(self.domains[i])
             self.domains[i] = sorted(list(self.domains[i]))
+            if len(self.domains[i]) > 0:
+                _, self.domains_max[i] = max((v, k) for k, v in self.domain_counts[i].items())
         self.feature_indices = c_idx - 1
 
     def add_example(self, e):
         if self.num_features == -1:
             self.num_features = len(e.features) - 1
             self.domains = [set() for _ in range(0, self.num_features + 1)]
+            self.domain_counts = [defaultdict(int) for _ in range(0, self.num_features + 1)]
         elif len(e.features) - 1 != self.num_features:
             raise RuntimeError("Examples have different number of features")
 
@@ -54,6 +60,7 @@ class ClassificationInstance:
         for i in range(1, self.num_features+1):
             if e.features[i] != "?":
                 self.domains[i].add(e.features[i])
+                self.domain_counts[i][e.features[i]] += 1
         self.classes.add(e.cls)
 
     def _verify_support_set(self, supset):
@@ -221,6 +228,8 @@ class ClassificationInstance:
                 c_e.features[c_k], c_e.features[c_v] = c_e.features[c_v], c_e.features[c_k]
         for c_k, c_v in self.reduced_map.items():
             self.domains[c_k], self.domains[c_v] = self.domains[c_v], self.domains[c_k]
+            self.domain_counts[c_k], self.domain_counts[c_v] = self.domain_counts[c_v], self.domain_counts[c_k]
+            self.domains_max[c_k], self.domains_max[c_v] = self.domains_max[c_v], self.domains_max[c_k]
         self.finish()
 
         self.num_features = len(key)
@@ -268,6 +277,8 @@ class ClassificationInstance:
         for c_k, c_v in reverse_lookup.items():
             self.domains[c_k], self.domains[c_v] = self.domains[c_v], self.domains[c_k]
             self.feature_idx[c_k], self.feature_idx[c_v] = self.feature_idx[c_v], self.feature_idx[c_k]
+            self.domain_counts[c_k], self.domain_counts[c_v] = self.domain_counts[c_v], self.domain_counts[c_k]
+            self.domains_max[c_k], self.domains_max[c_v] = self.domains_max[c_v], self.domains_max[c_k]
         self.reduced_map = None
 
         self.reduced_original_num_features = None

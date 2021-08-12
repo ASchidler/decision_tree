@@ -86,26 +86,28 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, slv, t):
 
     example = instance.examples[e_idx]
     for f in range(1, instance.num_features + 1):
+        c_val = example.features[f] if example.features[f] != "?" else instance.domains_max[f]
         if f in instance.is_categorical:
             for c_i in range(0, len(instance.domains[f])):
-                if instance.domains[f][c_i] != example.features[f]:
+                if instance.domains[f][c_i] != c_val:
                     slv.add(z3.Or([*clause, z3.Not(x[e_idx][lvl]), c_i != t[q], z3.Not(fs[q][f])]))
                 else:
                     slv.add(z3.Or([*clause, z3.Not(x[e_idx][lvl]), c_i == t[q], z3.Not(fs[q][f])]))
         else:
-            slv.add(z3.Or([*clause, z3.Not(x[e_idx][lvl]), example.features[f] <= t[q], z3.Not(fs[q][f])]))
+            slv.add(z3.Or([*clause, z3.Not(x[e_idx][lvl]), c_val <= t[q], z3.Not(fs[q][f])]))
 
     n_cl = list(clause)
     n_cl.append(z3.Not(x[e_idx][lvl]))
     _alg1(instance, e_idx, limit, lvl+1, 2 * q + 1, n_cl, fs, x, slv, t)
 
     for f in range(1, instance.num_features + 1):
+        c_val = example.features[f] if example.features[f] != "?" else instance.domains_max[f]
         if f in instance.is_categorical:
             for c_i in range(0, len(instance.domains[f])):
-                if instance.domains[f][c_i] == example.features[f]:
+                if instance.domains[f][c_i] == c_val:
                     slv.add(z3.Or([*clause, x[e_idx][lvl], c_i != t[q], z3.Not(fs[q][f])]))
         else:
-            slv.add(z3.Or([*clause, x[e_idx][lvl], example.features[f] > t[q], z3.Not(fs[q][f])]))
+            slv.add(z3.Or([*clause, x[e_idx][lvl], c_val > t[q], z3.Not(fs[q][f])]))
 
     n_cl2 = list(clause)
     n_cl2.append(x[e_idx][lvl])
@@ -147,7 +149,7 @@ def estimate_size_add(instance, dl):
     return 2 ** dl * c * 2 + (2 ** dl) ** 2 * 3
 
 
-def run(instance, slv, start_bound=1, obs=None, timeout=0, ub=maxsize, opt_size=False):
+def run(instance, start_bound=1, ub=maxsize, opt_size=False):
     c_bound = start_bound
     c_lb = 1
     best_model = None

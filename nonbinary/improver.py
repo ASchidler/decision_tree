@@ -293,6 +293,8 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
         node = path[prev_idx]
         new_instance, feature_map, c_leafs, _ = prev_instance
         cd = node.get_depth()
+        if cd < 2:
+            return False, prev_idx
         new_ub = _get_max_bound(len(prev_instance[0].examples), sample_limit)
         if new_ub < 1:
             return False, prev_idx
@@ -304,6 +306,7 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
         if new_tree is None:
             return False, prev_idx
         else:
+            new_instance.unreduce(tree)
             # Correct features
             q = [new_tree.root]
             while q:

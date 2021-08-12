@@ -4,6 +4,8 @@ from threading import Timer
 from sys import maxsize, stdout
 from pysat.card import ITotalizer, CardEnc, EncType
 import time
+from collections import defaultdict
+from decision_tree import DecisionTree
 
 
 def check_memory(s, done):
@@ -36,6 +38,16 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
     best_model = None
     best_depth = None
     interrupted = []
+
+    # Edge case
+    if all(len(x) == 0 for x in instance.domains):
+        counts = defaultdict(int)
+        for e in instance.examples:
+            counts[e.cls] += 1
+        _, cls = max((v, k) for k, v in counts.items())
+        dt = DecisionTree()
+        dt.set_root_leaf(cls)
+        return dt
 
     while clb < ub:
         print(f"Running {c_bound}, " + '{:,}'.format(enc.estimate_size(instance, c_bound)))

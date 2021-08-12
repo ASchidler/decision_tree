@@ -33,7 +33,7 @@ ap.add_argument("-r", dest="reduce", action="store_true", default=False,
                 help="Use support set based reduction. Decreases instance size, but tree may be sub-optimal.")
 ap.add_argument("-c", dest="categorical", action="store_true", default=False,
                 help="Treat all features as categorical, this means a one hot encoding as in previous encodings.")
-ap.add_argument("-t", dest="time_limit", action="store", default=900, type=int,
+ap.add_argument("-t", dest="time_limit", action="store", default=0, type=int,
                 help="The timelimit in seconds.")
 ap.add_argument("-z", dest="size", action="store_true", default=False,
                 help="Decrease the size as well as the depth.")
@@ -98,12 +98,12 @@ def exit_timeout():
     sys.stdout.flush()
     exit(1)
 
+instance, test_instance, validation_instance = nonbinary_instance.parse(instance_path, target_instance, args.slice)
+
 timer = None
 if args.time_limit > 0:
     timer = Timer(args.time_limit * 1.1 - (time.time() - start_time), exit_timeout)
     timer.start()
-
-instance, test_instance, validation_instance = nonbinary_instance.parse(instance_path, target_instance, args.slice)
 
 if args.reduce:
     print(f"{instance.num_features}, {len(instance.examples)}")
@@ -133,7 +133,10 @@ if args.slim:
 
     improve_strategy.run(tree, instance, test_instance, Glucose3, enc, timelimit=args.time_limit, opt_size=args.size, opt_slim=args.slim_opt)
 else:
-    tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size)
+    if not args.use_smt:
+        tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size)
+    else:
+        tree = nbt.run(instance)
 
 if tree is None:
     print("No tree found.")
