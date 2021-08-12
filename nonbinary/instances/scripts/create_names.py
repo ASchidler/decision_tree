@@ -1,7 +1,7 @@
 import os
 from collections import defaultdict
 
-base_path = "nonbinary/instances"
+base_path = ".."
 
 header_names = None
 

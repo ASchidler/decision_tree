@@ -2,12 +2,19 @@ from sklearn.model_selection import StratifiedKFold
 import os
 import shutil
 
-base_path = "nonbinary/instances"
+base_path = ".."
 
 header_names = None
 
 for fl in sorted(os.listdir(base_path)):
     if fl.endswith(".data"):
+        file_fields = fl.split(".")
+        try:
+            int(file_fields[-1])
+            continue
+        except ValueError:
+            pass
+
         fl_path = os.path.join(base_path, fl)
         suffix = fl[:-5].split(".")
         # Is already a slice

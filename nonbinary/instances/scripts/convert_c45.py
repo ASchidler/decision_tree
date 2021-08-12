@@ -24,6 +24,9 @@ for fl in sorted(os.listdir(base_path)):
 
                         for c_i in range(0, len(fields)):
                             fd = fields[c_i].strip()
+                            if fd.startswith("\"") and fd.endswith("\""):
+                                fd = fd[1:-1]
+
                             try:
                                 fd = int(fd)
                             except ValueError:

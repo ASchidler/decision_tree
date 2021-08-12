@@ -1,0 +1,17 @@
+Low-Low, Low-Medium, Medium-N/A, Low-N/A, Medium-High, Low-High, High-High, Medium-Low, High-Low, Medium-Medium, High-Medium.
+sex: Female, Male.
+age: continuous.
+race: Other, Native American, Caucasian, Hispanic, Asian, African-American.
+juv_fel_count: continuous.
+decile_score: continuous.
+juv_misd_count: continuous.
+juv_other_count: continuous.
+priors_count: continuous.
+jail_days: continuous.
+c_days_from_compas: continuous.
+c_charge_degree: F, M, O.
+is_recid: continuous.
+r_charge_degree: F, M, O.
+r_jail_days: continuous.
+is_violent_recid: continuous.
+vr_charge_degree: (M2), (F7), (M1), (F6), (F2), O, (F3), (MO3), (F1), (F5).
