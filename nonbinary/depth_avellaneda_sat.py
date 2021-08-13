@@ -112,11 +112,30 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, solver):
 def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, solver):
     if lvl == limit:
         c_vars = class_map[instance.examples[e_idx].cls]
-        for i in range(0, len(c_vars)):
-            if c_vars[i]:
-                solver.add_clause([*clause, c[q - 2 ** limit][i]])
-            else:
-                solver.add_clause([*clause, -c[q - 2 ** limit][i]])
+        c_vars2 = None
+        if instance.examples[e_idx].surrogate_cls:
+            c_vars2 = class_map[instance.examples[e_idx].surrogate_cls]
+
+        if not c_vars2 or 1==1:
+            for i in range(0, len(c_vars)):
+                if c_vars[i]:
+                    solver.add_clause([*clause, c[q - 2 ** limit][i]])
+                else:
+                    solver.add_clause([*clause, -c[q - 2 ** limit][i]])
+        else:
+            for i in range(0, len(c_vars)):
+                if c_vars[i] == c_vars2[i]:
+                    if c_vars[i]:
+                        solver.add_clause([*clause, c[q - 2 ** limit][i]])
+                    else:
+                        solver.add_clause([*clause, -c[q - 2 ** limit][i]])
+                else:
+                    for j in range(0, len(c_vars)):
+                        if c_vars[j] != c_vars2[j]:
+                            if c_vars[i]:
+                                solver.add_clause([*clause, c[q - 2 ** limit][j] if c_vars2[j] else -c[q - 2 ** limit][j], c[q - 2 ** limit][i]])
+                            else:
+                                solver.add_clause([*clause, c[q - 2 ** limit][j] if c_vars2[j] else -c[q - 2 ** limit][j], -c[q - 2 ** limit][i]])
     else:
         n_cl = list(clause)
         n_cl.append(x[e_idx][lvl])

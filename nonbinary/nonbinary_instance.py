@@ -4,14 +4,15 @@ from decimal import Decimal, InvalidOperation, getcontext
 from collections import defaultdict
 
 class Example:
-    def __init__(self, inst, features, cls):
+    def __init__(self, inst, features, cls, surrogate_cls=None):
         self.cls = cls
         self.features = [None, *features]
         self.instance = inst
         self.id = None
+        self.surrogate_cls = surrogate_cls
 
     def copy(self, instance):
-        return Example(instance, self.features[1:], self.cls)
+        return Example(instance, self.features[1:], self.cls, self.surrogate_cls)
 
 
 class ClassificationInstance:
@@ -65,6 +66,8 @@ class ClassificationInstance:
             else:
                 self.has_missing = True
         self.classes.add(e.cls)
+        if e.surrogate_cls:
+            self.classes.add(e.surrogate_cls)
 
     def _verify_support_set(self, supset):
         for i in range(0, len(self.examples)):

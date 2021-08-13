@@ -119,28 +119,28 @@ def run(tree, instance, test, slv, enc, limit_idx=1, timelimit=0, opt_size=False
             op = None
             result = False
             if not allow_reduction:
-                result, _ = improver.leaf_select(tree, instance, 0, [root], assigned, depth_limit, sample_limit, time_limit, enc, slv, opt_size=opt_size)
+                result, _ = improver.leaf_select(tree, instance, 0, [root], assigned, depth_limit, sample_limit, time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim)
                 if result:
                     op = "ls"
                 if not result:
                     result, _ = improver.leaf_rearrange(tree, instance, 0, [root], assigned, depth_limit, sample_limit,
-                                                        time_limit, enc, slv, opt_size=opt_size)
+                                                        time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim)
                     if result:
                         op = "la"
 
                 if not result:
                     result, _ = improver.mid_reduced(tree, instance, 0, [root], assigned, depth_limit, sample_limit, False,
-                                                     time_limit, enc, slv, opt_size=opt_size)
+                                                     time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim)
                     if result:
                         op = "ma"
             else:
-                result, _ = improver.reduced_leaf(tree, instance, 0, [root], assigned, depth_limit, sample_limit, time_limit, enc, slv, opt_size=opt_size)
+                result, _ = improver.reduced_leaf(tree, instance, 0, [root], assigned, depth_limit, sample_limit, time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim)
                 if result:
                     op = "lr"
                 if not result:
                     result, _ = improver.mid_reduced(tree, instance, 0, [root], assigned, depth_limit, sample_limit,
                                                      True,
-                                                     time_limit, enc, slv, opt_size=opt_size)
+                                                     time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim)
                     if result:
                         op = "mr"
 

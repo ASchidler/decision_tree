@@ -163,7 +163,8 @@ class DecisionTree:
     def get_accuracy(self, examples):
         errors = 0
         for c_e in examples:
-            if self.root.decide(c_e)[0] != c_e.cls:
+            decision = self.root.decide(c_e)[0]
+            if decision != c_e.cls and (c_e.surrogate_cls is None or c_e.surrogate_cls != decision):
                 errors += 1
 
         return (len(examples) - errors) / len(examples)

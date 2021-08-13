@@ -56,7 +56,6 @@ def convert_instance(c_inst):
 
     c_idx = 0
 
-
     c_idx = c_inst.num_features + 2
     for c_f in range(1, c_inst.num_features+1):
         if c_f in c_inst.is_categorical:

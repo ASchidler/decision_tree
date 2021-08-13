@@ -82,9 +82,10 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
                 clb = c_bound + enc.increment()
 
     best_extension = None
-    if opt_size and best_model and slim:
+    if best_model and slim:
         # Try to remove extended leaves
         extension_count = best_model.root.get_extended_leaves()
+        print(f"{extension_count}")
         if extension_count > 0:
             with solver() as slv:
                 c_size_bound = extension_count - 1
