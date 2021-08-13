@@ -52,7 +52,8 @@ ap.add_argument("-w", dest="weka", action="store_false", default=True,
                 help="Use CART instead of WEKA trees.")
 ap.add_argument("-m", dest="slim", action="store_true", default=False,
                 help="Use local improvement instead of exact results.")
-
+ap.add_argument("-u", dest="multiclass", action="store_true", default=False,
+                help="For mid-reductions allow multiclass.")
 
 args = ap.parse_args()
 
@@ -131,7 +132,7 @@ if args.slim:
           f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
           f"Time: {time.time() - start_time}")
 
-    improve_strategy.run(tree, instance, test_instance, Glucose3, enc, timelimit=args.time_limit, opt_size=args.size, opt_slim=args.slim_opt)
+    improve_strategy.run(tree, instance, test_instance, Glucose3, enc, timelimit=args.time_limit, opt_size=args.size, opt_slim=args.slim_opt, multiclass=args.multiclass)
 else:
     if not args.use_smt:
         tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size)

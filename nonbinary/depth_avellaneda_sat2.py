@@ -44,7 +44,7 @@ def _init_var(instance, limit, class_map):
     return x, f, c, d, pool
 
 
-def encode(instance, limit, solver, opt_size=False):
+def encode(instance, limit, solver, opt_size=False, multiclass=False):
     classes = list(instance.classes)  # Give classes an order
     if opt_size:
         classes.insert(0, "EmptyLeaf")

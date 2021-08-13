@@ -37,7 +37,7 @@ def _init_var(instance, limit, class_map):
     return x, f, c, pool
 
 
-def encode(instance, limit, solver, opt_size=False):
+def encode(instance, limit, solver, opt_size=False, multiclass=False):
     classes = list(instance.classes)  # Give classes an order
     if opt_size:
         classes.insert(0, "EmptyLeaf")
@@ -62,7 +62,7 @@ def encode(instance, limit, solver, opt_size=False):
 
     for i in range(0, len(instance.examples)):
         _alg1(instance, i, limit, 0, 1, list(), f, x, solver)
-        _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, solver)
+        _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, solver, multiclass)
 
     # Forbid non-existing classes
     for c_c in c_values:
@@ -109,14 +109,14 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, solver):
     _alg1(instance, e_idx, limit, lvl+1, 2*q, n_cl2, fs, x, solver)
 
 
-def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, solver):
+def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, solver, multiclass=False):
     if lvl == limit:
         c_vars = class_map[instance.examples[e_idx].cls]
         c_vars2 = None
         if instance.examples[e_idx].surrogate_cls:
             c_vars2 = class_map[instance.examples[e_idx].surrogate_cls]
 
-        if not c_vars2 or 1==1:
+        if not c_vars2 or not multiclass:
             for i in range(0, len(c_vars)):
                 if c_vars[i]:
                     solver.add_clause([*clause, c[q - 2 ** limit][i]])

@@ -230,7 +230,7 @@ def _get_max_bound(size, sample_limit):
     return new_ub
 
 
-def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False, opt_slim=False):
+def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False, opt_slim=False, multiclass=False):
     last_idx = path_idx
     while path_idx < len(path):
         c_d = path[path_idx].get_depth()
@@ -259,7 +259,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
     if len(new_instance.examples) == 0 or encoding.estimate_size(new_instance, c_d-1) > literal_limit:
         return False, last_idx
 
-    new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, c_d - 1), timeout=time_limit, ub=min(new_ub, c_d - 1), opt_size=opt_size, slim=opt_slim)
+    new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, c_d - 1), timeout=time_limit, ub=min(new_ub, c_d - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
 
     if new_tree is None:
         return False, last_idx
@@ -268,7 +268,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
         return True, last_idx
 
 
-def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False, opt_slim=False):
+def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False, opt_slim=False, multiclass=False):
     prev_instance = None
     prev_idx = path_idx
 
@@ -302,7 +302,7 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
             return False, prev_idx
 
         # Solve instance
-        new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, cd-1), timeout=time_limit, ub=min(new_ub, cd-1), opt_size=opt_size, slim=opt_slim)
+        new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, cd-1), timeout=time_limit, ub=min(new_ub, cd-1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
 
         # Either the branch is done, or
         if new_tree is None:
@@ -326,7 +326,7 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
     return False, prev_idx
 
 
-def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False, opt_slim=False):
+def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False, opt_slim=False, multiclass=False):
     prev_instance = None
     prev_idx = path_idx
 
@@ -366,7 +366,7 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
             return False, prev_idx
 
         new_tree = bs.run(encoding, prev_instance, slv, start_bound=min(new_ub, nd - 1), timeout=time_limit,
-                              ub=min(new_ub, nd - 1), opt_size=opt_size, slim=opt_slim)
+                              ub=min(new_ub, nd - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
 
         if new_tree is not None:
             prev_instance.unreduce(new_tree)
@@ -377,7 +377,7 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
     return False, prev_idx
 
 
-def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, reduce, time_limit, encoding, slv, opt_size=False, opt_slim=False):
+def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, reduce, time_limit, encoding, slv, opt_size=False, opt_slim=False, multiclass=False):
     # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
     if path[path_idx].is_leaf:
         return False, path_idx
@@ -392,7 +392,7 @@ def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_li
         return False, path_idx
 
     new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, i_depth - 1), timeout=time_limit,
-                          ub=min(new_ub, i_depth - 1), opt_size=opt_size, slim=opt_slim)
+                          ub=min(new_ub, i_depth - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
 
     if new_tree is not None:
         print(f"{new_tree.get_accuracy(new_instance.examples)}")

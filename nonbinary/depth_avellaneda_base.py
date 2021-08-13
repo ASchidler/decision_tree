@@ -32,7 +32,7 @@ def mini_interrupt(s):
     interrupt(s, None, set_done=False)
 
 
-def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False, check_mem=True, slim=True):
+def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False, check_mem=True, slim=True, multiclass=False):
     clb = enc.lb()
     c_bound = max(clb, start_bound)
     best_model = None
@@ -58,7 +58,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
 
             timer = None
             try:
-                vs = enc.encode(instance, c_bound, slv, opt_size)
+                vs = enc.encode(instance, c_bound, slv, opt_size, multiclass)
                 if timeout > 0:
                     timer = Timer(timeout, interrupt, [slv, interrupted])
                     timer.start()
@@ -85,13 +85,13 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
     if best_model and slim:
         # Try to remove extended leaves
         extension_count = best_model.root.get_extended_leaves()
-        print(f"{extension_count}")
+
         if extension_count > 0:
             with solver() as slv:
                 c_size_bound = extension_count - 1
                 solved = True
                 try:
-                    vs = enc.encode(instance, best_depth, slv)
+                    vs = enc.encode(instance, best_depth, slv, multiclass)
                     card = enc.encode_extended_leaf_size(vs, instance, slv, best_depth)
                     tot = ITotalizer(card, c_size_bound+1, top_id=vs["pool"].top + 1)
                     slv.append_formula(tot.cnf)
@@ -131,7 +131,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
             solved = True
 
             try:
-                vs = enc.encode(instance, best_depth, slv, opt_size)
+                vs = enc.encode(instance, best_depth, slv, opt_size, multiclass)
                 if best_extension is not None:
                     card = enc.encode_extended_leaf_size(vs, instance, slv, best_depth)
                     slv.append_formula(
