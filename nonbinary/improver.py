@@ -395,9 +395,7 @@ def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_li
                           ub=min(new_ub, i_depth - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
 
     if new_tree is not None:
-        print(f"{new_tree.get_accuracy(new_instance.examples)}")
         new_instance.unreduce(new_tree)
-        print(f"{new_tree.get_accuracy(new_instance.examples)}")
         # Stitch the new tree in the middle
         stitch(tree, new_tree, c_parent, instance)
         return True, path_idx

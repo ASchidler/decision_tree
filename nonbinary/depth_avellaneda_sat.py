@@ -141,8 +141,8 @@ def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, solver, multi
         n_cl.append(x[e_idx][lvl])
         n_cl2 = list(clause)
         n_cl2.append(-x[e_idx][lvl])
-        _alg2(instance, e_idx, limit, lvl+1, 2*q, n_cl, class_map, x, c, solver)
-        _alg2(instance, e_idx, limit, lvl+1, 2*q+1, n_cl2, class_map, x, c, solver)
+        _alg2(instance, e_idx, limit, lvl+1, 2*q, n_cl, class_map, x, c, solver, multiclass)
+        _alg2(instance, e_idx, limit, lvl+1, 2*q+1, n_cl2, class_map, x, c, solver, multiclass)
 
 
 def encode_size(vs, instance, solver, dl):
