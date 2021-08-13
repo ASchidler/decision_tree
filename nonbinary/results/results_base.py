@@ -5,7 +5,7 @@ from collections import defaultdict
 import nonbinary.nonbinary_instance as nbi
 import pruning
 
-experiment = "s"
+experiment = "e"
 flags = set()
 
 
@@ -33,7 +33,7 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
         instance, instance_test, _ = nbi.parse("../instances", file_name, int(file_fields[1]))
         tree = tp.parse_internal_tree(os.path.join("trees", experiment, c_file))
 
-        sizes[file_name].append((len(instance.examples), instance.num_features, len(instance.classes)))
+        sizes[file_name].append((len(instance.examples), instance.num_features, len(instance.classes), sum(len(x) for x in instance.domains)))
 
         if tree is not None:
             tree.train(instance)
@@ -47,7 +47,7 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
             print(f"No tree in {c_file}")
 
 with open(f"results_{experiment}.csv", "w") as outf:
-    outf.write("Instance;E;F;C")
+    outf.write("Instance;E;F;Values;C")
     for c_f in sorted(flags):
         outf.write(f";{c_f} Solved;{c_f} Depth LB;{c_f} Nodes;{c_f} Depth;{c_f} Train Acc;{c_f} Test Acc")
     outf.write(os.linesep)
@@ -57,7 +57,7 @@ with open(f"results_{experiment}.csv", "w") as outf:
         if len(c_sizes) == 0:
             continue
         outf.write(f"{c_file}")
-        outf.write(f";{sum(x[0] for x in c_sizes)/len(c_sizes)};{max(x[1] for x in c_sizes)};{max(x[2] for x in c_sizes)}")
+        outf.write(f";{sum(x[0] for x in c_sizes)/len(c_sizes)};{max(x[1] for x in c_sizes)};{sum(x[3] for x in c_sizes)/len(c_sizes)};{max(x[2] for x in c_sizes)}")
         print(c_file)
         for c_f in sorted(flags):
             if c_f not in files[c_file]:

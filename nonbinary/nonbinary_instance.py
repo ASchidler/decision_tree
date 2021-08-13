@@ -20,6 +20,7 @@ class ClassificationInstance:
         self.domains = []
         self.num_features = -1
         self.classes = set()
+        self.has_missing = False
         self.domains = []
         self.domain_counts = []
         self.domains_max = []
@@ -61,6 +62,8 @@ class ClassificationInstance:
             if e.features[i] != "?":
                 self.domains[i].add(e.features[i])
                 self.domain_counts[i][e.features[i]] += 1
+            else:
+                self.has_missing = True
         self.classes.add(e.cls)
 
     def _verify_support_set(self, supset):
