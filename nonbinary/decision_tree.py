@@ -178,15 +178,15 @@ class DecisionTree:
     def as_string(self):
         lines = []
 
-        def add_node(n, d):
-            indent = ''.join("-" for _ in range(0, d))
-            n_id = f"c({n.cls})" if n.is_leaf else f"a({n.feature}){' =' if n.is_categorical else ' <='} {n.threshold}"
+        def add_node(n, indent):
+            n_id = f"c({n.cls})" if n.is_leaf else \
+                f"a({n.feature}){' =' if n.is_categorical else ' <='} {n.threshold}"
             lines.append(indent + "" + n_id)
             if not n.is_leaf:
-                add_node(n.left, d+1)
-                add_node(n.right, d+1)
+                add_node(n.left, indent+"-")
+                add_node(n.right, indent+"-")
 
-        add_node(self.root, 0)
+        add_node(self.root, "")
         return os.linesep.join(lines)
 
     def assign(self, instance):
@@ -286,3 +286,19 @@ class DecisionTree:
         if any(x.id not in nodes for x in self.nodes if x is not None):
             print("Superfluous nodes")
 
+
+def tree_compare(n1, n2):
+    if n1.is_leaf != n2.is_leaf:
+        raise RuntimeError("Leaf non leaf.")
+
+    if not n1.is_leaf:
+        if n1.feature != n2.feature:
+            raise RuntimeError("Features diverge.")
+        if n1.threshold != n2.threshold:
+            raise RuntimeError("Threshold diverge.")
+        if n1.is_categorical != n2.is_categorical:
+            raise RuntimeError("Categorical diverge.")
+        tree_compare(n1.left, n2.left)
+        tree_compare(n1.right, n2.right)
+    elif n1.cls != n2.cls:
+        raise RuntimeError("Divergent classes.")

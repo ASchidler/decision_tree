@@ -5,6 +5,7 @@ import sys
 import time
 import improve_strategy
 import tree_parsers
+import nonbinary.decision_tree as decision_tree
 
 from pysat.solvers import Glucose3
 import nonbinary_instance
@@ -128,6 +129,7 @@ else:
 if args.slim:
     algo = "w" if args.weka else "c"
     tree = tree_parsers.parse_internal_tree(f"nonbinary/results/trees/unpruned/{target_instance}.{args.slice}.{algo}.dt")
+
     print(f"START Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
           f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
           f"Time: {time.time() - start_time}")
@@ -143,8 +145,6 @@ if tree is None:
     print("No tree found.")
     exit(1)
 
-#tree.check_consistency()
-
 instance.unreduce(tree)
 print(f"{instance.num_features}, {len(instance.examples)}")
 print(f"END Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
@@ -152,6 +152,7 @@ print(f"END Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
       f"Time: {time.time() - start_time}")
 
 print(tree.as_string())
+
 
 if timer is not None:
     timer.cancel()

@@ -172,15 +172,16 @@ class ClassificationInstance:
 
         return supset
 
-    def reduce_with_key(self, randomized_runs=2):
+    def reduce_with_key(self, randomized_runs=1):
         keys = []
         keys.append(self.min_key_random())
-
-        if len(self.examples) < 7500:
+        if len(self.examples) < 1000:
+            randomized_runs *= 2
+        if len(self.examples) < 5000:
             keys.append(self.min_key_removal())
         for _ in range(0, randomized_runs):
             keys.append(self.min_key_random(randomize=True))
-            if len(self.examples) < 7500:
+            if len(self.examples) < 5000:
                 keys.append(self.min_key_removal(randomize=True))
 
         if len(self.examples) < 5000:

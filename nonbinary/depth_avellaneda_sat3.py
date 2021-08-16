@@ -88,7 +88,7 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, e, solver):
         is_cat = f in instance.is_categorical
         for i2 in range(0, len(instance.domains[f]) - (0 if f in instance.is_categorical else 1)):
             c_val = example.features[f] if example.features[f] != "?" else instance.domains_max[f]
-            if (not is_cat and example.features[f] > instance.domains[f][i2]) or (is_cat and c_val != instance.domains[f][i2]):
+            if (not is_cat and c_val > instance.domains[f][i2]) or (is_cat and c_val != instance.domains[f][i2]):
                 solver.add_clause([*clause, -x[e_idx][lvl], e[q], -fs[q][base_idx + i2]])
             if c_val != instance.domains[f][i2]:
                 solver.add_clause([*clause, -x[e_idx][lvl], -e[q], -fs[q][base_idx + i2]])
