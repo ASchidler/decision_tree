@@ -30,7 +30,7 @@ def parse_internal_tree(tree_path):
             a_fields = cf.split(" ")
             is_categorical = a_fields[1].strip() == "="
             c_f = int(a_fields[0].strip()[2:-1])
-            fd = a_fields[2] if is_categorical else Decimal(a_fields[2])
+            fd = a_fields[2]
 
             try:
                 fd = int(fd)

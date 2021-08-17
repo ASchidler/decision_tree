@@ -73,6 +73,28 @@ class DecisionTreeNode:
     def get_extended_leaves(self):
         return self.left.get_extended_leaves() + self.right.get_extended_leaves()
 
+    def reclassify(self, samples):
+        ls = []
+        rs = []
+
+        for e in samples:
+            target = self._decide(e)
+            if target.id == self.left.id:
+                ls.append(e)
+            else:
+                rs.append(e)
+
+        self.left.reclassify(ls)
+        self.right.reclassify(rs)
+
+    def copy(self, new_tree, c_p, is_left):
+        if c_p is None:
+            n_n = new_tree.set_root(self.feature, self.threshold, self.is_categorical)
+        else:
+            n_n = new_tree.add_node(self.feature, self.threshold, c_p.id, is_left, self.is_categorical)
+        self.left.copy(new_tree, n_n, True)
+        self.right.copy(new_tree, n_n, False)
+
 
 class DecisionTreeLeaf:
     def __init__(self, c, i, tree):
@@ -107,6 +129,18 @@ class DecisionTreeLeaf:
     def get_extended_leaves(self):
         return 0 if self.cls.startswith("-") or self.cls == "EmptyLeaf" else 1
 
+    def reclassify(self, samples):
+        classes = defaultdict(int)
+        for cs in samples:
+            classes[cs.cls] += 1
+
+        _, self.cls = max((v, k) for k, v in classes.items())
+
+    def copy(self, new_tree, c_p, is_left):
+        if c_p is None:
+            new_tree.set_root_leaf(self.cls)
+        else:
+            new_tree.add_leaf(self.cls, c_p.id, is_left)
 
 class DecisionTree:
     def __init__(self):
@@ -196,6 +230,11 @@ class DecisionTree:
             for c_node in pth:
                 assigned[c_node.id].append(e)
         return assigned
+
+    def copy(self):
+        n_tree = DecisionTree()
+        self.root.copy(n_tree, None, None)
+        return n_tree
 
     def clean(self, instance, min_samples=1):
         assigned = self.assign(instance)

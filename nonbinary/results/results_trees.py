@@ -11,6 +11,10 @@ def parse_file(fl, experiment):
     depth_lb = 0
     size_ub = maxsize
     c_slice = None
+    c_algo = "c"
+    time_taken = None
+    c_encoding = ""
+    c_val = ""
 
     for ci, cl in enumerate(fl):
         if type(cl) is not str:
@@ -22,24 +26,31 @@ def parse_file(fl, experiment):
                 # Error if the index is too high
                 return
             data_file = cl.split(",")[0].split(":")[1].strip()
-            c_flags = cl[cl.find("(")+1:cl.find(")")-1].split(",")
+            c_flags = cl[cl.find("(")+1:cl.find(")")].split(",")
             for cf in c_flags:
                 cfs = cf.strip().split("=")
 
                 if cfs[0] == "alt_sat" and cfs[1] == "True":
-                    flags += "a"
+                    c_encoding = "a"
                 elif cfs[0] == "categorical" and cfs[1] == "True":
-                    flags += "c"
+                    c_encoding = "c"
                 elif cfs[0] == "hybrid" and cfs[1] == "True":
-                    flags += "y"
-                # elif cfs[0] == "size" and cfs[1] == "True":
-                #     flags += "z"
+                    c_encoding = "y"
+                elif cfs[0] == "size" and cfs[1] == "True":
+                    flags += "z"
+                elif cfs[0] == "multiclass" and cfs[1] == "True":
+                    flags += "u"
                 elif cfs[0] == "slice":
                     c_slice = int(cfs[1])
                 elif cfs[0] == "use_smt" and cfs[1] == "True":
-                    flags += "s"
+                    c_encoding = "s"
                 elif cfs[0] == "validation" and cfs[1] == "True":
-                    flags += "v"
+                    c_val = "v"
+                elif cfs[0] == "weka" and cfs[1] == "True":
+                    c_algo = "w"
+            if c_encoding == "":
+                c_encoding = "0"
+            flags = c_val + flags + c_encoding
 
         if done:
             tree_data.append(cl)
@@ -48,9 +59,12 @@ def parse_file(fl, experiment):
         elif cl.startswith("Running size"):
             size_ub = int(cl.split(" ")[-1].strip())
         elif cl.startswith("END Tree"):
+            time_taken = cl.split(" ")[-1].strip()
+            done = True
+        elif cl.startswith("Time: End"):
             done = True
 
-        out_file = f"{data_file}.{c_slice}.{experiment}.{flags}"
+        out_file = f"{data_file}.{c_slice}.{experiment}.{flags}.{c_algo}"
         if len(flags) == 0:
             flags = "0"
 
@@ -58,10 +72,10 @@ def parse_file(fl, experiment):
             out_path = os.path.join("trees", f"{experiment}", out_file+".dt")
             with open(out_path, "w") as out_file:
                 out_file.write("".join(tree_data))
-        elif depth_lb > 0:
+        elif depth_lb > 0 or time_taken is not None:
             out_path = os.path.join("trees", f"{experiment}", out_file+".info")
             with open(out_path, "w") as out_file:
-                out_file.write(f"{depth_lb}{os.linesep}{size_ub}{os.linesep}")
+                out_file.write(f"{depth_lb}{os.linesep}{size_ub}{os.linesep}{time_taken}{os.linesep}")
 
 
 with tarfile.open(argv[1]) as tar_file:

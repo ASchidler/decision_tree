@@ -16,6 +16,7 @@ class TreeData:
         self.training = None
         self.test = None
         self.depth_lb = None
+        self.time = None
 
 files = defaultdict(lambda: defaultdict(lambda: defaultdict(TreeData)))
 sizes = defaultdict(list)
@@ -61,7 +62,7 @@ with open(f"results_{experiment}.csv", "w") as outf:
         print(c_file)
         for c_f in sorted(flags):
             if c_f not in files[c_file]:
-                outf.write(";;;;;")
+                outf.write(";;;;;;")
                 continue
 
             c_data = files[c_file][c_f].values()

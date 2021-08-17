@@ -11,7 +11,7 @@ from nonbinary.decision_tree import DecisionTree, DecisionTreeLeaf, DecisionTree
 from decimal import Decimal, InvalidOperation
 
 use_validation = False
-pruning = 1  # 0 is no pruning
+pruning = 0  # 0 is no pruning
 
 pth = "nonbinary/instances"
 weka_path = os.path.join(os.path.expanduser("~"), "Downloads/weka-3-8-5-azul-zulu-linux/weka-3-8-5")

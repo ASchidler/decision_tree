@@ -59,6 +59,13 @@ def encode(instance, limit, solver, opt_size=False, multiclass=False):
             for f2, f2v in f[i].items():
                 if f2 > f1:
                     solver.add_clause([-f1v, -f2v])
+        # In case of categorical data, enforce =
+        for cf in range(1, instance.num_features+1):
+            if cf in instance.is_categorical and len(instance.domains[f]) > 0:
+                base_idx = instance.feature_idx[cf]
+                for i2 in range(0, len(instance.domains[f])):
+                    solver.add_clause([-f[i][base_idx + i2], e[i]])
+
         solver.add_clause(clause)
 
     for i in range(0, len(instance.examples)):
@@ -88,7 +95,7 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, e, solver):
         is_cat = f in instance.is_categorical
         for i2 in range(0, len(instance.domains[f]) - (0 if f in instance.is_categorical else 1)):
             c_val = example.features[f] if example.features[f] != "?" else instance.domains_max[f]
-            if (not is_cat and c_val > instance.domains[f][i2]) or (is_cat and c_val != instance.domains[f][i2]):
+            if not is_cat and c_val > instance.domains[f][i2]:
                 solver.add_clause([*clause, -x[e_idx][lvl], e[q], -fs[q][base_idx + i2]])
             if c_val != instance.domains[f][i2]:
                 solver.add_clause([*clause, -x[e_idx][lvl], -e[q], -fs[q][base_idx + i2]])
@@ -104,10 +111,10 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, e, solver):
         is_cat = f in instance.is_categorical
         for i2 in range(0, len(instance.domains[f]) - (0 if f in instance.is_categorical else 1)):
             c_val = example.features[f] if example.features[f] != "?" else instance.domains_max[f]
-            if (not is_cat and c_val <= instance.domains[f][i2]) or (is_cat and c_val == instance.domains[f][i2]):
+            if not is_cat and c_val < instance.domains[f][i2]:
                 solver.add_clause([*clause, x[e_idx][lvl], e[q], -fs[q][base_idx + i2]])
             if c_val == instance.domains[f][i2]:
-                solver.add_clause([*clause, x[e_idx][lvl], -e[q], -fs[q][base_idx + i2]])
+                solver.add_clause([*clause, x[e_idx][lvl], -fs[q][base_idx + i2]])
     n_cl2 = list(clause)
     n_cl2.append(x[e_idx][lvl])
     _alg1(instance, e_idx, limit, lvl+1, 2*q, n_cl2, fs, x, e, solver)
@@ -145,7 +152,7 @@ def encode_size(vs, instance, solver, dl):
 
 def estimate_size_add(instance, dl):
     c = len(instance.classes)
-    return 2 ** dl * c * 2 + (2 ** dl) ** 2 * 3
+    return 2 ** dl * c * 2 + (2 ** dl) ** 2 * 3 * 2
 
 
 def encode_extended_leaf_size(vs, instance, solver, dl):

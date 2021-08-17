@@ -1,3 +1,3 @@
-sunny,mild,normal,true,+
-overcast,mild,high,true,+
-rain,cool,normal,true,-
+sunny,1,normal,true,+
+overcast,1,high,true,+
+rain,0,normal,true,-

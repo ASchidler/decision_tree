@@ -91,16 +91,15 @@ def exit_timeout():
     # this takes a lot shorter than reduction +
     print(f"Timeout: {time.time() - start_time}")
     #tree.clean(instance, min_samples=args.min_samples)
-    print(f"Time: End\t\t"
-          f"Training {tree.get_accuracy(instance.examples):.4f}\t"
-          f"Test {tree.get_accuracy(test_instance.examples):.4f}\t"
-          f"Depth {tree.get_depth():03}\t"
-          f"Nodes {tree.get_nodes()}")
+    print(f"END Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
+          f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
+          f"Time: {time.time() - start_time}")
+
     print(tree.as_string())
     sys.stdout.flush()
     exit(1)
 
-instance, test_instance, validation_instance = nonbinary_instance.parse(instance_path, target_instance, args.slice)
+instance, test_instance, validation_instance = nonbinary_instance.parse(instance_path, target_instance, args.slice, use_validation=args.validation)
 
 timer = None
 if args.time_limit > 0:
@@ -128,13 +127,15 @@ else:
 
 if args.slim:
     algo = "w" if args.weka else "c"
-    tree = tree_parsers.parse_internal_tree(f"nonbinary/results/trees/unpruned/{target_instance}.{args.slice}.{algo}.dt")
+    dirs = "validation" if args.validation else "unpruned"
+    tree = tree_parsers.parse_internal_tree(f"nonbinary/results/trees/{dirs}/{target_instance}.{args.slice}.{algo}.dt")
 
     print(f"START Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
           f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
           f"Time: {time.time() - start_time}")
 
-    improve_strategy.run(tree, instance, test_instance, Glucose3, enc, timelimit=args.time_limit, opt_size=args.size, opt_slim=args.slim_opt, multiclass=args.multiclass)
+    improve_strategy.run(tree, instance, test_instance, Glucose3, enc, timelimit=args.time_limit, opt_size=args.size,
+                         opt_slim=args.slim_opt, multiclass=args.multiclass)
 else:
     if not args.use_smt:
         tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size)
