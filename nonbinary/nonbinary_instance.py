@@ -37,6 +37,9 @@ class ClassificationInstance:
     def finish(self):
         c_idx = 1
         self.domains_max = [0 for _ in range(0, self.num_features + 1)]
+
+        # TODO: use average for non-categorial values...
+
         for i in range(1, self.num_features+1):
             if len(self.domains[i]) <= 2:
                 self.is_binary.add(i)
@@ -46,7 +49,18 @@ class ClassificationInstance:
             c_idx += len(self.domains[i])
             self.domains[i] = sorted(list(self.domains[i]))
             if len(self.domains[i]) > 0:
-                _, self.domains_max[i] = max((v, k) for k, v in self.domain_counts[i].items())
+                if i in self.is_categorical:
+                    _, self.domains_max[i] = max((v, k) for k, v in self.domain_counts[i].items())
+                else:
+                    c_sum = 0
+                    c_cnt = 0
+                    is_int = True
+                    for k, v in self.domain_counts[i].items():
+                        c_sum += k * v
+                        c_cnt += v
+                        is_int = is_int and isinstance(k, int)
+                    self.domains_max[i] = c_sum // c_cnt if is_int else c_sum / c_cnt
+
         self.feature_indices = c_idx - 1
 
     def add_example(self, e):
