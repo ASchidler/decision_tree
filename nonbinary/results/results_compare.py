@@ -38,6 +38,7 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
     flags.add(file_fields[3])
     if c_file.endswith(".dt"):
         instance, instance_test, _ = nbi.parse("../instances", file_name, int(file_fields[1]))
+
         tree = tp.parse_internal_tree(os.path.join("trees", experiment, c_file))
         tree_p = None
         if os.path.exists(os.path.join("trees", "p", c_file)):
@@ -47,20 +48,22 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
         for c_idx, c_t in enumerate([tree, tree_p]):
             if c_t is not None:
                 tree.train(instance)
-                files[file_name][file_fields[3]][c_idx][file_fields[1]].nodes = tree.get_nodes()
-                files[file_name][file_fields[3]][c_idx][file_fields[1]].depth = tree.get_depth()
-                files[file_name][file_fields[3]][c_idx][file_fields[1]].training = tree.get_accuracy(instance.examples)
-                files[file_name][file_fields[3]][c_idx][file_fields[1]].test = tree.get_accuracy(instance_test.examples)
+                files[file_name][file_fields[3]][c_idx][file_fields[1]].nodes = c_t.get_nodes()
+                files[file_name][file_fields[3]][c_idx][file_fields[1]].depth = c_t.get_depth()
+                files[file_name][file_fields[3]][c_idx][file_fields[1]].training = c_t.get_accuracy(instance.examples)
+                files[file_name][file_fields[3]][c_idx][file_fields[1]].test = c_t.get_accuracy(instance_test.examples)
 
                 print(f"Parsed {c_file}")
                 if file_fields[1] not in original[file_name]:
-                    tree2 = tp.parse_internal_tree(os.path.join("trees", "unpruned" if c_idx == 0 else "pruned",
-                                                                f"{file_name}.{file_fields[1]}.w.dt"))
-                    tree2.train(instance)
-                    original[file_name][c_idx][file_fields[1]].nodes = tree2.get_nodes()
-                    original[file_name][c_idx][file_fields[1]].depth = tree2.get_depth()
-                    original[file_name][c_idx][file_fields[1]].training = tree2.get_accuracy(instance.examples)
-                    original[file_name][c_idx][file_fields[1]].test = tree2.get_accuracy(instance_test.examples)
+                    if os.path.exists(os.path.join("trees", "unpruned" if c_idx == 0 else "pruned",
+                                                                f"{file_name}.{file_fields[1]}.w.dt")):
+                        tree2 = tp.parse_internal_tree(os.path.join("trees", "unpruned" if c_idx == 0 else "pruned",
+                                                                    f"{file_name}.{file_fields[1]}.w.dt"))
+                        tree2.train(instance)
+                        original[file_name][c_idx][file_fields[1]].nodes = tree2.get_nodes()
+                        original[file_name][c_idx][file_fields[1]].depth = tree2.get_depth()
+                        original[file_name][c_idx][file_fields[1]].training = tree2.get_accuracy(instance.examples)
+                        original[file_name][c_idx][file_fields[1]].test = tree2.get_accuracy(instance_test.examples)
             else:
                 print(f"No tree in {c_file} {c_idx}")
 

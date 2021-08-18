@@ -5,7 +5,7 @@ from scipy.stats import norm
 
 from nonbinary.decision_tree import DecisionTreeLeaf
 
-c45_default_c = 0.2
+c45_default_c = 0.25
 c45_default_m = 2
 
 
@@ -43,7 +43,7 @@ def prune_c45(tree, instance, ratio, m=2, subtree_raise=True):
             r_samples = []
 
             for s in samples:
-                if s.features[child.feature]:
+                if child._decide(s).id == child.left.id:
                     l_samples.append(s)
                 else:
                     r_samples.append(s)
@@ -124,16 +124,17 @@ def prune_c45(tree, instance, ratio, m=2, subtree_raise=True):
     tree.clean(instance, min_samples=m)
 
 
-def prune_c45_optimized(tree, instance, subtree_raise=True, simple=False, validation_instance=None, validation_tree=None, validation_training=None):
+def prune_c45_optimized(tree, instance, validation_tree, validation_training, validation_test, subtree_raise=True, simple=False):
     if simple:
         return prune_c45(tree, instance, c45_default_c, c45_default_m, subtree_raise)
 
     def get_accuracy(c_val, m_val):
         new_tree = validation_tree.copy()
-        new_tree.clean(validation_instance, min_samples=m_val)
-        prune_c45(new_tree, validation_instance, c_val, m_val, subtree_raise)
-        acc = new_tree.get_accuracy(validation_training.examples)
+        new_tree.clean(validation_training, min_samples=m_val)
+        prune_c45(new_tree, validation_training, c_val, m_val, subtree_raise)
+        acc = new_tree.get_accuracy(validation_test.examples)
         sz = new_tree.get_nodes()
+        print(f"f {c_val} {m_val} {sz} {acc}")
         return acc, sz
 
     # Establish baseline
@@ -141,31 +142,30 @@ def prune_c45_optimized(tree, instance, subtree_raise=True, simple=False, valida
     best_c = c45_default_c
     best_m = c45_default_m
 
-    c_c = 0.01
-    while c_c < 0.5:
-        accuracy, _ = get_accuracy(c_c, best_m)
-        if accuracy >= best_accuracy:
-            best_c = c_c
-            best_accuracy = accuracy
-
-        c_c += 0.01 if c_c < 0.05 else 0.05
-
     max_m = len(validation_training.examples) // 5 * 4
     m_values = [1, 2, 3, 4, *[x for x in range(5, min(50, max_m) + 1, 5)]]
-    last_accuracies = deque(maxlen=5)
 
-    for c_m in m_values:
-        c_accuracy, new_sz = get_accuracy(best_c, c_m)
-        if c_accuracy < 0.001:
-            break
+    c_c = 0.01
+    while c_c < 0.5:
+        last_accuracies = deque(maxlen=5)
+        cycle_accuracy = 0
+        for c_m in m_values:
+            accuracy, new_sz = get_accuracy(c_c, c_m)
+            cycle_accuracy = max(cycle_accuracy, accuracy)
+            if accuracy < 0.001:
+                break
 
-        if c_accuracy >= best_accuracy:
-            best_accuracy = c_accuracy
-            best_m = c_m
-        elif new_sz == 1 or (len(last_accuracies) >= 5 and all(x < best_accuracy for x in last_accuracies)):
-            break
+            if new_sz == 1 or (len(last_accuracies) >= 5 and all(x < cycle_accuracy for x in last_accuracies)):
+                break
 
-        last_accuracies.append(c_accuracy)
+            last_accuracies.append(accuracy)
+
+            if accuracy >= best_accuracy:
+                best_c = c_c
+                best_m = c_m
+                best_accuracy = accuracy
+
+        c_c += 0.01 if c_c < 0.05 else 0.05
 
     prune_c45(tree, instance, best_c, best_m, subtree_raise)
     tree.root.reclassify(instance.examples)

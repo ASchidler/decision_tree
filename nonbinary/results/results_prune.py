@@ -38,8 +38,7 @@ for c_file in sorted(os.listdir("../instances")):
                     v_tree = tp.parse_internal_tree(v_tree_path)
 
                     print(f"{tree_path}: {tree.get_nodes()} {tree.get_depth()} {tree.get_accuracy(test_instance.examples)}")
-                    p.prune_c45_optimized(tree, full_instance, validation_instance=validation_test, validation_tree=v_tree,
-                                          validation_training=validation_instance)
+                    p.prune_c45_optimized(tree, full_instance, v_tree, validation_instance, validation_test)
                     print(f"{tree_path}: {tree.get_nodes()} {tree.get_depth()} {tree.get_accuracy(test_instance.examples)}")
 
                     with open(out_path, "w") as out_file:

@@ -11,7 +11,7 @@ from nonbinary.decision_tree import DecisionTree, DecisionTreeLeaf, DecisionTree
 from decimal import Decimal, InvalidOperation
 
 use_validation = False
-pruning = 0  # 0 is no pruning
+pruning = 1  # 0 is no pruning
 
 pth = "nonbinary/instances"
 weka_path = os.path.join(os.path.expanduser("~"), "Downloads/weka-3-8-5-azul-zulu-linux/weka-3-8-5")
@@ -188,34 +188,28 @@ for fl in fls:
             best_accuracy, _ = get_accuracy(best_c, best_m)
 
             c_c = 0.01
-            while c_c < 0.5:
-                c_accuracy, _ = get_accuracy(c_c, best_m)
-
-                if c_accuracy > best_accuracy:
-                    best_accuracy = c_accuracy
-                    best_c = c_c
-
-                if c_c < 0.05:
-                    c_c += 0.01
-                else:
-                    c_c += 0.05
-
             max_m = len(instance.examples) // 5 * 4
-            m_values = [1, 2, 3, 4, *[x for x in range(5, max_m+1, 5)]]
+            m_values = [1, 2, 3, 4, *[x for x in range(5, max_m + 1, 5)]]
             c_m = 1
-            last_accuracies = deque(maxlen=5)
 
-            for c_m in m_values:
-                c_accuracy, c_sz = get_accuracy(best_c, c_m) if pruning == 1 else get_accuracy(best_n, c_m)
+            while c_c < 0.5:
+                last_accuracies = deque(maxlen=5)
+                for c_m in m_values:
+                    accuracy, new_sz = get_accuracy(c_c, c_m)
+                    if accuracy < 0.001:
+                        break
 
-                if c_accuracy > best_accuracy:
-                    best_accuracy = c_accuracy
-                    best_m = c_m
-                elif (c_sz == 1) or (
-                        len(last_accuracies) >= 5 and all(x < best_accuracy for x in last_accuracies)):
-                    break
+                    if new_sz == 1 or (len(last_accuracies) >= 5 and all(x < best_accuracy for x in last_accuracies)):
+                        break
 
-                last_accuracies.append(c_accuracy)
+                    last_accuracies.append(accuracy)
+
+                    if accuracy >= best_accuracy:
+                        best_c = c_c
+                        best_m = c_m
+                        best_accuracy = accuracy
+
+                c_c += 0.01 if c_c < 0.05 else 0.05
 
             try:
                 instance, instance_test, instance_validation = parse(pth, fl, c_slice, use_validation=False)
