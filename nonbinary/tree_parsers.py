@@ -48,7 +48,7 @@ def parse_internal_tree(tree_path):
                         # Special case to catch scientific notation
                         fd = float(fd)
                         # Round to 6 decimals
-                        fd = Decimal(int(fd * 1000000) / 1000000.0)
+                        fd = Decimal(int(fd * 1000000)) / Decimal(1000000.0)
                     except ValueError:
                         pass
             if not cstack:

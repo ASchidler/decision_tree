@@ -59,7 +59,8 @@ class ClassificationInstance:
                         c_sum += k * v
                         c_cnt += v
                         is_int = is_int and isinstance(k, int)
-                    self.domains_max[i] = c_sum // c_cnt if is_int else c_sum / c_cnt
+                    #self.domains_max[i] = c_sum // c_cnt if is_int else c_sum / c_cnt
+                    self.domains_max[i] =  c_sum / c_cnt
 
         self.feature_indices = c_idx - 1
 
@@ -395,7 +396,7 @@ def _parse_file(filenames):
                                 # Special case to catch scientific notation
                                 fd = float(fd)
                                 # Round to 6 decimals
-                                fd = Decimal(int(fd * 1000000) / 1000000.0)
+                                fd = Decimal(int(fd * 1000000)) / Decimal(1000000.0)
                             except ValueError:
                                 pass
 

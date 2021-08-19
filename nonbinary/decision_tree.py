@@ -17,14 +17,17 @@ class DecisionTreeNode:
         self.count_right = 0
 
     def _decide(self, e):
-        # TODO: Find better solution for missing values...
-        if e.features[self.feature] == "?":
+        c_val = e.features[self.feature]
+        if c_val == "?" and len(e.instance.domains[self.feature]) > 0:
+            c_val = e.instance.domains_max[self.feature]
+
+        if c_val == "?":
             if self.count_right > self.count_left:
                 return self.right
             else:
                 return self.left
-        if (self.is_categorical and e.features[self.feature] == self.threshold) \
-                or (not self.is_categorical and e.features[self.feature] <= self.threshold):
+        if (self.is_categorical and c_val == self.threshold) \
+                or (not self.is_categorical and c_val <= self.threshold):
             return self.left
         else:
             return self.right
@@ -141,6 +144,7 @@ class DecisionTreeLeaf:
             new_tree.set_root_leaf(self.cls)
         else:
             new_tree.add_leaf(self.cls, c_p.id, is_left)
+
 
 class DecisionTree:
     def __init__(self):
