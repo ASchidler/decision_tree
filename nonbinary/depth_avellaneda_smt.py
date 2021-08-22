@@ -1,7 +1,7 @@
 import itertools
 from sys import maxsize, stdout
 from threading import Timer
-
+from decimal import Decimal
 from pysat.formula import IDPool
 from pysat.card import ITotalizer
 from nonbinary.decision_tree import DecisionTreeNode, DecisionTreeLeaf, DecisionTree
@@ -132,14 +132,36 @@ def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, slv):
 
 
 def encode_size(vs, instance, solver, dl):
-    pool = vs["pool"]
     card_vars = []
     c = vs["c"]
 
     for c_n in range(0, 2 ** dl):
-        card_vars.append(pool.id(f"n{c_n}"))
+        n_n = z3.Int(f"n{c_n}")
+        card_vars.append(n_n)
         for c_c in c[c_n].values():
-            solver.add_clause([-c_c, pool.id(f"n{c_n}")])
+            solver.add(z3.Implies(c_c, n_n == 1))
+
+    return card_vars
+
+
+def encode_size_surrogate(vs, instance, solver, dl):
+    card_vars = []
+    class_map = vs["class_map"]
+    c = vs["c"]
+
+    # If there are no virtual classes, no need for this
+    if instance.class_sizes is None or len(instance.class_sizes):
+        encode_size(vs, instance, solver, dl)
+    else:
+        for c_n in range(0, 2 ** dl):
+            for cc, c_vars in class_map:
+                n_n = z3.Int(f"n{c_n}")
+                card_vars.append(n_n)
+                clause = []
+
+                for i in range(0, len(c_vars)):
+                    clause.append(c[c_n][i] if c_vars[i] else z3.Not(c[c_n][i]))
+                solver.add(z3.Implies(z3.And(clause), n_n == (instance.class_sizes[cc] if cc in instance.class_sizes[cc] else 1)))
 
     return card_vars
 
@@ -149,85 +171,63 @@ def estimate_size_add(instance, dl):
     return 2 ** dl * c * 2 + (2 ** dl) ** 2 * 3
 
 
-def run(instance, start_bound=1, ub=maxsize, opt_size=False):
+def run(instance, start_bound=1, ub=maxsize, timeout=0, opt_size=False, check_mem=True, slim=True, multiclass=False):
     c_bound = start_bound
     c_lb = 1
     best_model = None
     best_depth = None
 
+    c_start = time.time()
+
     while c_lb < ub:
         print(f"Running depth {c_bound}")
         stdout.flush()
-        #with z3.Solver() as slv:
+
         slv = z3.Solver()
-        vs = encode(instance, c_bound, slv)
+        slv.set("max_memory", 10000)
+
+        vs = encode(instance, c_bound, slv, opt_size=opt_size)
+        if timeout > 0:
+            if (time.time() - c_start) > timeout:
+                break
+
+            slv.set("timeout", int(timeout - (time.time() - c_start)) * 1000)
         res = slv.check()
 
         if res == z3.sat:
             model = slv.model()
             best_model = _decode(model, instance, c_bound, vs)
-            best_depth = c_bound
-            ub = c_bound
-            c_bound -= 1
+            best_depth = best_model.get_depth()
+            ub = best_depth
+            c_bound = ub - 1
         else:
             c_bound += 1
             c_lb = c_bound
-    #
-    # if opt_size and best_model:
-    #     with solver() as slv:
-    #         c_size_bound = best_model.root.get_leafs() - 1
-    #         solved = True
-    #         vs = encode(instance, best_depth, slv)
-    #         card = encode_size(vs, instance, slv, best_depth)
-    #
-    #         tot = ITotalizer(card, c_size_bound, top_id=vs["pool"].top+1)
-    #         slv.append_formula(tot.cnf)
-    #
-    #         while solved:
-    #             print(f"Running size {c_size_bound}")
-    #             stdout.flush()
-    #             if timeout == 0:
-    #                 solved = slv.solve()
-    #             else:
-    #                 def interrupt(s):
-    #                     s.interrupt()
-    #
-    #                 timer = Timer(timeout, interrupt, [slv])
-    #                 timer.start()
-    #                 solved = slv.solve_limited(expect_interrupt=True)
-    #                 timer.cancel()
-    #
-    #             if solved:
-    #                 model = {abs(x): x > 0 for x in slv.get_model()}
-    #                 best_model = _decode(model, instance, best_depth, vs)
-    #                 c_size_bound -= 1
-    #                 slv.add_clause([-tot.rhs[c_size_bound]])
-    #             else:
-    #                 break
+
+    c_start = time.time()
+    if opt_size and best_model:
+        opt = z3.Optimize()
+        # Not supported by optimize
+        # opt.set("max_memory", 10000)
+        vs = encode(instance, best_depth, opt)
+        if timeout > 0:
+            if (time.time() - c_start) > timeout:
+                return best_model
+
+            opt.set("timeout", int(timeout - (time.time() - c_start)) * 1000)
+        cards = encode_size_surrogate(vs, instance, opt, best_depth) if slim else encode_size(vs, instance, opt, best_depth)
+
+        c_size_bound = best_model.root.get_leaves() - 1
+        c_opt = z3.Int("c_opt")
+        opt.add(z3.Sum(cards) <= c_opt)
+        opt.add(c_opt <= c_size_bound)
+        opt.minimize(c_opt)
+        res = opt.check()
+        if res == z3.sat:
+            model = opt.model()
+            best_model = _decode(model, instance, best_depth, vs)
 
     return best_model
-
-
-def extend(slv, instance, vs, c_bound, increment, size_limit):
-    c = len(instance.classes)
-    lc = len(bin(c - 1)) - 2  # ln(c)
-    f = instance.num_features
-    d2 = 2 ** c_bound
-
-    alg1_lits = increment * sum(2 ** i * f * (i + 2) for i in range(0, c_bound))
-    guess = alg1_lits + increment * d2 * (c_bound + 1) * lc
-
-    if guess > size_limit:
-        return None
-
-    for e_idx in range(len(instance.examples) - increment, len(instance.examples)):
-        vs["x"][e_idx] = {}
-        for x2 in range(0, c_bound):
-            vs["x"][e_idx][x2] = vs["pool"].id(f"x{e_idx}{x2}")
-        _alg1(instance, e_idx, c_bound, 0, 1, list(), vs["f"], vs["x"], slv)
-        _alg2(instance, e_idx, c_bound, 0, 1, list(), vs["class_map"], vs["x"], vs["c"], slv)
-
-    return guess
 
 
 def _decode(model, instance, limit, vs):
@@ -244,16 +244,20 @@ def _decode(model, instance, limit, vs):
         f_found = False
         for f in range(1, instance.num_features+1):
             if model[fs[i][f]]:
-                threshold = model[ts[i]].as_decimal(5)
+                threshold = model[ts[i]].as_decimal(6)
                 if threshold.endswith("?"):
                     threshold = threshold[:-1]
-                threshold = float(threshold)
+
                 if f_found:
                     print(f"ERROR: double features found for node {i}, features {f} and {tree.nodes[i].feature}")
                 else:
                     if f in instance.is_categorical:
+                        threshold = float(threshold)
                         if threshold.is_integer() and threshold < len(instance.domains[f]):
                             threshold = instance.domains[f][int(threshold)]
+                    else:
+                        threshold = Decimal(threshold)
+
                     if i == 1:
                         tree.set_root(f, threshold, f in instance.is_categorical)
                     else:
@@ -269,7 +273,6 @@ def _decode(model, instance, limit, vs):
             if all_right:
                 tree.add_leaf(c_c, (num_leafs + i)//2, i % 2 == 1)
 
-    #_reduce_tree(tree, instance)
     tree.clean(instance)
     return tree
 
@@ -308,3 +311,7 @@ def estimate_size(instance, depth):
     alg1_lits = s * sum(2**i * f * (i+2) for i in range(0, depth))
 
     return d2 * f * (f-1) // 2 + d2 * f + forbidden_c + alg1_lits + s * d2 * (depth+1) * lc
+
+
+def is_sat():
+    return False

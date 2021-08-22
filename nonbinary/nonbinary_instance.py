@@ -3,6 +3,7 @@ import random
 from decimal import Decimal, InvalidOperation, getcontext
 from collections import defaultdict
 
+
 class Example:
     def __init__(self, inst, features, cls, surrogate_cls=None):
         self.cls = cls
@@ -33,6 +34,7 @@ class ClassificationInstance:
         self.reduced_map = None
         self.reduced_original_num_features = None
         self.reduced_dropped = None
+        self.class_sizes = None
 
     def finish(self):
         c_idx = 1

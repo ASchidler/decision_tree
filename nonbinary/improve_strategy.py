@@ -13,8 +13,7 @@ sample_limit_short = [175,
 sample_limit_mid = [300,
                     300, 300, 300, 270, 270,
                     270, 270, 270, 270, 250,
-                    200, 200, 175, 90, 90,
-                    0]
+                    200, 100, 0]
 
 sample_limit_long = [500,
                      500, 500, 500, 500, 500,
@@ -27,7 +26,7 @@ sample_limit_long = [500,
                      105, 105, 105, 105, 105]
 
 time_limits = [60, 300, 800]
-depth_limits = [12, 15, 29]
+depth_limits = [12, 12, 12]
 
 reduce_runs = 1
 

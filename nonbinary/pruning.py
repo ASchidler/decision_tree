@@ -167,6 +167,7 @@ def prune_c45_optimized(tree, instance, validation_tree, validation_training, va
 
         c_c += 0.01 if c_c < 0.05 else 0.05
 
-    prune_c45(tree, instance, best_c, best_m, subtree_raise)
-    tree.root.reclassify(instance.examples)
-    return best_accuracy
+    if tree is not None:
+        prune_c45(tree, instance, best_c, best_m, subtree_raise)
+        tree.root.reclassify(instance.examples)
+    return best_accuracy, best_c, best_m

@@ -5,7 +5,7 @@ from collections import defaultdict
 import nonbinary.nonbinary_instance as nbi
 import pruning
 
-experiment = "l"
+experiment = "u"
 flags = set()
 
 

@@ -25,7 +25,8 @@ for c_file in sorted(os.listdir("../instances")):
                         continue
 
                     tree_path = os.path.join("trees", c_t, f"{fd[0]}.{fd[1]}.{c_t}.{c_f}.{c_a}.dt")
-                    v_tree_path = os.path.join("trees", "v", f"{fd[0]}.{fd[1]}.v.v{c_f}.{c_a}.dt")
+                    #v_tree_path = os.path.join("trees", "v", f"{fd[0]}.{fd[1]}.v.v{c_f}.{c_a}.dt")
+                    v_tree_path = os.path.join("trees", "validation", f"{fd[0]}.{fd[1]}.{c_a}.dt")
 
                     if not os.path.exists(tree_path):
                         print("Tree does not exist: "+ tree_path)

@@ -257,6 +257,10 @@ def increment():
     return 1
 
 
+def is_sat():
+    return True
+
+
 def estimate_size(instance, depth):
     """Estimates the required size in the number of literals"""
 

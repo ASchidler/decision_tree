@@ -140,7 +140,7 @@ else:
     if not args.use_smt:
         tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size)
     else:
-        tree = nbt.run(instance)
+        tree = nbt.run(instance, opt_size=args.size)
 
 if tree is None:
     print("No tree found.")

@@ -92,6 +92,7 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
             break
 
         if cnt >= 3:
+            class_sizes = {}
             class_mapping = {}
             cnt_internal = 0
             for c_leaf in frontier:
@@ -101,6 +102,8 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
                     else:
                         cnt_internal += 1
                         class_mapping[s.id] = f"{c_leaf}"
+                        class_sizes[f"{c_leaf}"] = tree.nodes[c_leaf].get_leaves()
+
 
             # If all "leaves" are leaves, this method is not required, as it will be handled by separate improvements
             if cnt_internal > 0:
@@ -111,6 +114,7 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
                     if not n_s.cls.startswith("-"):
                         n_s.surrogate_cls = f"-{s.cls}"
                     new_instance.add_example(n_s)
+                new_instance.class_sizes = class_sizes
                 new_instance.finish()
                 if reduce:
                     new_instance.reduce_with_key()
@@ -259,7 +263,11 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
     if len(new_instance.examples) == 0 or encoding.estimate_size(new_instance, c_d-1) > literal_limit:
         return False, last_idx
 
-    new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, c_d - 1), timeout=time_limit, ub=min(new_ub, c_d - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
+    if encoding.is_sat():
+        new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, c_d - 1), timeout=time_limit, ub=min(new_ub, c_d - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
+    else:
+        new_tree = encoding.run(new_instance, start_bound=min(new_ub, c_d - 1), timeout=time_limit,
+               ub=min(new_ub, c_d - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
 
     if new_tree is None:
         return False, last_idx
@@ -302,7 +310,11 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
             return False, prev_idx
 
         # Solve instance
-        new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, cd-1), timeout=time_limit, ub=min(new_ub, cd-1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
+        if encoding.is_sat():
+            new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, cd-1), timeout=time_limit, ub=min(new_ub, cd-1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
+        else:
+            new_tree = encoding.run(new_instance, start_bound=min(new_ub, cd - 1), timeout=time_limit,
+                              ub=min(new_ub, cd - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
 
         # Either the branch is done, or
         if new_tree is None:
@@ -365,7 +377,11 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
         if new_ub < 1:
             return False, prev_idx
 
-        new_tree = bs.run(encoding, prev_instance, slv, start_bound=min(new_ub, nd - 1), timeout=time_limit,
+        if encoding.is_sat():
+            new_tree = bs.run(encoding, prev_instance, slv, start_bound=min(new_ub, nd - 1), timeout=time_limit,
+                                  ub=min(new_ub, nd - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
+        else:
+            new_tree = encoding.run(prev_instance, start_bound=min(new_ub, nd - 1), timeout=time_limit,
                               ub=min(new_ub, nd - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
 
         if new_tree is not None:
@@ -391,7 +407,11 @@ def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_li
     if new_ub < 1:
         return False, path_idx
 
-    new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, i_depth - 1), timeout=time_limit,
+    if encoding.is_sat():
+        new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, i_depth - 1), timeout=time_limit,
+                          ub=min(new_ub, i_depth - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
+    else:
+        new_tree = encoding.run(new_instance, start_bound=min(new_ub, i_depth - 1), timeout=time_limit,
                           ub=min(new_ub, i_depth - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
 
     if new_tree is not None:
