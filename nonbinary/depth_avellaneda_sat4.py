@@ -27,12 +27,14 @@ def _init_var(instance, limit, class_map):
             for j in range(0, len(instance.domains[cf]) - (0 if cf in instance.is_categorical else 1)):
                 f[i][instance.feature_idx[cf] + j] = pool.id(f"f{i}_{instance.feature_idx[cf] + j}")
 
-    c_vars = len(next(iter(class_map.values())))
     c = {}
     for i in range(0, 2**limit):
         c[i] = {}
-        for j in range(0, c_vars):
-            c[i][j] = pool.id(f"c{i}_{j}")
+        if len(class_map) <= 2:
+            c[i] = pool.id(f"c{i}")
+        else:
+            for j in range(1, len(class_map)+1):
+                c[i][j] = pool.id(f"c{i}_{j}")
 
     return x, f, c, pool
 
@@ -41,11 +43,8 @@ def encode(instance, limit, solver, opt_size=False, multiclass=False):
     classes = list(instance.classes)  # Give classes an order
     if opt_size:
         classes.insert(0, "EmptyLeaf")
-    c_vars = len(bin(len(classes)-1)) - 2  # "easier" than log_2
-    c_values = list(itertools.product([True, False], repeat=c_vars))
-    class_map = {}
-    for i in range(0, len(classes)):
-        class_map[classes[i]] = c_values.pop()
+
+    class_map = {cc: i for i, cc in enumerate(classes)}
 
     x, f, c, p = _init_var(instance, limit, class_map)
 
@@ -65,12 +64,17 @@ def encode(instance, limit, solver, opt_size=False, multiclass=False):
         _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, solver, multiclass)
 
     # Forbid non-existing classes
-    for c_c in c_values:
-        for c_n in range(0, 2**limit):
+    if len(class_map) > 2:
+        for c_n in range(0, 2 ** limit):
             clause = []
-            for i in range(0, c_vars):
-                clause.append(-c[c_n][i] if c_c[i] else c[c_n][i])
-            solver.add_clause(clause)
+            for c1, c1v in c[c_n].items():
+                clause.append(c1v)
+                for c2, c2v in c[c_n].items():
+                    if c2 > c1:
+                        solver.add_clause([-c1v, -c2v])
+            if not opt_size:
+                solver.add_clause(clause)
+
     return {"f": f, "x": x, "c": c, "class_map": class_map, "pool": p}
 
 
@@ -108,26 +112,16 @@ def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, solver, multi
         if instance.examples[e_idx].surrogate_cls:
             c_vars2 = class_map[instance.examples[e_idx].surrogate_cls]
 
-        if not c_vars2 or not multiclass:
-            for i in range(0, len(c_vars)):
-                if c_vars[i]:
-                    solver.add_clause([*clause, c[q - 2 ** limit][i]])
-                else:
-                    solver.add_clause([*clause, -c[q - 2 ** limit][i]])
+        if len(class_map) <= 2:
+            if c_vars == 0:
+                solver.add_clause([*clause, -c[q - 2**limit]])
+            else:
+                solver.add_clause([*clause, c[q - 2 ** limit]])
         else:
-            for i in range(0, len(c_vars)):
-                if c_vars[i] == c_vars2[i]:
-                    if c_vars[i]:
-                        solver.add_clause([*clause, c[q - 2 ** limit][i]])
-                    else:
-                        solver.add_clause([*clause, -c[q - 2 ** limit][i]])
-                else:
-                    for j in range(0, len(c_vars)):
-                        if c_vars[j] != c_vars2[j]:
-                            if c_vars[i]:
-                                solver.add_clause([*clause, c[q - 2 ** limit][j] if c_vars2[j] else -c[q - 2 ** limit][j], c[q - 2 ** limit][i]])
-                            else:
-                                solver.add_clause([*clause, c[q - 2 ** limit][j] if c_vars2[j] else -c[q - 2 ** limit][j], -c[q - 2 ** limit][i]])
+            if not c_vars2 or not multiclass:
+                solver.add_clause([*clause, c[q - 2 ** limit][c_vars]])
+            else:
+                solver.add_clause([*clause, c[q - 2 ** limit][c_vars], c[q - 2 ** limit][c_vars2]])
     else:
         clause.append(x[e_idx][lvl])
         _alg2(instance, e_idx, limit, lvl + 1, 2 * q, clause, class_map, x, c, solver, multiclass)
