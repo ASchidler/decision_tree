@@ -10,10 +10,14 @@ import time
 import z3
 
 
-def _init_var(instance, limit, class_map):
+def _init_var(instance, limit, class_map, slv):
     x = {}
+    e = {}
     for xl in range(0, len(instance.examples)):
         x[xl] = {}
+        e[xl] = z3.Int(f"e{xl}")
+        slv.add(e[xl] >= 0)
+        slv.add(e[xl] <= 1)
         for x2 in range(0, limit):
             x[xl][x2] = z3.Bool(f"x{xl}_{x2}")
 
@@ -34,7 +38,7 @@ def _init_var(instance, limit, class_map):
         for j in range(0, c_vars):
             c[i][j] = z3.Bool(f"c{i}_{j}")
 
-    return x, f, c, t
+    return x, f, c, t, e
 
 
 def encode(instance, limit, slv, opt_size=False):
@@ -48,7 +52,7 @@ def encode(instance, limit, slv, opt_size=False):
     for i in range(0, len(classes)):
         class_map[classes[i]] = c_values.pop()
 
-    x, f, c, t = _init_var(instance, limit, class_map)
+    x, f, c, t, e = _init_var(instance, limit, class_map, slv)
 
     # each node has a feature
     for i in range(1, 2**limit):
@@ -68,7 +72,7 @@ def encode(instance, limit, slv, opt_size=False):
 
     for i in range(0, len(instance.examples)):
         _alg1(instance, i, limit, 0, 1, list(), f, x, slv, t)
-        _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, slv)
+        _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, e, slv)
 
     # Forbid non-existing classes
     # for c_c in c_values:
@@ -77,7 +81,7 @@ def encode(instance, limit, slv, opt_size=False):
     #         for i in range(0, c_vars):
     #             clause.append(z3.Not(c[c_n][i]) if c_c[i] else c[c_n][i])
     #         slv.add(clause)
-    return {"f": f, "x": x, "c": c, "class_map": class_map, "t": t}
+    return {"f": f, "x": x, "c": c, "class_map": class_map, "t": t, "e": e}
 
 
 def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, slv, t):
@@ -114,21 +118,21 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, slv, t):
     _alg1(instance, e_idx, limit, lvl+1, 2*q, n_cl2, fs, x, slv, t)
 
 
-def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, slv):
+def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, e, slv):
     if lvl == limit:
         c_vars = class_map[instance.examples[e_idx].cls]
         for i in range(0, len(c_vars)):
             if c_vars[i]:
-                slv.add(z3.Or([*clause, c[q - 2 ** limit][i]]))
+                slv.add(z3.Or([*clause, c[q - 2 ** limit][i], e[e_idx] == 0]))
             else:
-                slv.add(z3.Or([*clause, z3.Not(c[q - 2 ** limit][i])]))
+                slv.add(z3.Or([*clause, z3.Not(c[q - 2 ** limit][i]), -e[e_idx] == 0]))
     else:
         n_cl = list(clause)
         n_cl.append(x[e_idx][lvl])
         n_cl2 = list(clause)
         n_cl2.append(z3.Not(x[e_idx][lvl]))
-        _alg2(instance, e_idx, limit, lvl+1, 2*q, n_cl, class_map, x, c, slv)
-        _alg2(instance, e_idx, limit, lvl+1, 2*q+1, n_cl2, class_map, x, c, slv)
+        _alg2(instance, e_idx, limit, lvl+1, 2*q, n_cl, class_map, x, c, e, slv)
+        _alg2(instance, e_idx, limit, lvl+1, 2*q+1, n_cl2, class_map, x, c, e, slv)
 
 
 def encode_size(vs, instance, solver, dl):
@@ -171,7 +175,7 @@ def estimate_size_add(instance, dl):
     return 2 ** dl * c * 2 + (2 ** dl) ** 2 * 3
 
 
-def run(instance, start_bound=1, ub=maxsize, timeout=0, opt_size=False, check_mem=True, slim=True, multiclass=False):
+def run(instance, start_bound=1, ub=maxsize, timeout=60, opt_size=False, check_mem=True, slim=True, multiclass=False):
     c_bound = start_bound
     c_lb = 1
     best_model = None
@@ -183,50 +187,35 @@ def run(instance, start_bound=1, ub=maxsize, timeout=0, opt_size=False, check_me
         print(f"Running depth {c_bound}")
         stdout.flush()
 
-        slv = z3.Solver()
-        slv.set("max_memory", 10000)
+        slv = z3.Optimize()
+        #slv.set("max_memory", 10000)
 
         vs = encode(instance, c_bound, slv, opt_size=opt_size)
-        if timeout > 0:
-            if (time.time() - c_start) > timeout:
-                break
+        e = vs['e']
+        e_lim = z3.Int("e_lim")
+        slv.add(z3.Sum([x for x in e.values()]) >= e_lim)
 
-            slv.set("timeout", int(timeout - (time.time() - c_start)) * 1000)
+        if timeout > 0:
+            # if (time.time() - c_start) > timeout:
+            #     break
+
+            #slv.set("timeout", int(timeout - (time.time() - c_start)) * 1000)
+            slv.set("timeout", timeout * 1000)
+        slv.maximize(e_lim)
         res = slv.check()
 
-        if res == z3.sat:
-            model = slv.model()
-            best_model = _decode(model, instance, c_bound, vs)
-            best_depth = best_model.get_depth()
-            ub = best_depth
-            c_bound = ub - 1
-        else:
-            c_bound += 1
-            c_lb = c_bound
-
-    c_start = time.time()
-    if opt_size and best_model:
-        opt = z3.Optimize()
-        # Not supported by optimize
-        # opt.set("max_memory", 10000)
-        vs = encode(instance, best_depth, opt)
-        if timeout > 0:
-            if (time.time() - c_start) > timeout:
-                return best_model
-
-            opt.set("timeout", int(timeout - (time.time() - c_start)) * 1000)
-        cards = encode_size_surrogate(vs, instance, opt, best_depth) if slim else encode_size(vs, instance, opt, best_depth)
-
-        c_size_bound = best_model.root.get_leaves() - 1
-        c_opt = z3.Int("c_opt")
-        opt.add(z3.Sum(cards) <= c_opt)
-        opt.add(c_opt <= c_size_bound)
-        opt.minimize(c_opt)
-        opt.check()
-
-        model = opt.model()
+        model = slv.model()
         if len(model) > 0:
-            best_model = _decode(model, instance, best_depth, vs)
+            print(f"{res}")
+            print(f"{model}")
+            best_model = _decode(model, instance, c_bound, vs)
+            c_acc = best_model.get_accuracy(instance.examples)
+            print(f"{best_model.get_nodes()} {best_model.get_depth()} {c_acc}")
+
+            if c_acc > 0.99999999999:
+                break
+
+        c_bound += 1
 
     return best_model
 
@@ -272,10 +261,7 @@ def _decode(model, instance, limit, vs):
                     all_right = False
                     break
             if all_right:
-                if num_leafs == 1:
-                    tree.set_root_leaf(c_c)
-                else:
-                    tree.add_leaf(c_c, (num_leafs + i) // 2, i % 2 == 1)
+                tree.add_leaf(c_c, (num_leafs + i)//2, i % 2 == 1)
 
     tree.clean(instance)
     return tree

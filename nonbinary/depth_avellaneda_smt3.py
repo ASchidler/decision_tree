@@ -10,7 +10,7 @@ import time
 import z3
 
 
-def _init_var(instance, limit, class_map):
+def _init_var(instance, limit, slv, opt_size=False):
     x = {}
     for xl in range(0, len(instance.examples)):
         x[xl] = {}
@@ -19,65 +19,38 @@ def _init_var(instance, limit, class_map):
 
     f = {}
     for i in range(1, 2**limit):
-        f[i] = {}
-        for j in range(1, instance.num_features + 1):
-            f[i][j] = z3.Bool(f"f{i}_{j}")
+        f[i] = z3.Int(f"f{i}")
+        slv.add(f[i] > 0)
+        slv.add(f[i] <= instance.num_features)
 
     t = {}
     for i in range(1, 2 ** limit):
         t[i] = z3.Real(f"t{i}")
 
-    c_vars = len(next(iter(class_map.values())))
     c = {}
     for i in range(0, 2**limit):
-        c[i] = {}
-        for j in range(0, c_vars):
-            c[i][j] = z3.Bool(f"c{i}_{j}")
+        c[i] = z3.Int(f"c{i}")
+        if opt_size:
+            slv.add(c[i] >= 0)
+        else:
+            slv.add(c[i] > 0)
+        slv.add(c[i] <= len(instance.classes))
 
     return x, f, c, t
 
 
 def encode(instance, limit, slv, opt_size=False):
     classes = list(instance.classes)  # Give classes an order
+    classes.insert(0, "EmptyLeaf")
+    class_map = {cc: i for i, cc in enumerate(classes)}
 
-    if opt_size:
-        classes.insert(0, "EmptyLeaf")
-    c_vars = len(bin(len(classes)-1)) - 2  # "easier" than log_2
-    c_values = list(itertools.product([True, False], repeat=c_vars))
-    class_map = {}
-    for i in range(0, len(classes)):
-        class_map[classes[i]] = c_values.pop()
-
-    x, f, c, t = _init_var(instance, limit, class_map)
-
-    # each node has a feature
-    for i in range(1, 2**limit):
-        clause = []
-        for f1, f1v in f[i].items():
-            clause.append(f1v)
-            for f2, f2v in f[i].items():
-                if f2 > f1:
-                    slv.add(z3.Or([z3.Not(f1v), z3.Not(f2v)]))
-
-            # In case of binary features, we can fix the threshold to the middle
-            # if instance.is_binary[f1]:
-            #     middle = round(sum(instance.domains[f1]) / 2, 1)
-            #     slv.add(z3.Or([z3.Not(f[i][f1]), t[i] == middle]))
-
-        slv.add(z3.Or(clause))
+    x, f, c, t = _init_var(instance, limit, slv)
 
     for i in range(0, len(instance.examples)):
         _alg1(instance, i, limit, 0, 1, list(), f, x, slv, t)
         _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, slv)
 
-    # Forbid non-existing classes
-    # for c_c in c_values:
-    #     for c_n in range(0, 2**limit):
-    #         clause = []
-    #         for i in range(0, c_vars):
-    #             clause.append(z3.Not(c[c_n][i]) if c_c[i] else c[c_n][i])
-    #         slv.add(clause)
-    return {"f": f, "x": x, "c": c, "class_map": class_map, "t": t}
+    return {"f": f, "x": x, "c": c, "class_map": class_map, "t": t, "classes": classes}
 
 
 def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, slv, t):
@@ -90,11 +63,11 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, slv, t):
         if f in instance.is_categorical:
             for c_i in range(0, len(instance.domains[f])):
                 if instance.domains[f][c_i] != c_val:
-                    slv.add(z3.Or([*clause, z3.Not(x[e_idx][lvl]), c_i != t[q], z3.Not(fs[q][f])]))
+                    slv.add(z3.Or([*clause, z3.Not(x[e_idx][lvl]), c_i != t[q], fs[q] != f]))
                 else:
-                    slv.add(z3.Or([*clause, z3.Not(x[e_idx][lvl]), c_i == t[q], z3.Not(fs[q][f])]))
+                    slv.add(z3.Or([*clause, z3.Not(x[e_idx][lvl]), c_i == t[q], fs[q] != f]))
         else:
-            slv.add(z3.Or([*clause, z3.Not(x[e_idx][lvl]), c_val <= t[q], z3.Not(fs[q][f])]))
+            slv.add(z3.Or([*clause, z3.Not(x[e_idx][lvl]), c_val <= t[q], fs[q] != f]))
 
     n_cl = list(clause)
     n_cl.append(z3.Not(x[e_idx][lvl]))
@@ -105,9 +78,9 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, slv, t):
         if f in instance.is_categorical:
             for c_i in range(0, len(instance.domains[f])):
                 if instance.domains[f][c_i] == c_val:
-                    slv.add(z3.Or([*clause, x[e_idx][lvl], c_i != t[q], z3.Not(fs[q][f])]))
+                    slv.add(z3.Or([*clause, x[e_idx][lvl], c_i != t[q], fs[q] != f]))
         else:
-            slv.add(z3.Or([*clause, x[e_idx][lvl], c_val > t[q], z3.Not(fs[q][f])]))
+            slv.add(z3.Or([*clause, x[e_idx][lvl], c_val > t[q], fs[q] != f]))
 
     n_cl2 = list(clause)
     n_cl2.append(x[e_idx][lvl])
@@ -116,12 +89,7 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, slv, t):
 
 def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, slv):
     if lvl == limit:
-        c_vars = class_map[instance.examples[e_idx].cls]
-        for i in range(0, len(c_vars)):
-            if c_vars[i]:
-                slv.add(z3.Or([*clause, c[q - 2 ** limit][i]]))
-            else:
-                slv.add(z3.Or([*clause, z3.Not(c[q - 2 ** limit][i])]))
+        slv.add(z3.Or([*clause, c[q-2 ** limit] == class_map[instance.examples[e_idx].cls]]))
     else:
         n_cl = list(clause)
         n_cl.append(x[e_idx][lvl])
@@ -225,14 +193,14 @@ def run(instance, start_bound=1, ub=maxsize, timeout=0, opt_size=False, check_me
         opt.check()
 
         model = opt.model()
-        if len(model) > 0:
+        if model:
             best_model = _decode(model, instance, best_depth, vs)
 
     return best_model
 
 
 def _decode(model, instance, limit, vs):
-    class_map = vs['class_map']
+    classes = vs['classes']
     fs = vs["f"]
     cs = vs["c"]
     ts = vs["t"]
@@ -242,40 +210,34 @@ def _decode(model, instance, limit, vs):
 
     # Find features
     for i in range(1, num_leafs):
-        f_found = False
-        for f in range(1, instance.num_features+1):
-            if model[fs[i][f]]:
-                threshold = model[ts[i]].as_decimal(6)
-                if threshold.endswith("?"):
-                    threshold = threshold[:-1]
+        f = int(model[fs[i]].as_long())
+        threshold = model[ts[i]]
+        if threshold is None:  # Edge case where the threshold is not needed
+            if f in instance.is_categorical:
+                threshold = 0
+            else:
+                threshold = instance.domains[f][0]
+        else:
+            threshold = threshold.as_decimal(6)
 
-                if f_found:
-                    print(f"ERROR: double features found for node {i}, features {f} and {tree.nodes[i].feature}")
-                else:
-                    if f in instance.is_categorical:
-                        threshold = float(threshold)
-                        if threshold.is_integer() and threshold < len(instance.domains[f]):
-                            threshold = instance.domains[f][int(threshold)]
-                    else:
-                        threshold = Decimal(threshold)
+        if f in instance.is_categorical:
+            threshold = float(threshold)
+            if threshold.is_integer() and threshold < len(instance.domains[f]):
+                threshold = instance.domains[f][int(threshold)]
+        else:
+            threshold = Decimal(threshold)
 
-                    if i == 1:
-                        tree.set_root(f, threshold, f in instance.is_categorical)
-                    else:
-                        tree.add_node(f, threshold, i//2, i % 2 == 1, f in instance.is_categorical)
+        if i == 1:
+            tree.set_root(f, threshold, f in instance.is_categorical)
+        else:
+            tree.add_node(f, threshold, i//2, i % 2 == 1, f in instance.is_categorical)
 
-    for c_c, c_v in class_map.items():
-        for i in range(0, num_leafs):
-            all_right = True
-            for i_v in range(0, len(c_v)):
-                if bool(model[cs[i][i_v]]) != c_v[i_v]:
-                    all_right = False
-                    break
-            if all_right:
-                if num_leafs == 1:
-                    tree.set_root_leaf(c_c)
-                else:
-                    tree.add_leaf(c_c, (num_leafs + i) // 2, i % 2 == 1)
+    for i in range(0, num_leafs):
+        c_c = classes[int(model[cs[i]].as_long())]
+        if num_leafs == 1:
+            tree.set_root_leaf(c_c)
+        else:
+            tree.add_leaf(c_c, (num_leafs + i) // 2, i % 2 == 1)
 
     tree.clean(instance)
     return tree

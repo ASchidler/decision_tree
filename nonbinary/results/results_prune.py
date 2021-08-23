@@ -8,7 +8,7 @@ algos = ["w"]
 trees = ["l"]
 #flags = ["0", "a", "y"]
 #flags = ["z0", "za", "zy"]
-flags = ["zy"]
+flags = ["za"]
 
 for c_file in sorted(os.listdir("../instances")):
     if c_file.endswith(".data"):

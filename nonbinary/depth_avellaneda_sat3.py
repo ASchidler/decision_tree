@@ -237,7 +237,10 @@ def _decode(model, instance, limit, vs):
                     all_right = False
                     break
             if all_right:
-                tree.add_leaf(c_c, (num_leafs + i)//2, i % 2 == 1)
+                if num_leafs == 1:
+                    tree.set_root_leaf(c_c)
+                else:
+                    tree.add_leaf(c_c, (num_leafs + i) // 2, i % 2 == 1)
 
     tree.clean(instance)
     return tree
