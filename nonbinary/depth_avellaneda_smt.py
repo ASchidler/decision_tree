@@ -222,9 +222,10 @@ def run(instance, start_bound=1, ub=maxsize, timeout=0, opt_size=False, check_me
         opt.add(z3.Sum(cards) <= c_opt)
         opt.add(c_opt <= c_size_bound)
         opt.minimize(c_opt)
-        res = opt.check()
-        if res == z3.sat:
-            model = opt.model()
+        opt.check()
+
+        model = opt.model()
+        if model:
             best_model = _decode(model, instance, best_depth, vs)
 
     return best_model

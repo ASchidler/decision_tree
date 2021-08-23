@@ -177,6 +177,21 @@ def encode_extended_leaf_size(vs, instance, solver, dl):
     return card_vars
 
 
+def encode_extended_leaf_limit(vs, solver, dl):
+    c = vs["c"]
+    cm = vs["class_map"]
+
+    for cls, vals in cm.items():
+        if not cls.startswith("-") and cls != "EmptyLeaf":
+            for c_n in range(0, 2 ** dl):
+                for c_n2 in range(c_n+1, 2 ** dl):
+                    clause = []
+                    for i in range(0, len(vals)):
+                        clause.append(-c[c_n][i] if vals[i] else c[c_n][i])
+                        clause.append(-c[c_n2][i] if vals[i] else c[c_n2][i])
+                    solver.add_clause(clause)
+
+
 def estimate_size_add(instance, dl):
     c = len(instance.classes)
     return 2 ** dl * c * 2 + (2 ** dl) ** 2 * 3
