@@ -108,26 +108,15 @@ def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, solver, multi
         if instance.examples[e_idx].surrogate_cls:
             c_vars2 = class_map[instance.examples[e_idx].surrogate_cls]
 
-        if not c_vars2 or not multiclass:
-            for i in range(0, len(c_vars)):
-                if c_vars[i]:
-                    solver.add_clause([*clause, c[q - 2 ** limit][i]])
-                else:
-                    solver.add_clause([*clause, -c[q - 2 ** limit][i]])
-        else:
-            for i in range(0, len(c_vars)):
-                if c_vars[i] == c_vars2[i]:
-                    if c_vars[i]:
-                        solver.add_clause([*clause, c[q - 2 ** limit][i]])
-                    else:
-                        solver.add_clause([*clause, -c[q - 2 ** limit][i]])
-                else:
-                    for j in range(0, len(c_vars)):
-                        if c_vars[j] != c_vars2[j]:
-                            if c_vars[i]:
-                                solver.add_clause([*clause, c[q - 2 ** limit][j] if c_vars2[j] else -c[q - 2 ** limit][j], c[q - 2 ** limit][i]])
-                            else:
-                                solver.add_clause([*clause, c[q - 2 ** limit][j] if c_vars2[j] else -c[q - 2 ** limit][j], -c[q - 2 ** limit][i]])
+        for i in range(0, len(c_vars)):
+            cv1 = c[q - 2 ** limit][i] * (1 if c_vars[i] else -1)
+            if c_vars2 is None or not multiclass or c_vars[i] == c_vars2[i]:
+                solver.add_clause([*clause, cv1])
+            else:
+                for j in range(0, len(c_vars)):
+                    if c_vars[j] != c_vars2[j]:
+                        cv2 = c[q - 2 ** limit][j] * (1 if c_vars[j] else -1)
+                        solver.add_clause([*clause, cv1, cv2])
     else:
         clause.append(x[e_idx][lvl])
         _alg2(instance, e_idx, limit, lvl + 1, 2 * q, clause, class_map, x, c, solver, multiclass)
