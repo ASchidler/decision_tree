@@ -37,7 +37,7 @@ def _init_var(instance, limit, class_map):
     return x, f, c, pool
 
 
-def encode(instance, limit, solver, opt_size=False, multiclass=False):
+def encode(instance, limit, solver, opt_size=False):
     classes = list(instance.classes)  # Give classes an order
     if opt_size:
         classes.insert(0, "EmptyLeaf")
@@ -62,7 +62,7 @@ def encode(instance, limit, solver, opt_size=False, multiclass=False):
 
     for i in range(0, len(instance.examples)):
         _alg1(instance, i, limit, 0, 1, list(), f, x, solver)
-        _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, solver, multiclass)
+        _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, solver)
 
     # Forbid non-existing classes
     for c_c in c_values:
@@ -101,29 +101,20 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, solver):
     clause.pop()
 
 
-def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, solver, multiclass=False):
+def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, solver):
     if lvl == limit:
         c_vars = class_map[instance.examples[e_idx].cls]
-        c_vars2 = None
-        if instance.examples[e_idx].surrogate_cls:
-            c_vars2 = class_map[instance.examples[e_idx].surrogate_cls]
 
         for i in range(0, len(c_vars)):
             cv1 = c[q - 2 ** limit][i] * (1 if c_vars[i] else -1)
-            if c_vars2 is None or not multiclass or c_vars[i] == c_vars2[i]:
-                solver.add_clause([*clause, cv1])
-            else:
-                for j in range(0, len(c_vars)):
-                    if c_vars[j] != c_vars2[j]:
-                        cv2 = c[q - 2 ** limit][j] * (1 if c_vars[j] else -1)
-                        solver.add_clause([*clause, cv1, cv2])
+            solver.add_clause([*clause, cv1])
     else:
         clause.append(x[e_idx][lvl])
-        _alg2(instance, e_idx, limit, lvl + 1, 2 * q, clause, class_map, x, c, solver, multiclass)
+        _alg2(instance, e_idx, limit, lvl + 1, 2 * q, clause, class_map, x, c, solver)
         clause.pop()
 
         clause.append(-x[e_idx][lvl])
-        _alg2(instance, e_idx, limit, lvl+1, 2*q+1, clause, class_map, x, c, solver, multiclass)
+        _alg2(instance, e_idx, limit, lvl+1, 2*q+1, clause, class_map, x, c, solver)
         clause.pop()
 
 
@@ -266,11 +257,10 @@ def estimate_size(instance, depth):
 
     d2 = 2**depth
     c = len(instance.classes)
-    lc = len(bin(c-1)) - 2  #ln(c)
-    s = len(instance.examples)
-    f = sum(len(x) for x in instance.domains)
 
-    forbidden_c = (2**lc - c) * d2 * lc
+    s = len(instance.examples)
+    f = sum(len(instance.domains[x]) for x in range(1, instance.num_features+1))
+
     alg1_lits = s * sum(2**i * f * (i+2) for i in range(0, depth))
 
-    return d2 * f * (f-1) // 2 + d2 * f + forbidden_c + alg1_lits + s * d2 * (depth+1) * lc
+    return d2 * f * (f-1) // 2 + d2 * f + alg1_lits + s * d2 * (depth+1) * c

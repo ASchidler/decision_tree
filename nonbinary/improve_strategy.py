@@ -77,7 +77,7 @@ def clear_ignore(ignore, root):
             q.append(c_n.right)
 
 
-def run(tree, instance, test, slv, enc, limit_idx=1, timelimit=0, opt_size=False, opt_slim=False, multiclass=False):
+def run(tree, instance, test, slv, enc, limit_idx=1, timelimit=0, opt_size=False, opt_slim=False, maintain=False):
     sample_limit = [sample_limit_short, sample_limit_mid, sample_limit_long][limit_idx]
     time_limit = time_limits[limit_idx]
     depth_limit = depth_limits[limit_idx]
@@ -100,7 +100,7 @@ def run(tree, instance, test, slv, enc, limit_idx=1, timelimit=0, opt_size=False
     assigned = tree.assign(instance)
     tree_size = tree.get_nodes()
     while tree_size > len(c_ignore_reduce):
-        allow_reduction = False
+        allow_reduction = True
         pth = find_deepest_leaf(tree, c_ignore)
 
         if pth is None:
@@ -118,28 +118,28 @@ def run(tree, instance, test, slv, enc, limit_idx=1, timelimit=0, opt_size=False
             op = None
             result = False
             if not allow_reduction:
-                result, _ = improver.leaf_select(tree, instance, 0, [root], assigned, depth_limit, sample_limit, time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, multiclass=multiclass)
+                result, _ = improver.leaf_select(tree, instance, 0, [root], assigned, depth_limit, sample_limit, time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, maintain=maintain)
                 if result:
                     op = "ls"
                 if not result:
                     result, _ = improver.leaf_rearrange(tree, instance, 0, [root], assigned, depth_limit, sample_limit,
-                                                        time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, multiclass=multiclass)
+                                                        time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, maintain=maintain)
                     if result:
                         op = "la"
 
                 if not result:
                     result, _ = improver.mid_reduced(tree, instance, 0, [root], assigned, depth_limit, sample_limit, False,
-                                                     time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, multiclass=multiclass)
+                                                     time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, maintain=maintain)
                     if result:
                         op = "ma"
             else:
-                result, _ = improver.reduced_leaf(tree, instance, 0, [root], assigned, depth_limit, sample_limit, time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, multiclass=multiclass)
+                result, _ = improver.reduced_leaf(tree, instance, 0, [root], assigned, depth_limit, sample_limit, time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, maintain=maintain)
                 if result:
                     op = "lr"
                 if not result:
                     result, _ = improver.mid_reduced(tree, instance, 0, [root], assigned, depth_limit, sample_limit,
                                                      True,
-                                                     time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, multiclass=multiclass)
+                                                     time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, maintain=maintain)
                     if result:
                         op = "mr"
 

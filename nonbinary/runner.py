@@ -12,7 +12,7 @@ import nonbinary_instance
 import incremental.entropy_strategy as es
 import incremental.maintain_strategy as ms
 import incremental.random_strategy as rs
-import nonbinary.depth_avellaneda_sat as nbs
+import nonbinary.depth_avellaneda_sat4 as nbs
 import nonbinary.depth_avellaneda_sat2 as nbs2
 import nonbinary.depth_avellaneda_sat3 as nbs3
 import nonbinary.depth_avellaneda_smt as nbt
@@ -53,8 +53,8 @@ ap.add_argument("-w", dest="weka", action="store_false", default=True,
                 help="Use CART instead of WEKA trees.")
 ap.add_argument("-m", dest="slim", action="store_true", default=False,
                 help="Use local improvement instead of exact results.")
-ap.add_argument("-u", dest="multiclass", action="store_true", default=False,
-                help="For mid-reductions allow multiclass.")
+ap.add_argument("-u", dest="maintain", action="store_true", default=False,
+                help="Force maintaining of sizes for SLIM.")
 
 args = ap.parse_args()
 
@@ -107,9 +107,9 @@ if args.time_limit > 0:
     timer.start()
 
 if args.reduce:
-    print(f"{instance.num_features}, {len(instance.examples)}")
+    print(f"{instance.num_features}, {len(instance.examples)} {sum(len(instance.domains[x]) for x in range(1, instance.num_features+1))}")
     instance.reduce_with_key()
-    print(f"{instance.num_features}, {len(instance.examples)}")
+    print(f"{instance.num_features}, {len(instance.examples)} {sum(len(instance.domains[x]) for x in range(1, instance.num_features+1))}")
 
 if args.categorical:
     instance.is_categorical = {x for x in range(1, instance.num_features+1)}
@@ -135,7 +135,7 @@ if args.slim:
           f"Time: {time.time() - start_time}")
 
     improve_strategy.run(tree, instance, test_instance, Glucose3, enc, timelimit=args.time_limit, opt_size=args.size,
-                         opt_slim=args.slim_opt, multiclass=args.multiclass)
+                         opt_slim=args.slim_opt, maintain=args.maintain)
 else:
     if not args.use_smt:
         tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size)

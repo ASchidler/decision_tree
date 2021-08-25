@@ -1,6 +1,7 @@
 import itertools
 from sys import maxsize, stdout
 from threading import Timer
+from collections import defaultdict
 from decimal import Decimal
 from pysat.formula import IDPool
 from pysat.card import ITotalizer
@@ -171,11 +172,26 @@ def estimate_size_add(instance, dl):
     return 2 ** dl * c * 2 + (2 ** dl) ** 2 * 3
 
 
-def run(instance, start_bound=1, ub=maxsize, timeout=0, opt_size=False, check_mem=True, slim=True, multiclass=False):
+def run(instance, start_bound=1, ub=maxsize, timeout=0, opt_size=False, check_mem=True, slim=True, maintain=False):
     c_bound = start_bound
     c_lb = 1
     best_model = None
     best_depth = None
+
+    # Edge cases
+    if len(instance.classes) == 1:
+        dt = DecisionTree()
+        dt.set_root_leaf(next(iter(instance.classes)))
+        return dt
+
+    if all(len(x) == 0 for x in instance.domains):
+        counts = defaultdict(int)
+        for e in instance.examples:
+            counts[e.cls] += 1
+        _, cls = max((v, k) for k, v in counts.items())
+        dt = DecisionTree()
+        dt.set_root_leaf(cls)
+        return dt
 
     c_start = time.time()
 
@@ -307,14 +323,13 @@ def estimate_size(instance, depth):
 
     d2 = 2**depth
     c = len(instance.classes)
-    lc = len(bin(c-1)) - 2  #ln(c)
-    s = len(instance.examples)
-    f = sum(len(x) for x in instance.domains)
 
-    forbidden_c = (2**lc - c) * d2 * lc
+    s = len(instance.examples)
+    f = sum(len(instance.domains[x]) for x in range(1, instance.num_features+1))
+
     alg1_lits = s * sum(2**i * f * (i+2) for i in range(0, depth))
 
-    return d2 * f * (f-1) // 2 + d2 * f + forbidden_c + alg1_lits + s * d2 * (depth+1) * lc
+    return d2 * f * (f-1) // 2 + d2 * f + alg1_lits + s * d2 * (depth+1) * c
 
 
 def is_sat():

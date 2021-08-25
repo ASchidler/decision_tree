@@ -32,15 +32,19 @@ def mini_interrupt(s):
     interrupt(s, None, set_done=False)
 
 
-def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False, check_mem=True, slim=True, multiclass=False, limit_size=0):
-    #limit_size = 0
+def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False, check_mem=True, slim=True, maintain=False, limit_size=0):
     clb = enc.lb()
     c_bound = max(clb, start_bound)
     best_model = None
     best_depth = None
     interrupted = []
 
-    # Edge case
+    # Edge cases
+    if len(instance.classes) == 1:
+        dt = DecisionTree()
+        dt.set_root_leaf(next(iter(instance.classes)))
+        return dt
+
     if all(len(x) == 0 for x in instance.domains):
         counts = defaultdict(int)
         for e in instance.examples:
@@ -50,6 +54,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
         dt.set_root_leaf(cls)
         return dt
 
+    # Compute decision tree
     while clb < ub:
         print(f"Running {c_bound}, " + '{:,}'.format(enc.estimate_size(instance, c_bound)))
 
@@ -59,8 +64,8 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
 
             timer = None
             try:
-                vs = enc.encode(instance, c_bound, slv, opt_size, multiclass)
-                if limit_size > 0:
+                vs = enc.encode(instance, c_bound, slv, opt_size or (maintain and limit_size > 0))
+                if limit_size > 0 and maintain:
                     enc.encode_extended_leaf_limit(vs, slv, c_bound)
                     card = enc.encode_size(vs, instance, slv, c_bound)
                     slv.append_formula(CardEnc.atmost(card, bound=limit_size, vpool=vs["pool"], encoding=EncType.totalizer).clauses)
@@ -80,6 +85,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
                 model = {abs(x): x > 0 for x in slv.get_model()}
                 best_model = enc._decode(model, instance, c_bound, vs)
                 best_depth = c_bound
+
                 ub = best_model.get_depth()
                 c_bound = ub - enc.increment()
             else:
@@ -87,7 +93,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
                 clb = c_bound + enc.increment()
 
     best_extension = None
-    if best_model and slim and limit_size == 0:
+    if best_model and slim and not maintain:
         best_extension = best_model.root.get_extended_leaves()
         # Try to remove extended leaves
         extension_count = best_model.root.get_extended_leaves()
@@ -97,7 +103,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
                 c_size_bound = extension_count - 1
                 solved = True
                 try:
-                    vs = enc.encode(instance, best_depth, slv, multiclass)
+                    vs = enc.encode(instance, best_depth, slv, opt_size=True)
                     card = enc.encode_extended_leaf_size(vs, instance, slv, best_depth)
                     tot = ITotalizer(card, c_size_bound+1, top_id=vs["pool"].top + 1)
                     slv.append_formula(tot.cnf)
@@ -137,7 +143,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
             solved = True
 
             try:
-                vs = enc.encode(instance, best_depth, slv, opt_size, multiclass)
+                vs = enc.encode(instance, best_depth, slv, opt_size)
                 if best_extension is not None:
                     card = enc.encode_extended_leaf_size(vs, instance, slv, best_depth)
                     slv.append_formula(

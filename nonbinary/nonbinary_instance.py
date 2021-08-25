@@ -11,6 +11,7 @@ class Example:
         self.instance = inst
         self.id = None
         self.surrogate_cls = surrogate_cls
+        self.original_values = None
 
     def copy(self, instance):
         return Example(instance, self.features[1:], self.cls, self.surrogate_cls)
@@ -35,6 +36,7 @@ class ClassificationInstance:
         self.reduced_original_num_features = None
         self.reduced_dropped = None
         self.class_sizes = None
+        self.layer_reduced = False
 
     def finish(self):
         c_idx = 1
@@ -98,111 +100,122 @@ class ClassificationInstance:
                     if not found:
                         raise RuntimeError("Not a real support set.")
 
-    def min_key_random(self, randomize=False):
-        supset = set()
+    def min_key_random(self):
+        supset = []
         features = list(range(1, self.num_features + 1))
+        random.shuffle(features)
 
-        if randomize:
-            random.shuffle(features)
-        else:
-            features.sort(key=lambda x: len(self.domains[x]))
+        # Group examples by classes, if the partitions are non-trivially small, this significantly improves runtime
+        classes = defaultdict(list)
+        for c_e in self.examples:
+            classes[c_e.cls].append(c_e)
+        iterations = sum(len(v1) * len(v2) for (k1, v1) in classes.items() for (k2, v2) in classes.items() if k1 < k2)
 
-        for i in range(0, len(self.examples)):
-            for j in range(i+1, len(self.examples)):
-                if self.examples[i].cls != self.examples[j].cls:
-                    found = False
+        # Check for each pair of examples
+        for c_c, c_es in classes.items():
+            for c_c2, c_es2 in classes.items():
+                if c_c >= c_c2:
+                    continue
 
-                    # Check if there is a disagreement for any feature in the set
-                    for c_f in supset:
-                        if self.examples[i].features[c_f] != self.examples[j].features[c_f]:
-                            found = True
-                            break
-
-                    if not found:
-                        for c_fi, c_f in enumerate(features):
-                            if self.examples[i].features[c_f] != self.examples[j].features[c_f]:
-                                supset.add(c_f)
-                                features[c_fi], features[-1] = features[-1], features[c_fi]
-                                features.pop()
-
-        return supset
-
-    def min_key_removal(self, randomize=False):
-        supset = set(range(1, self.num_features+1))
-        features = list(range(1, self.num_features+1))
-
-        if randomize:
-            random.shuffle(features)
-        else:
-            features.sort(key=lambda x: -len(self.domains[x]))
-
-        for c_f in features:
-            violated = False
-            supset.remove(c_f)
-
-            for i in range(0, len(self.examples)):
-                if violated:
-                    break
-                for j in range(i + 1, len(self.examples)):
-                    if self.examples[i].cls != self.examples[j].cls:
+                for c_e1 in c_es:
+                    for c_e2 in c_es2:
                         found = False
-                        for c_f2 in supset:
-                            # Check if there is a disagreement for any feature in the set
-                            if self.examples[i].features[c_f2] != self.examples[j].features[c_f2]:
+
+                        # Check if there is a disagreement for any feature in the set
+                        for c_f, c_v in supset:
+                            if c_e1.features[c_f] == "?" or c_e2.features[c_f] == "?":
+                                continue
+
+                            if c_f in self.is_categorical:
+                                if (c_e1.features[c_f] == c_v) ^ (c_e2.features[c_f] == c_v):
+                                    found = True
+                                    break
+                            elif (c_e1.features[c_f] <= c_v < c_e2.features[c_f])\
+                                    or (c_e1.features[c_f] > c_v >= c_e2.features[c_f]):
                                 found = True
                                 break
+
                         if not found:
-                            violated = True
-                            break
-            if violated:
-                supset.add(c_f)
+                            for c_f in features:
+                                if c_e1.features[c_f] == "?" or c_e2.features[c_f] == "?":
+                                    continue
+
+                                if c_e1.features[c_f] != c_e2.features[c_f]:
+                                    if c_f in self.is_categorical:
+                                        supset.append((c_f, c_e1.features[c_f]))
+                                    else:
+                                        supset.append((c_f, min(c_e1.features[c_f], c_e2.features[c_f])))
+                                    break
+                            random.shuffle(features)
 
         return supset
-
-    def min_key_greedy(self):
-        violated = True
-        supset = set()
-        non_supset = set(range(1, self.num_features + 1))
-
-        while violated:
-            violated = False
-            counts = [0 for _ in range(0, self.num_features + 1)]
-            for i in range(0, len(self.examples)):
-                for j in range(i + 1, len(self.examples)):
-                    if self.examples[i].cls != self.examples[j].cls:
-                        found = False
-                        for c_f in supset:
-                            if self.examples[i].features[c_f] != self.examples[j].features[c_f]:
-                                found = True
-                                break
-                        # Check with features the two lines would disagree on
-                        if not found:
-                            violated = True
-                            for c_f in non_supset:
-                                if self.examples[i].features[c_f] != self.examples[j].features[c_f]:
-                                    counts[c_f] += 1
-
-            if violated:
-                _, _, n_f = max((counts[i], -len(self.domains[i]), i) for i in non_supset)
-                non_supset.remove(n_f)
-                supset.add(n_f)
-
-        return supset
+    #
+    # def min_key_removal(self, randomize=False):
+    #     supset = set(range(1, self.num_features+1))
+    #     features = list(range(1, self.num_features+1))
+    #
+    #     if randomize:
+    #         random.shuffle(features)
+    #     else:
+    #         features.sort(key=lambda x: -len(self.domains[x]))
+    #
+    #     for c_f in features:
+    #         violated = False
+    #         supset.remove(c_f)
+    #
+    #         for i in range(0, len(self.examples)):
+    #             if violated:
+    #                 break
+    #             for j in range(i + 1, len(self.examples)):
+    #                 if self.examples[i].cls != self.examples[j].cls:
+    #                     found = False
+    #                     for c_f2 in supset:
+    #                         # Check if there is a disagreement for any feature in the set
+    #                         if self.examples[i].features[c_f2] != self.examples[j].features[c_f2]:
+    #                             found = True
+    #                             break
+    #                     if not found:
+    #                         violated = True
+    #                         break
+    #         if violated:
+    #             supset.add(c_f)
+    #
+    #     return supset
+    #
+    # def min_key_greedy(self):
+    #     violated = True
+    #     supset = set()
+    #     non_supset = set(range(1, self.num_features + 1))
+    #
+    #     while violated:
+    #         violated = False
+    #         counts = [0 for _ in range(0, self.num_features + 1)]
+    #         for i in range(0, len(self.examples)):
+    #             for j in range(i + 1, len(self.examples)):
+    #                 if self.examples[i].cls != self.examples[j].cls:
+    #                     found = False
+    #                     for c_f in supset:
+    #                         if self.examples[i].features[c_f] != self.examples[j].features[c_f]:
+    #                             found = True
+    #                             break
+    #                     # Check with features the two lines would disagree on
+    #                     if not found:
+    #                         violated = True
+    #                         for c_f in non_supset:
+    #                             if self.examples[i].features[c_f] != self.examples[j].features[c_f]:
+    #                                 counts[c_f] += 1
+    #
+    #         if violated:
+    #             _, _, n_f = max((counts[i], -len(self.domains[i]), i) for i in non_supset)
+    #             non_supset.remove(n_f)
+    #             supset.add(n_f)
+    #
+    #     return supset
 
     def reduce_with_key(self, randomized_runs=1):
         keys = []
-        keys.append(self.min_key_random())
-        if len(self.examples) < 1000:
-            randomized_runs *= 2
-        if len(self.examples) < 5000:
-            keys.append(self.min_key_removal())
         for _ in range(0, randomized_runs):
-            keys.append(self.min_key_random(randomize=True))
-            if len(self.examples) < 5000:
-                keys.append(self.min_key_removal(randomize=True))
-
-        if len(self.examples) < 5000:
-            keys.append(self.min_key_greedy())
+            keys.append(self.min_key_random())
 
         key = min(keys, key=lambda x: len(x))
         self.reduce(key)
@@ -212,8 +225,13 @@ class ClassificationInstance:
             for j in range(i + 1, len(self.examples)):
                 if self.examples[i].cls != self.examples[j].cls:
                     found = False
-                    for c_f in key:
-                        if self.examples[i].features[c_f] != self.examples[j].features[c_f]:
+                    for c_f, c_v in key:
+                        if c_f in self.is_categorical:
+                            if (self.examples[i].features[c_f] == c_v) ^ (self.examples[j].features[c_f] == c_v):
+                                found = True
+                                break
+                        elif (self.examples[i].features[c_f] <= c_v < self.examples[j].features[c_f] or
+                                self.examples[i].features[c_f] > c_v >= self.examples[j].features[c_f]):
                             found = True
                             break
                     if not found:
@@ -221,30 +239,74 @@ class ClassificationInstance:
         return True
 
     def reduce(self, key):
+        # Nothing to reduce
         if len(key) == self.num_features:
+            return
+
+        # Trivial decision tree, as a leaf will suffice
+        if len(key) == 0:
             return
 
         if self.reduced_key is not None:
             raise RuntimeError("Instance has already been reduced")
 
+        reduce_features = set()
+        reduce_thresholds = defaultdict(list)
+        if isinstance(next(iter(key)), int):
+            reduce_features = key
+        else:
+            for c_f, c_v in key:
+                if len(self.domains[c_f]) > 0:
+                    reduce_features.add(c_f)
+                    reduce_thresholds[c_f].append(c_v)
+
+            for c_l in reduce_thresholds.values():
+                c_l.sort()
+
+            for c_f in reduce_features:
+                if c_f not in self.is_categorical:
+                    reduce_thresholds[c_f].append(self.domains[c_f][-1])
+                else:
+                    reduce_thresholds[c_f] = set(reduce_thresholds[c_f])
+
         self.reduced_map = dict()
-        self.reduced_key = key
+        self.reduced_key = reduce_features
         self.reduced_original_num_features = self.num_features
 
         # Map features such that all features in the key are front
         c_tail = self.num_features
         c_head = 1
         while c_head < c_tail:
-            if c_head in key:
+            if c_head in reduce_features:
                 # self.reduced_map[c_head] = c_head
                 c_head += 1
-            elif c_tail not in key:
+            elif c_tail not in reduce_features:
                 # self.reduced_map[c_tail] = c_tail
                 c_tail -= 1
             else:
                 self.reduced_map[c_tail] = c_head
                 c_head += 1
                 c_tail -= 1
+
+        # Map values
+        if len(reduce_thresholds) > 0:
+            for c_e in self.examples:
+                c_e.original_values = list(c_e.features)
+                for c_f in reduce_features:
+                    if c_e.features[c_f] == "?":
+                        continue
+
+                    if c_f in self.is_categorical:
+                        if c_e.features[c_f] not in reduce_thresholds[c_f]:
+                            c_e.features[c_f] = "DummyValue"
+                    else:
+                        for c_v in reduce_thresholds[c_f]:
+                            if c_e.features[c_f] <= c_v:
+                                c_e.features[c_f] = c_v
+                                break
+
+            for c_f, c_v in reduce_thresholds.items():
+                self.domains[c_f] = c_v
 
         # Swap features
         for c_e in self.examples:
@@ -256,7 +318,7 @@ class ClassificationInstance:
             self.domains_max[c_k], self.domains_max[c_v] = self.domains_max[c_v], self.domains_max[c_k]
         self.finish()
 
-        self.num_features = len(key)
+        self.num_features = len(reduce_features)
 
         # Eliminate duplicates
         known_entries = dict()
@@ -296,8 +358,13 @@ class ClassificationInstance:
             decision_tree.root.remap(reverse_lookup)
 
         for c_e in self.examples:
-            for c_k, c_v in reverse_lookup.items():
-                c_e.features[c_k], c_e.features[c_v] = c_e.features[c_v], c_e.features[c_k]
+            if c_e.original_values is not None:
+                c_e.features = c_e.original_values
+                c_e.original_values = None
+                #TODO: Fix domains...
+            else:
+                for c_k, c_v in reverse_lookup.items():
+                    c_e.features[c_k], c_e.features[c_v] = c_e.features[c_v], c_e.features[c_k]
         for c_k, c_v in reverse_lookup.items():
             self.domains[c_k], self.domains[c_v] = self.domains[c_v], self.domains[c_k]
             self.feature_idx[c_k], self.feature_idx[c_v] = self.feature_idx[c_v], self.feature_idx[c_k]
@@ -307,6 +374,7 @@ class ClassificationInstance:
 
         self.reduced_original_num_features = None
         self.reduced_key = None
+
         self.finish()
 
     def export_c45(self, path, write_names=True):

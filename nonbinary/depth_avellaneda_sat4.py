@@ -39,12 +39,15 @@ def _init_var(instance, limit, class_map):
     return x, f, c, pool
 
 
-def encode(instance, limit, solver, opt_size=False, multiclass=False):
+def encode(instance, limit, solver, opt_size=False):
     classes = list(instance.classes)  # Give classes an order
     if opt_size:
         classes.insert(0, "EmptyLeaf")
 
-    class_map = {cc: i for i, cc in enumerate(classes)}
+    if len(classes) == 2 or opt_size:
+        class_map = {cc: i for i, cc in enumerate(classes)}
+    else:
+        class_map = {cc: i + 1 for i, cc in enumerate(classes)}
 
     x, f, c, p = _init_var(instance, limit, class_map)
 
@@ -61,7 +64,7 @@ def encode(instance, limit, solver, opt_size=False, multiclass=False):
 
     for i in range(0, len(instance.examples)):
         _alg1(instance, i, limit, 0, 1, list(), f, x, solver)
-        _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, solver, multiclass)
+        _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, solver)
 
     # Forbid non-existing classes
     if len(class_map) > 2:
@@ -105,7 +108,7 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, solver):
     clause.pop()
 
 
-def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, solver, multiclass=False):
+def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, solver):
     if lvl == limit:
         c_vars = class_map[instance.examples[e_idx].cls]
         c_vars2 = None
@@ -118,17 +121,14 @@ def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, solver, multi
             else:
                 solver.add_clause([*clause, c[q - 2 ** limit]])
         else:
-            if not c_vars2 or not multiclass:
-                solver.add_clause([*clause, c[q - 2 ** limit][c_vars]])
-            else:
-                solver.add_clause([*clause, c[q - 2 ** limit][c_vars], c[q - 2 ** limit][c_vars2]])
+            solver.add_clause([*clause, c[q - 2 ** limit][c_vars]])
     else:
         clause.append(x[e_idx][lvl])
-        _alg2(instance, e_idx, limit, lvl + 1, 2 * q, clause, class_map, x, c, solver, multiclass)
+        _alg2(instance, e_idx, limit, lvl + 1, 2 * q, clause, class_map, x, c, solver)
         clause.pop()
 
         clause.append(-x[e_idx][lvl])
-        _alg2(instance, e_idx, limit, lvl+1, 2*q+1, clause, class_map, x, c, solver, multiclass)
+        _alg2(instance, e_idx, limit, lvl+1, 2*q+1, clause, class_map, x, c, solver)
         clause.pop()
 
 
@@ -154,11 +154,7 @@ def encode_extended_leaf_size(vs, instance, solver, dl):
     for c_n in range(0, 2 ** dl):
         for cls, vals in cm.items():
             if not cls.startswith("-") and cls != "EmptyLeaf":
-                clause = []
-                for i in range(0, len(vals)):
-                    clause.append(-c[c_n][i] if vals[i] else c[c_n][i])
-                clause.append(pool.id(f"e{c_n}"))
-                solver.add_clause(clause)
+                solver.add_clause([-c[c_n][vals], pool.id(f"e{c_n}")])
 
         card_vars.append(pool.id(f"e{c_n}"))
     return card_vars
@@ -168,15 +164,11 @@ def encode_extended_leaf_limit(vs, solver, dl):
     c = vs["c"]
     cm = vs["class_map"]
 
-    for cls, vals in cm.items():
-        if not cls.startswith("-") and cls != "EmptyLeaf":
-            for c_n in range(0, 2 ** dl):
-                for c_n2 in range(c_n+1, 2 ** dl):
-                    clause = []
-                    for i in range(0, len(vals)):
-                        clause.append(-c[c_n][i] if vals[i] else c[c_n][i])
-                        clause.append(-c[c_n2][i] if vals[i] else c[c_n2][i])
-                    solver.add_clause(clause)
+    for c_n in range(0, 2 ** dl):
+        for c_n2 in range(c_n + 1, 2 ** dl):
+            for cls, vals in cm.items():
+                if not cls.startswith("-") and cls != "EmptyLeaf":
+                        solver.add_clause([-c[c_n][vals], -c[c_n2][vals]])
 
 
 def estimate_size_add(instance, dl):
@@ -224,18 +216,24 @@ def _decode(model, instance, limit, vs):
         if not f_found:
             print(f"ERROR: No feature found for node {i}")
 
-    for c_c, c_v in class_map.items():
-        for i in range(0, num_leafs):
-            all_right = True
-            for i_v in range(0, len(c_v)):
-                if bool(model[cs[i][i_v]]) != c_v[i_v]:
-                    all_right = False
+    rev_lookup = {v: k for k, v in class_map.items()}
+    for i in range(0, num_leafs):
+        c_c = None
+        if len(class_map) == 2:
+            if not bool(model[cs[i]]):
+                c_c = rev_lookup[0]
+            elif len(class_map) > 1:
+                c_c = rev_lookup[1]
+        else:
+            for c_i in range(1, len(class_map)+1):
+                if bool(model[cs[i][c_i]]):
+                    c_c = rev_lookup[c_i]
                     break
-            if all_right:
-                if num_leafs == 1:
-                    tree.set_root_leaf(c_c)
-                else:
-                    tree.add_leaf(c_c, (num_leafs + i) // 2, i % 2 == 1)
+
+        if num_leafs == 1:
+            tree.set_root_leaf(c_c)
+        else:
+            tree.add_leaf(c_c, (num_leafs + i) // 2, i % 2 == 1)
 
     tree.clean(instance)
     return tree
@@ -271,11 +269,9 @@ def estimate_size(instance, depth):
 
     d2 = 2**depth
     c = len(instance.classes)
-    lc = len(bin(c-1)) - 2  #ln(c)
     s = len(instance.examples)
-    f = sum(len(x) for x in instance.domains)
+    f = sum(len(instance.domains[x]) for x in range(1, instance.num_features+1))
 
-    forbidden_c = (2**lc - c) * d2 * lc
     alg1_lits = s * sum(2**i * f * (i+2) for i in range(0, depth))
 
-    return d2 * f * (f-1) // 2 + d2 * f + forbidden_c + alg1_lits + s * d2 * (depth+1) * lc
+    return d2 * f * (f-1) // 2 + d2 * f + alg1_lits + s * d2 * (depth+1) * c

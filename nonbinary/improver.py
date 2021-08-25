@@ -24,7 +24,7 @@ def build_unique_set(root, samples, examples, limit=maxsize):
         else:
             q.append((c_q.left, d + 1))
             q.append((c_q.right, d + 1))
-            c_features.add(c_q.feature)
+            c_features.add((c_q.feature, c_q.threshold))
 
     # We need a guaranteed order
     c_features = list(c_features)
@@ -32,7 +32,7 @@ def build_unique_set(root, samples, examples, limit=maxsize):
     new_instance = ClassificationInstance()
     added = {}
     for s in samples:
-        tp = tuple(s.features[v] for v in c_features)
+        tp = tuple(s.features[v] for v, _ in c_features)
 
         if tp not in added:
             added[tp] = s.cls
@@ -46,7 +46,7 @@ def build_unique_set(root, samples, examples, limit=maxsize):
     return new_instance, c_features, c_leafs, depth
 
 
-def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit, reduce, encoding):
+def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit, reduce, encoding, maintain=False):
     max_dist = root.get_depth()
     q = [[] for _ in range(0, max_dist+1)]
     q[max_dist].append((0, root))
@@ -71,7 +71,7 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
             cnt += 1
 
             if not new_root.is_leaf and new_root.id in frontier:
-                features.add(new_root.feature)
+                features.add((new_root.feature, new_root.threshold))
                 q[new_root.left.get_depth()].append((c_depth + 1, new_root.left))
                 q[new_root.right.get_depth()].append((c_depth + 1, new_root.right))
 
@@ -84,7 +84,8 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
             c_n = tree.nodes[cl]
             if not c_n.is_leaf and c_n.left.is_leaf and c_n.right.is_leaf:
                 frontier.remove(cl)
-                features.add(c_n.feature)
+                features.add((c_n.feature, c_n.threshold))
+                #features.add(c_n.feature)
                 frontier.add(c_n.left.id)
                 frontier.add(c_n.right.id)
 
@@ -95,13 +96,15 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
             class_sizes = {}
             class_mapping = {}
             cnt_internal = 0
+            classes = set()
             for c_leaf in frontier:
                 for s in assigned[c_leaf]:
                     if tree.nodes[c_leaf].is_leaf:
-                        class_mapping[s.id] = f"-{tree.nodes[c_leaf].cls}"
+                        class_mapping[s.id] = (f"-{tree.nodes[c_leaf].cls}", True)
+                        classes.add(tree.nodes[c_leaf].cls)
                     else:
                         cnt_internal += 1
-                        class_mapping[s.id] = f"{c_leaf}"
+                        class_mapping[s.id] = (f"{c_leaf}", False)
                         class_sizes[f"{c_leaf}"] = tree.nodes[c_leaf].get_leaves()
 
 
@@ -110,8 +113,8 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
                 new_instance = ClassificationInstance()
                 for s in assigned[root.id]:
                     n_s = s.copy(new_instance)
-                    n_s.cls = class_mapping[s.id]
-                    if not n_s.cls.startswith("-"):
+                    n_s.cls, is_leaf = class_mapping[s.id]
+                    if not is_leaf and s.cls in classes:
                         n_s.surrogate_cls = f"-{s.cls}"
                     new_instance.add_example(n_s)
                 new_instance.class_sizes = class_sizes
@@ -234,7 +237,7 @@ def _get_max_bound(size, sample_limit):
     return new_ub
 
 
-def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False, opt_slim=False, multiclass=False):
+def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False, opt_slim=False, maintain=False):
     last_idx = path_idx
     while path_idx < len(path):
         c_d = path[path_idx].get_depth()
@@ -266,11 +269,11 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
 
     if encoding.is_sat():
         new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, c_d - 1), timeout=time_limit,
-                          ub=min(new_ub, c_d - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass,
+                          ub=min(new_ub, c_d - 1), opt_size=opt_size, slim=opt_slim, maintain=maintain,
                           limit_size=leaves)
     else:
         new_tree = encoding.run(new_instance, start_bound=min(new_ub, c_d - 1), timeout=time_limit,
-               ub=min(new_ub, c_d - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
+               ub=min(new_ub, c_d - 1), opt_size=opt_size, slim=opt_slim, maintain=maintain)
 
     if new_tree is None:
         return False, last_idx
@@ -279,7 +282,7 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
         return True, last_idx
 
 
-def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False, opt_slim=False, multiclass=False):
+def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False, opt_slim=False, maintain=False):
     prev_instance = None
     prev_idx = path_idx
 
@@ -315,11 +318,11 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
         # Solve instance
         if encoding.is_sat():
             new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, cd-1), timeout=time_limit,
-                              ub=min(new_ub, cd-1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass,
+                              ub=min(new_ub, cd-1), opt_size=opt_size, slim=opt_slim, maintain=maintain,
                               limit_size=leaves)
         else:
             new_tree = encoding.run(new_instance, start_bound=min(new_ub, cd - 1), timeout=time_limit,
-                              ub=min(new_ub, cd - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
+                              ub=min(new_ub, cd - 1), opt_size=opt_size, slim=opt_slim, maintain=maintain)
 
         # Either the branch is done, or
         if new_tree is None:
@@ -331,7 +334,7 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
             while q:
                 c_q = q.pop()
                 if not c_q.is_leaf:
-                    c_q.feature = feature_map[c_q.feature - 1]
+                    c_q.feature = feature_map[c_q.feature - 1][0]
                     q.append(c_q.left)
                     q.append(c_q.right)
 
@@ -343,7 +346,7 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
     return False, prev_idx
 
 
-def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False, opt_slim=False, multiclass=False):
+def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False, opt_slim=False, maintain=False):
     prev_instance = None
     prev_idx = path_idx
 
@@ -352,6 +355,9 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
             break
         c_d = path[path_idx].get_depth()
         if c_d > depth_limit:
+            break
+
+        if len(assigned[path[path_idx].id]) > 2000:
             break
 
         new_instance = ClassificationInstance()
@@ -384,11 +390,11 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
         leaves = node.get_leaves()
         if encoding.is_sat():
             new_tree = bs.run(encoding, prev_instance, slv, start_bound=min(new_ub, nd - 1), timeout=time_limit,
-                                  ub=min(new_ub, nd - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass,
+                                  ub=min(new_ub, nd - 1), opt_size=opt_size, slim=opt_slim, maintain=maintain,
                               limit_size=leaves)
         else:
             new_tree = encoding.run(prev_instance, start_bound=min(new_ub, nd - 1), timeout=time_limit,
-                              ub=min(new_ub, nd - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
+                              ub=min(new_ub, nd - 1), opt_size=opt_size, slim=opt_slim, maintain=maintain)
 
         if new_tree is not None:
             prev_instance.unreduce(new_tree)
@@ -399,11 +405,12 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
     return False, prev_idx
 
 
-def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, reduce, time_limit, encoding, slv, opt_size=False, opt_slim=False, multiclass=False):
+def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, reduce, time_limit, encoding, slv, opt_size=False, opt_slim=False, maintain=False):
     # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
     if path[path_idx].is_leaf:
         return False, path_idx
-
+    if len(assigned[path[path_idx].id]) > 2000 and reduce:
+        return False, path_idx
     c_parent = path[path_idx]
     new_instance, i_depth, leaves = build_reduced_set(c_parent, tree, instance.examples, assigned, depth_limit, sample_limit, reduce, encoding)
 
@@ -415,11 +422,11 @@ def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_li
 
     if encoding.is_sat():
         new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, i_depth - 1), timeout=time_limit,
-                          ub=min(new_ub, i_depth - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass,
+                          ub=min(new_ub, i_depth - 1), opt_size=opt_size, slim=opt_slim, maintain=maintain,
                           limit_size=leaves)
     else:
         new_tree = encoding.run(new_instance, start_bound=min(new_ub, i_depth - 1), timeout=time_limit,
-                          ub=min(new_ub, i_depth - 1), opt_size=opt_size, slim=opt_slim, multiclass=multiclass)
+                          ub=min(new_ub, i_depth - 1), opt_size=opt_size, slim=opt_slim, maintain=maintain)
 
     if new_tree is not None:
         new_instance.unreduce(new_tree)

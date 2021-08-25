@@ -44,7 +44,7 @@ def _init_var(instance, limit, class_map):
     return x, f, c, d, pool
 
 
-def encode(instance, limit, solver, opt_size=False, multiclass=False):
+def encode(instance, limit, solver, opt_size=False):
     classes = list(instance.classes)  # Give classes an order
     if opt_size:
         classes.insert(0, "EmptyLeaf")
@@ -276,14 +276,15 @@ def estimate_size(instance, depth):
 
     d2 = 2**depth
     c = len(instance.classes)
-    lc = len(bin(c-1)) - 2  #ln(c)
     s = len(instance.examples)
-    f = sum(len(x) for x in instance.domains)
+    f = instance.num_features
+    maxd = max(len(instance.domains[x]) for x in range(1, instance.num_features + 1))
 
-    forbidden_c = (2**lc - c) * d2 * lc
-    alg1_lits = s * sum(2**i * f * (i+2) for i in range(0, depth))
+    sum(len(instance.domains[x]) for x in range(1, instance.num_features+1))
 
-    return d2 * f * (f-1) // 2 + d2 * f + forbidden_c + alg1_lits + s * d2 * (depth+1) * lc
+    alg1_lits = s * sum(2**i * f * (i+3) for i in range(0, depth))
+
+    return d2 * f * (f-1) // 2 + d2 * f + alg1_lits + s * d2 * (depth+1) * c
 
 
 def is_sat():
