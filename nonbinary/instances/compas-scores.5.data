@@ -5,7 +5,7 @@ Male,33,African-American,0,8,0,1,9,1,1,M,1,M,0,0,O,Low-High
 Male,39,Caucasian,0,3,0,0,3,1,1,F,0,O,0,0,O,Medium-Low
 Male,22,Caucasian,0,4,1,0,1,2,1,F,0,O,0,0,O,Medium-Low
 Male,30,Caucasian,0,9,0,0,0,37,1,F,1,M,179,0,O,Low-High
-Male,35,African-American,0,8,0,0,1,1,1,F,0,O,0,0,O,Low-High
+Male,35,African-American,0,8,0,0,1,1,1,F,0,O,0,0,O,Medium-High
 Female,20,Caucasian,0,4,0,0,1,37,50,F,0,O,0,0,O,Medium-Low
 Male,21,Hispanic,0,3,0,0,0,18,0,M,0,O,0,0,O,Medium-Low
 Male,50,Hispanic,0,9,0,0,3,34,1,F,1,F,31,0,O,Low-High
@@ -153,7 +153,7 @@ Male,48,Caucasian,0,1,0,0,0,0,0,O,-1,O,0,0,O,Low-Low
 Male,27,Hispanic,0,7,0,0,1,2,1,F,1,F,0,0,O,Low-Medium
 Male,60,Caucasian,0,2,0,0,2,11,1,M,0,O,0,0,O,Low-Low
 Male,44,Caucasian,0,2,0,0,0,2,1,M,0,O,0,0,O,Low-Low
-Male,29,Caucasian,0,3,0,0,0,0,0,O,-1,O,0,0,O,Medium-Low
+Male,29,Caucasian,0,3,0,0,0,0,0,O,-1,O,0,0,O,Low-Low
 Male,30,Hispanic,0,2,0,0,1,17,18,F,0,O,0,0,O,Low-Low
 Female,25,African-American,0,4,0,0,2,1,1,M,0,O,0,0,O,Low-Low
 Male,43,Hispanic,0,1,0,0,4,26,1,F,0,O,0,0,O,Low-Low
@@ -262,7 +262,7 @@ Male,21,African-American,0,8,0,0,0,2,1,F,0,O,0,0,O,High-High
 Male,22,Caucasian,0,4,0,0,1,1,2,F,1,F,1,0,O,Medium-Low
 Female,28,African-American,0,2,0,0,0,1,1,M,0,O,0,0,O,Low-Low
 Male,35,African-American,0,1,0,0,2,0,1,F,0,O,0,0,O,Low-Low
-Male,23,Caucasian,0,2,0,0,0,1,1,F,0,O,0,0,O,Medium-Low
+Male,23,Caucasian,0,2,0,0,0,1,1,F,0,O,0,0,O,Low-Low
 Female,49,Caucasian,0,5,0,0,0,0,0,O,-1,O,0,0,O,Low-Medium
 Male,48,African-American,0,8,0,0,4,0,4200,F,0,O,0,0,O,Low-High
 Male,49,African-American,0,4,0,0,14,2,0,M,0,O,0,0,O,Low-Low
@@ -338,7 +338,7 @@ Male,24,African-American,0,5,0,0,1,5,1,F,0,O,0,0,O,Low-Medium
 Male,31,African-American,0,10,0,0,1,1,1,F,0,O,0,0,O,Medium-High
 Male,22,African-American,0,3,0,0,2,4,1,F,0,O,0,0,O,Medium-Low
 Male,23,African-American,0,7,0,0,2,4,1,M,1,M,0,0,O,Medium-Medium
-Male,23,Hispanic,0,7,0,0,0,1,1,M,0,O,0,0,O,High-Medium
+Male,23,Hispanic,0,7,0,0,0,1,1,M,0,O,0,0,O,Medium-Medium
 Male,32,African-American,0,4,0,0,4,1,1,F,1,M,0,0,O,Low-Low
 Male,28,African-American,0,6,0,0,11,2,1,F,1,F,0,1,(M1),Medium-Medium
 Male,50,Caucasian,1,10,0,0,16,67,68,F,1,M,0,0,O,Medium-High
@@ -481,7 +481,7 @@ Female,22,African-American,0,7,0,0,0,1,2,F,0,O,0,0,O,Medium-Medium
 Male,32,Hispanic,0,1,0,0,1,1,47,F,0,O,0,0,O,Low-Low
 Male,32,Hispanic,0,1,0,0,0,0,1,M,0,O,0,0,O,Low-Low
 Male,39,African-American,0,4,0,0,8,40,1,F,0,O,0,0,O,Low-Low
-Male,35,African-American,0,6,0,0,9,1,1,F,0,O,0,0,O,Low-Medium
+Male,35,African-American,0,6,0,0,9,1,1,F,0,O,0,0,O,Medium-Medium
 Male,26,African-American,0,1,0,0,1,14,0,M,0,O,0,0,O,Low-Low
 Male,27,African-American,0,2,0,0,1,0,1,F,1,M,16,0,O,Low-Low
 Male,27,African-American,0,10,0,0,5,28,28,F,1,M,222,1,(M2),Medium-High
@@ -706,7 +706,7 @@ Female,41,African-American,0,4,0,0,7,1,0,F,1,F,46,0,O,Low-Low
 Male,26,African-American,0,2,0,0,0,1,1,F,0,O,0,0,O,Low-Low
 Male,25,African-American,0,5,0,0,2,1,27,M,1,M,1,0,O,Low-Medium
 Female,31,African-American,0,6,0,0,1,0,0,F,0,O,0,0,O,Low-Medium
-Male,24,African-American,0,9,0,0,0,0,0,O,-1,O,0,0,O,Low-High
+Male,24,African-American,0,9,0,0,0,0,0,O,-1,O,0,0,O,Medium-High
 Male,35,African-American,0,2,0,0,5,0,1472,F,0,O,0,0,O,Low-Low
 Female,50,African-American,0,1,0,0,0,1,1,F,0,O,0,0,O,Low-Low
 Male,24,African-American,0,4,0,0,2,1,1,F,0,O,0,0,O,Low-Low
@@ -803,12 +803,12 @@ Male,35,African-American,0,6,0,0,9,1,1,F,0,O,0,0,O,Medium-Medium
 Male,33,Caucasian,0,3,0,0,4,0,321,M,0,O,0,0,O,Low-Low
 Male,38,Caucasian,0,1,0,0,8,0,21,F,0,O,0,0,O,Low-Low
 Male,32,African-American,0,9,0,0,0,1,1,M,0,O,0,0,O,Medium-High
-Female,23,African-American,0,4,0,0,0,1,1,M,0,O,0,0,O,Medium-Low
+Female,23,African-American,0,4,0,0,0,1,1,M,0,O,0,0,O,Low-Low
 Male,67,African-American,0,2,0,0,3,0,799,F,0,O,0,0,O,Low-Low
 Female,25,Caucasian,0,2,0,0,0,1,1,M,0,O,0,0,O,Low-Low
 Male,23,African-American,1,10,1,2,4,31,1,F,0,O,0,0,O,High-High
 Male,25,African-American,0,8,0,0,2,1,1,M,0,O,0,0,O,Medium-High
-Female,26,African-American,0,8,0,0,0,1,1,M,0,O,0,0,O,Low-High
+Female,26,African-American,0,8,0,0,0,1,1,M,0,O,0,0,O,Medium-High
 Male,31,African-American,0,8,0,0,9,0,0,F,1,M,52,0,O,Medium-High
 Male,22,African-American,0,4,0,0,0,1,1,M,1,M,0,0,O,Medium-Low
 Female,20,Caucasian,0,8,0,0,0,19,1,F,1,F,33,0,O,High-High
@@ -860,7 +860,7 @@ Male,39,African-American,0,6,0,0,1,0,1881,M,0,O,0,0,O,Medium-Medium
 Male,40,Caucasian,0,3,0,0,9,25,0,F,0,O,0,0,O,Low-Low
 Male,21,Caucasian,0,4,0,0,0,2,1,F,0,O,0,0,O,Medium-Low
 Female,31,African-American,0,8,0,0,4,1,0,F,0,O,0,0,O,Medium-High
-Male,22,African-American,0,10,0,0,0,0,0,O,-1,O,0,0,O,Medium-High
+Male,22,African-American,0,10,0,0,0,0,0,O,-1,O,0,0,O,High-High
 Male,29,Caucasian,0,3,0,0,0,1,1,F,0,O,0,0,O,Low-Low
 Female,29,Hispanic,0,2,0,0,0,1,2,M,1,F,1,1,(F2),Low-Low
 Male,33,Hispanic,0,3,0,0,2,4,14,M,0,O,0,0,O,Low-Low
@@ -912,7 +912,7 @@ Male,56,Other,0,1,0,0,0,1,1,M,0,O,0,0,O,Low-Low
 Male,62,African-American,0,1,0,0,0,0,0,M,0,O,0,0,O,Low-Low
 Male,42,African-American,0,3,0,0,1,91,97,F,0,O,0,0,O,Low-Low
 Male,43,African-American,0,1,0,0,3,1,1,F,1,M,1,0,O,Low-Low
-Male,27,African-American,0,7,0,0,0,0,0,O,-1,O,0,0,O,Low-Medium
+Male,27,African-American,0,7,0,0,0,0,0,O,-1,O,0,0,O,Medium-Medium
 Male,27,African-American,0,5,0,0,1,112,0,M,0,O,0,0,O,Medium-Medium
 Male,28,African-American,0,3,0,0,0,0,0,O,-1,O,0,0,O,Low-Low
 Male,31,Hispanic,2,9,1,0,8,3,0,M,1,M,3,0,O,Medium-High
@@ -1241,7 +1241,7 @@ Male,32,African-American,0,8,0,0,6,130,1,F,1,F,233,0,O,Medium-High
 Female,50,Caucasian,0,5,0,0,3,57,73,F,1,M,23,0,O,Low-Medium
 Male,27,Hispanic,0,2,0,0,4,3,1,F,1,F,0,1,(F2),Low-Low
 Male,21,African-American,0,5,0,0,1,1,2,M,0,O,0,0,O,Medium-Medium
-Male,22,Hispanic,0,3,0,0,0,1,1,M,0,O,0,0,O,Low-Low
+Male,22,Hispanic,0,3,0,0,0,1,1,M,0,O,0,0,O,Medium-Low
 Male,23,Caucasian,0,6,0,0,0,1,0,M,0,O,0,0,O,Medium-Medium
 Male,33,African-American,0,6,0,0,3,115,1,M,1,M,1,0,O,Low-Medium
 Male,64,African-American,0,2,0,0,0,1,1,M,0,O,0,0,O,Low-Low
@@ -1322,7 +1322,7 @@ Female,58,Caucasian,0,1,0,0,0,1,1,M,0,O,0,0,O,Low-Low
 Female,35,African-American,0,7,0,1,5,7,1,F,1,M,199,1,(F3),Low-Medium
 Male,33,African-American,0,1,0,0,0,0,1,F,1,M,2,1,(M1),Low-Low
 Female,36,African-American,0,2,0,0,1,1,1,M,0,O,0,0,O,Low-Low
-Male,21,African-American,0,9,0,0,0,0,0,O,-1,O,0,0,O,Medium-High
+Male,21,African-American,0,9,0,0,0,0,0,O,-1,O,0,0,O,High-High
 Male,51,Caucasian,0,3,0,0,13,544,1,F,0,O,0,0,O,Low-Low
 Male,28,African-American,0,2,0,0,2,1,52,F,1,M,0,0,O,Low-Low
 Female,27,African-American,0,5,0,0,6,0,0,M,0,O,0,0,O,Low-Medium
@@ -1696,7 +1696,7 @@ Female,28,African-American,0,6,0,0,3,1,1,F,0,O,0,0,O,Low-Medium
 Male,28,Caucasian,0,1,0,0,0,1,1,M,0,O,0,0,O,Low-Low
 Male,36,African-American,0,1,0,0,0,1,1,M,0,O,0,0,O,Low-Low
 Male,23,Other,0,6,0,0,1,1,14,M,0,O,0,0,O,Medium-Medium
-Male,27,Hispanic,0,3,0,0,0,0,0,O,-1,O,0,0,O,Low-Low
+Male,27,Hispanic,0,3,0,0,0,0,0,O,-1,O,0,0,O,Medium-Low
 Female,30,African-American,0,9,0,0,10,0,0,F,1,M,0,0,O,Medium-High
 Male,23,Caucasian,0,6,0,0,1,9,1,F,1,M,69,0,O,Medium-Medium
 Male,44,African-American,0,2,0,0,2,177,1,F,0,O,0,0,O,Low-Low
@@ -1942,7 +1942,7 @@ Male,55,African-American,0,1,0,0,1,0,1,F,1,M,0,0,O,Low-Low
 Male,30,African-American,0,2,0,0,0,1,1,F,0,O,0,0,O,Low-Low
 Male,29,African-American,0,3,0,0,4,0,75,F,1,M,4,1,(M1),Low-Low
 Male,47,African-American,0,2,0,0,2,1,2,M,0,O,0,0,O,Low-Low
-Male,19,African-American,0,8,0,0,0,1,1,F,0,O,0,0,O,Medium-High
+Male,19,African-American,0,8,0,0,0,1,1,F,0,O,0,0,O,High-High
 Female,37,African-American,0,2,0,0,1,7,1,F,1,M,1,0,O,Low-Low
 Male,49,African-American,0,5,0,1,19,56,1,M,1,M,121,0,O,Low-Medium
 Male,44,Caucasian,0,1,0,0,1,0,330,F,0,O,0,0,O,Low-Low
@@ -2114,7 +2114,7 @@ Male,33,African-American,0,1,0,0,0,1,1,M,0,O,0,0,O,Low-Low
 Male,35,Caucasian,0,1,0,0,1,14,24,M,1,M,15,0,O,Low-Low
 Male,28,Hispanic,0,4,0,0,1,3,14,F,0,O,0,0,O,Medium-Low
 Male,39,African-American,0,2,0,0,1,16,88,F,0,O,0,0,O,Low-Low
-Male,21,African-American,0,6,0,0,0,1,1,F,1,M,0,0,O,High-Medium
+Male,21,African-American,0,6,0,0,0,1,1,F,1,M,0,0,O,Medium-Medium
 Female,28,African-American,0,6,0,0,8,1,1,F,1,F,0,0,O,Low-Medium
 Female,24,African-American,0,6,0,0,2,1,0,F,1,F,29,1,(F2),Low-Medium
 Male,30,Hispanic,0,5,0,0,2,1,1,M,0,O,0,0,O,Medium-Medium
@@ -2186,7 +2186,7 @@ Female,22,Caucasian,0,6,0,0,2,0,1,F,0,O,0,0,O,Medium-Medium
 Male,23,African-American,0,3,0,0,0,1,1,F,0,O,0,0,O,Low-Low
 Male,55,Caucasian,0,1,0,0,0,1,1,M,0,O,0,0,O,Low-Low
 Male,22,Caucasian,0,7,0,0,4,6,1,F,1,M,0,0,O,High-Medium
-Male,21,African-American,0,7,0,0,0,1,1,F,1,M,0,0,O,High-Medium
+Male,21,African-American,0,7,0,0,0,1,1,F,1,M,0,0,O,Medium-Medium
 Male,28,African-American,0,7,1,0,21,104,0,F,0,O,0,0,O,Medium-Medium
 Male,35,Caucasian,0,9,0,0,13,119,264,F,1,M,0,0,O,Low-High
 Male,21,African-American,0,8,0,0,1,1,1,M,1,F,0,1,(F2),Medium-High
@@ -2280,7 +2280,7 @@ Male,41,African-American,0,1,0,0,0,1,1,M,0,O,0,0,O,Low-Low
 Male,56,Caucasian,0,1,0,0,0,0,0,O,-1,O,0,0,O,Low-Low
 Male,33,African-American,0,2,0,0,5,140,154,F,0,O,0,0,O,Low-Low
 Male,31,Hispanic,0,4,0,0,4,1,1,F,0,O,0,0,O,Low-Low
-Male,25,Caucasian,0,9,0,0,0,0,0,O,-1,O,0,0,O,Low-High
+Male,25,Caucasian,0,9,0,0,0,0,0,O,-1,O,0,0,O,Medium-High
 Male,42,African-American,0,4,0,0,3,0,47,F,0,O,0,0,O,Low-Low
 Male,20,African-American,1,4,0,3,1,55,55,F,1,M,0,0,O,Medium-Low
 Female,25,Caucasian,0,6,0,0,1,1,1,F,0,O,0,0,O,Medium-Medium
