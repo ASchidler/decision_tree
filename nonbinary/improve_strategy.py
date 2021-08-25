@@ -100,7 +100,7 @@ def run(tree, instance, test, slv, enc, limit_idx=1, timelimit=0, opt_size=False
     assigned = tree.assign(instance)
     tree_size = tree.get_nodes()
     while tree_size > len(c_ignore_reduce):
-        allow_reduction = True
+        allow_reduction = False
         pth = find_deepest_leaf(tree, c_ignore)
 
         if pth is None:

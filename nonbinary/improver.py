@@ -46,7 +46,7 @@ def build_unique_set(root, samples, examples, limit=maxsize):
     return new_instance, c_features, c_leafs, depth
 
 
-def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit, reduce, encoding, maintain=False):
+def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit, reduce, encoding, use_smt=0):
     max_dist = root.get_depth()
     q = [[] for _ in range(0, max_dist+1)]
     q[max_dist].append((0, root))
@@ -85,7 +85,7 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
             if not c_n.is_leaf and c_n.left.is_leaf and c_n.right.is_leaf:
                 frontier.remove(cl)
                 features.add((c_n.feature, c_n.threshold))
-                #features.add(c_n.feature)
+
                 frontier.add(c_n.left.id)
                 frontier.add(c_n.right.id)
 
@@ -120,9 +120,12 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
                 new_instance.class_sizes = class_sizes
                 new_instance.finish()
                 if reduce:
-                    new_instance.reduce_with_key()
+                    new_instance.reduce_with_key(only_features=use_smt)
                 else:
-                    new_instance.reduce(features)
+                    if use_smt:
+                        new_instance.reduce(set(x[0] for x in features))
+                    else:
+                        new_instance.reduce(features)
 
                 # TODO: This leads to adding as many nodes as possible. To emphasize the remaining depth more,
                 #  one should stop when the node with the highest remaining depth fails due to too high depth
@@ -369,7 +372,7 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
         if len(new_instance.examples) == 0:
             break
 
-        new_instance.reduce_with_key()
+        new_instance.reduce_with_key(only_features=not encoding.is_sat())
 
         if encoding.estimate_size(new_instance, c_d-1) > literal_limit:
             break
@@ -412,7 +415,7 @@ def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_li
     if len(assigned[path[path_idx].id]) > 2000 and reduce:
         return False, path_idx
     c_parent = path[path_idx]
-    new_instance, i_depth, leaves = build_reduced_set(c_parent, tree, instance.examples, assigned, depth_limit, sample_limit, reduce, encoding)
+    new_instance, i_depth, leaves = build_reduced_set(c_parent, tree, instance.examples, assigned, depth_limit, sample_limit, reduce, encoding, use_smt=not encoding.is_sat())
 
     if new_instance is None or len(new_instance.examples) == 0:
         return False, path_idx

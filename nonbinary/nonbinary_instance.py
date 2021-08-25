@@ -149,75 +149,15 @@ class ClassificationInstance:
                             random.shuffle(features)
 
         return supset
-    #
-    # def min_key_removal(self, randomize=False):
-    #     supset = set(range(1, self.num_features+1))
-    #     features = list(range(1, self.num_features+1))
-    #
-    #     if randomize:
-    #         random.shuffle(features)
-    #     else:
-    #         features.sort(key=lambda x: -len(self.domains[x]))
-    #
-    #     for c_f in features:
-    #         violated = False
-    #         supset.remove(c_f)
-    #
-    #         for i in range(0, len(self.examples)):
-    #             if violated:
-    #                 break
-    #             for j in range(i + 1, len(self.examples)):
-    #                 if self.examples[i].cls != self.examples[j].cls:
-    #                     found = False
-    #                     for c_f2 in supset:
-    #                         # Check if there is a disagreement for any feature in the set
-    #                         if self.examples[i].features[c_f2] != self.examples[j].features[c_f2]:
-    #                             found = True
-    #                             break
-    #                     if not found:
-    #                         violated = True
-    #                         break
-    #         if violated:
-    #             supset.add(c_f)
-    #
-    #     return supset
-    #
-    # def min_key_greedy(self):
-    #     violated = True
-    #     supset = set()
-    #     non_supset = set(range(1, self.num_features + 1))
-    #
-    #     while violated:
-    #         violated = False
-    #         counts = [0 for _ in range(0, self.num_features + 1)]
-    #         for i in range(0, len(self.examples)):
-    #             for j in range(i + 1, len(self.examples)):
-    #                 if self.examples[i].cls != self.examples[j].cls:
-    #                     found = False
-    #                     for c_f in supset:
-    #                         if self.examples[i].features[c_f] != self.examples[j].features[c_f]:
-    #                             found = True
-    #                             break
-    #                     # Check with features the two lines would disagree on
-    #                     if not found:
-    #                         violated = True
-    #                         for c_f in non_supset:
-    #                             if self.examples[i].features[c_f] != self.examples[j].features[c_f]:
-    #                                 counts[c_f] += 1
-    #
-    #         if violated:
-    #             _, _, n_f = max((counts[i], -len(self.domains[i]), i) for i in non_supset)
-    #             non_supset.remove(n_f)
-    #             supset.add(n_f)
-    #
-    #     return supset
 
-    def reduce_with_key(self, randomized_runs=1):
+    def reduce_with_key(self, randomized_runs=1, only_features=False):
         keys = []
         for _ in range(0, randomized_runs):
             keys.append(self.min_key_random())
 
         key = min(keys, key=lambda x: len(x))
+        if only_features:
+            key = set(x[0] for x in key)
         self.reduce(key)
 
     def test_key(self, key):

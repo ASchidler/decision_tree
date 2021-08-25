@@ -1,23 +1,21 @@
 import argparse as argp
 import os
+import random
 import resource
 import sys
 import time
-import improve_strategy
-import tree_parsers
-import nonbinary.decision_tree as decision_tree
 
 from pysat.solvers import Glucose3
-import nonbinary_instance
+
 import incremental.entropy_strategy as es
 import incremental.maintain_strategy as ms
 import incremental.random_strategy as rs
+import nonbinary.depth_avellaneda_base as base
 import nonbinary.depth_avellaneda_sat as nbs
 import nonbinary.depth_avellaneda_sat2 as nbs2
 import nonbinary.depth_avellaneda_sat3 as nbs3
 import nonbinary.depth_avellaneda_smt as nbt
-import nonbinary.depth_avellaneda_base as base
-from threading import Timer
+import nonbinary_instance
 
 instance_path = "nonbinary/instances"
 instance_validation_path = "datasets/validate"
@@ -86,35 +84,8 @@ sys.stdout.flush()
 
 start_time = time.time()
 
-def exit_timeout():
-    # TODO: There is a race condition in case the tree is currently changing. This should rarely be the case, as
-    # this takes a lot shorter than reduction +
-    print(f"Timeout: {time.time() - start_time}")
-    #tree.clean(instance, min_samples=args.min_samples)
-    print(f"END Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
-          f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
-          f"Time: {time.time() - start_time}")
+instance, test_instance, validation_instance = nonbinary_instance.parse(instance_path, target_instance, args.slice, use_validation=False)
 
-    print(tree.as_string())
-    sys.stdout.flush()
-    exit(1)
-
-instance, test_instance, validation_instance = nonbinary_instance.parse(instance_path, target_instance, args.slice, use_validation=args.validation)
-
-timer = None
-if args.time_limit > 0:
-    timer = Timer(args.time_limit * 1.1 - (time.time() - start_time), exit_timeout)
-    timer.start()
-
-if args.reduce:
-    print(f"{instance.num_features}, {len(instance.examples)} {sum(len(instance.domains[x]) for x in range(1, instance.num_features+1))}")
-    instance.reduce_with_key()
-    print(f"{instance.num_features}, {len(instance.examples)} {sum(len(instance.domains[x]) for x in range(1, instance.num_features+1))}")
-
-if args.categorical:
-    instance.is_categorical = {x for x in range(1, instance.num_features+1)}
-
-tree = None
 if args.use_smt:
     enc = nbt
 else:
@@ -125,35 +96,31 @@ else:
     else:
         enc = nbs
 
-if args.slim:
-    algo = "w" if args.weka else "c"
-    dirs = "validation" if args.validation else "unpruned"
-    tree = tree_parsers.parse_internal_tree(f"nonbinary/results/trees/{dirs}/{target_instance}.{args.slice}.{algo}.dt")
+if args.reduce:
+    instance.reduce_with_key()
 
-    print(f"START Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
-          f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
-          f"Time: {time.time() - start_time}")
+for i in range(50, len(instance.examples), 50):
+    to = 0
+    for _ in range(0, 3):
+        new_instance = nonbinary_instance.ClassificationInstance()
 
-    improve_strategy.run(tree, instance, test_instance, Glucose3, enc, timelimit=args.time_limit, opt_size=args.size,
-                         opt_slim=args.slim_opt, maintain=args.maintain)
-else:
-    if not args.use_smt:
-        tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size)
-    else:
-        tree = nbt.run(instance, opt_size=args.size)
+        for _ in range(0, i):
+            new_instance.add_example(instance.examples[random.randint(0, len(instance.examples)-1)].copy(new_instance))
+        new_instance.finish()
+        start = time.time()
+        if not args.use_smt:
+            tree = base.run(enc, new_instance, Glucose3, slim=False, opt_size=args.size, timeout=600)
+        else:
+            tree = nbt.run(new_instance, opt_size=args.size, timeout=600)
 
-if tree is None:
-    print("No tree found.")
-    exit(1)
-
-instance.unreduce(tree)
-print(f"{instance.num_features}, {len(instance.examples)}")
-print(f"END Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
-      f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
-      f"Time: {time.time() - start_time}")
-
-print(tree.as_string())
+        if tree:
+            esize = enc.estimate_size(new_instance, tree.get_depth())
+            print(f"E:{i} T:{time.time()-start} C:{len(instance.classes)} F:{new_instance.num_features} DS:{sum(len(new_instance.domains[x]) for x in range(1, new_instance.num_features+1))}"
+                  f" DM:{max(len(new_instance.domains[x]) for x in range(1, new_instance.num_features+1))} D:{tree.get_depth()} S:{esize}")
+        else:
+            print(f"E: {i} Time: -1")
+            to += 1
+    if to == 3:
+        break
 
 
-if timer is not None:
-    timer.cancel()
