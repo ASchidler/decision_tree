@@ -268,7 +268,8 @@ class ClassificationInstance:
 
             if values in known_entries:
                 if known_entries[values] != c_e.cls:
-                    raise RuntimeError("Key is not a real key, duplicate with different classes found.")
+                    print(f"Not real key error {values}")
+                    #raise RuntimeError("Key is not a real key, duplicate with different classes found.")
                 self.reduced_dropped.append(c_e)
             else:
                 known_entries[values] = c_e.cls

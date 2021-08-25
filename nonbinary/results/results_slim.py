@@ -5,8 +5,15 @@ from collections import defaultdict
 import nonbinary.nonbinary_instance as nbi
 import pruning
 
-experiment = "l"
+experiment = "u"
 flags = set()
+
+ignore = set()
+
+with open("ignore.txt") as ip:
+    for _, cl in enumerate(ip):
+        if len(cl.strip()) > 0:
+            ignore.add(cl.strip())
 
 
 class TreeData:
@@ -26,6 +33,10 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
         continue
     file_fields = c_file.split(".")
     file_name = file_fields[0]
+
+    if file_name in ignore:
+        continue
+
     flags.add(file_fields[3])
     if c_file.endswith(".dt"):
         instance, instance_test, _ = nbi.parse("../instances", file_name, int(file_fields[1]))
