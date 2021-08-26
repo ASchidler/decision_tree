@@ -27,14 +27,18 @@ class ClassificationInstance:
         self.domains = []
         self.domain_counts = []
         self.domains_max = []
-        self.is_binary = set()
         self.is_categorical = set()
         self.feature_idx = dict()
-        self.feature_indices = -1
         self.reduced_key = None
         self.reduced_map = None
         self.reduced_original_num_features = None
         self.reduced_dropped = None
+        self.reduced_domains = None
+        self.reduced_domains_max = None
+        self.reduced_domain_counts = None
+        self.reduced_feature_idx = None
+        self.reduced_categorical = None
+
         self.class_sizes = None
         self.layer_reduced = False
 
@@ -42,11 +46,7 @@ class ClassificationInstance:
         c_idx = 1
         self.domains_max = [0 for _ in range(0, self.num_features + 1)]
 
-        # TODO: use average for non-categorial values...
-
         for i in range(1, self.num_features+1):
-            if len(self.domains[i]) <= 2:
-                self.is_binary.add(i)
             if any(isinstance(x, str) and x != "?" for x in self.domains[i]):
                 self.is_categorical.add(i)
             self.feature_idx[i] = c_idx
@@ -64,9 +64,7 @@ class ClassificationInstance:
                         c_cnt += v
                         is_int = is_int and isinstance(k, int)
                     #self.domains_max[i] = c_sum // c_cnt if is_int else c_sum / c_cnt
-                    self.domains_max[i] =  c_sum / c_cnt
-
-        self.feature_indices = c_idx - 1
+                    self.domains_max[i] = c_sum / c_cnt
 
     def add_example(self, e):
         if self.num_features == -1:
@@ -179,10 +177,6 @@ class ClassificationInstance:
         return True
 
     def reduce(self, key):
-        # Nothing to reduce
-        if len(key) == self.num_features:
-            return
-
         # Trivial decision tree, as a leaf will suffice
         if len(key) == 0:
             return
@@ -195,7 +189,11 @@ class ClassificationInstance:
 
         reduce_features = set()
         reduce_thresholds = defaultdict(list)
+
         if isinstance(next(iter(key)), int):
+            # Nothing to reduce
+            if len(key) == self.num_features:
+                return
             reduce_features = key
         else:
             for c_f, c_v in key:
@@ -208,75 +206,46 @@ class ClassificationInstance:
 
             for c_f in reduce_features:
                 if c_f not in self.is_categorical:
-                    reduce_thresholds[c_f].append(self.domains[c_f][-1])
+                    if reduce_thresholds[c_f][-1] != self.domains[c_f][-1]:
+                        reduce_thresholds[c_f].append(self.domains[c_f][-1])
                 else:
-                    reduce_thresholds[c_f] = set(reduce_thresholds[c_f])
+                    reduce_thresholds[c_f] = list(reduce_thresholds[c_f])
+        reduce_features = list(reduce_features)
+        self.reduced_map = {f: i+1 for i, f in enumerate(reduce_features)}
+        self.reduced_key = key
 
-        self.reduced_map = dict()
-        self.reduced_key = reduce_features
-        self.reduced_original_num_features = self.num_features
-
-        # Map features such that all features in the key are front
-        c_tail = self.num_features
-        c_head = 1
-        while c_head < c_tail:
-            if c_head in reduce_features:
-                # self.reduced_map[c_head] = c_head
-                c_head += 1
-            elif c_tail not in reduce_features:
-                # self.reduced_map[c_tail] = c_tail
-                c_tail -= 1
-            else:
-                self.reduced_map[c_tail] = c_head
-                c_head += 1
-                c_tail -= 1
-
-        # Map values
-        if len(reduce_thresholds) > 0:
-            for c_e in self.examples:
-                c_e.original_values = list(c_e.features)
-                for c_f in reduce_features:
-                    if c_e.features[c_f] == "?":
-                        continue
-
-                    if c_f in self.is_categorical:
-                        if c_e.features[c_f] not in reduce_thresholds[c_f]:
-                            c_e.features[c_f] = "DummyValue"
-                    else:
-                        for c_v in reduce_thresholds[c_f]:
-                            if c_e.features[c_f] <= c_v:
-                                c_e.features[c_f] = c_v
-                                break
-
-            for c_f, c_v in reduce_thresholds.items():
-                self.domains[c_f] = c_v
-
-        # Swap features
-        for c_e in self.examples:
-            for c_k, c_v in self.reduced_map.items():
-                c_e.features[c_k], c_e.features[c_v] = c_e.features[c_v], c_e.features[c_k]
-        for c_k, c_v in self.reduced_map.items():
-            self.domains[c_k], self.domains[c_v] = self.domains[c_v], self.domains[c_k]
-            self.domain_counts[c_k], self.domain_counts[c_v] = self.domain_counts[c_v], self.domain_counts[c_k]
-            self.domains_max[c_k], self.domains_max[c_v] = self.domains_max[c_v], self.domains_max[c_k]
-        self.finish()
-
-        self.num_features = len(reduce_features)
-
-        # Eliminate duplicates
         known_entries = dict()
         self.reduced_dropped = []
         for c_e in self.examples:
-            values = tuple(c_e.features[1:self.num_features+1])
+            c_e.original_values = c_e.features
+            c_e.features = [None, *(c_e.features[c_f] for c_f in reduce_features)]
+
+            # Map values
+            if len(reduce_thresholds) > 0:
+                for c_i, c_f in enumerate(reduce_features):
+                    if c_e.features[c_i+1] == "?":
+                        continue
+
+                    if c_f in self.is_categorical:
+                        if c_e.features[c_i+1] not in reduce_thresholds[c_f]:
+                            c_e.features[c_i + 1] = "DummyValue"
+                    else:
+                        for c_v in reduce_thresholds[c_f]:
+                            if c_e.features[c_i + 1] <= c_v:
+                                c_e.features[c_i + 1] = c_v
+                                break
+
+            # Check if can be removed
+            values = tuple(c_e.features[1:])
 
             if values in known_entries:
                 if known_entries[values] != c_e.cls:
-                    print(f"Not real key error {values}")
-                    #raise RuntimeError("Key is not a real key, duplicate with different classes found.")
+                    raise RuntimeError("Key is not a real key, duplicate with different classes found.")
                 self.reduced_dropped.append(c_e)
             else:
                 known_entries[values] = c_e.cls
 
+        # Remove duplicates
         for c_e in reversed(self.reduced_dropped):
             self.examples[c_e.id], self.examples[-1] = self.examples[-1], self.examples[c_e.id]
             self.examples.pop()
@@ -285,39 +254,66 @@ class ClassificationInstance:
         for i, c_e in enumerate(self.examples):
             c_e.id = i
 
+        self.reduced_original_num_features = self.num_features
+        self.reduced_domains = self.domains
+        self.reduced_domains_max = self.domains_max
+        self.reduced_domain_counts = self.domain_counts
+        self.reduced_feature_idx = self.feature_idx
+        self.reduced_categorical = self.is_categorical
+
+        self.num_features = len(reduce_features)
+        self.domains = [[]]
+        self.domains_max = [0]
+        self.domain_counts = [None]
+        self.feature_idx = {}
+        self.is_categorical = set()
+        c_idx = 1
+
+        for c_i, c_f in enumerate(reduce_features):
+            if len(reduce_thresholds) > 0:
+                self.domains.append(reduce_thresholds[c_f])
+            else:
+                self.domains.append(self.reduced_domains[c_f])
+            self.domains_max.append(self.reduced_domains_max[c_f])
+            self.domain_counts.append(self.reduced_domain_counts[c_f])
+            self.feature_idx[c_i + 1] = c_idx
+            c_idx += len(self.domains[c_i+1])
+            if c_f in self.reduced_categorical:
+                self.is_categorical.add(c_i + 1)
+
     def unreduce(self, decision_tree=None):
         if self.reduced_map is None:
             return
 
         self.num_features = self.reduced_original_num_features
+        self.domains = self.reduced_domains
+        self.domains_max = self.reduced_domains_max
+        self.domain_counts = self.reduced_domain_counts
+        self.is_categorical = self.reduced_categorical
+        self.feature_idx = self.reduced_feature_idx
 
+        for c_e in self.examples:
+            c_e.features = c_e.original_values
+            c_e.original_values = None
         for c_e in self.reduced_dropped:
+            c_e.features = c_e.original_values
+            c_e.original_values = None
             c_e.id = len(self.examples)
             self.examples.append(c_e)
-
         self.reduced_dropped = None
 
         reverse_lookup = {x: y for y, x in self.reduced_map.items()}
         if decision_tree:
             decision_tree.root.remap(reverse_lookup)
 
-        for c_e in self.examples:
-            if c_e.original_values is not None:
-                c_e.features = c_e.original_values
-                c_e.original_values = None
-                #TODO: Fix domains...
-            else:
-                for c_k, c_v in reverse_lookup.items():
-                    c_e.features[c_k], c_e.features[c_v] = c_e.features[c_v], c_e.features[c_k]
-        for c_k, c_v in reverse_lookup.items():
-            self.domains[c_k], self.domains[c_v] = self.domains[c_v], self.domains[c_k]
-            self.feature_idx[c_k], self.feature_idx[c_v] = self.feature_idx[c_v], self.feature_idx[c_k]
-            self.domain_counts[c_k], self.domain_counts[c_v] = self.domain_counts[c_v], self.domain_counts[c_k]
-            self.domains_max[c_k], self.domains_max[c_v] = self.domains_max[c_v], self.domains_max[c_k]
         self.reduced_map = None
-
-        self.reduced_original_num_features = None
         self.reduced_key = None
+        self.reduced_original_num_features = None
+        self.reduced_domains = None
+        self.reduced_domains_max = None
+        self.reduced_domain_counts = None
+        self.reduced_categorical = None
+        self.reduced_feature_idx = None
 
         self.finish()
 

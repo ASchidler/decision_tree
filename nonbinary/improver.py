@@ -121,7 +121,6 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
                     new_instance.add_example(n_s)
                 new_instance.class_sizes = class_sizes
                 new_instance.finish()
-                #print(f"GI: {tree.get_accuracy(assigned[root.id])}")
 
                 if reduce:
                     new_instance.reduce_with_key(only_features=use_smt)
@@ -335,9 +334,9 @@ def leaf_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_l
 
         # Either the branch is done, or
         if new_tree is not None:
-            #print(f"{new_tree.get_accuracy(new_instance.examples)}")
+            print(f"{new_tree.get_accuracy(new_instance.examples)}")
             new_instance.unreduce(new_tree)
-            #print(f"{new_tree.get_accuracy(new_instance.examples)}")
+            print(f"{new_tree.get_accuracy(new_instance.examples)}")
             stitch(tree, new_tree, node, None)
             return True, prev_idx
 
@@ -368,9 +367,9 @@ def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_li
                           ub=min(new_ub, i_depth - 1), opt_size=opt_size, slim=opt_slim, maintain=maintain)
 
     if new_tree is not None:
-        #print(f"BR {new_tree.get_accuracy(new_instance.examples)}")
+        print(f"BR {new_tree.get_accuracy(new_instance.examples)}")
         new_instance.unreduce(new_tree)
-        #print(f"AR {new_tree.get_accuracy(new_instance.examples)}")
+        print(f"AR {new_tree.get_accuracy(new_instance.examples)}")
 
         # Stitch the new tree in the middle
         stitch(tree, new_tree, c_parent, instance)
