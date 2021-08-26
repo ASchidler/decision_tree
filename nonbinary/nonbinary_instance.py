@@ -66,6 +66,12 @@ class ClassificationInstance:
                     #self.domains_max[i] = c_sum // c_cnt if is_int else c_sum / c_cnt
                     self.domains_max[i] = c_sum / c_cnt
 
+        if self.has_missing:
+            for c_e in self.examples:
+                for i in range(1, self.num_features + 1):
+                    if c_e.features[i] == "?":
+                        c_e.features[i] = self.domains_max[i]
+
     def add_example(self, e):
         if self.num_features == -1:
             self.num_features = len(e.features) - 1
@@ -164,6 +170,8 @@ class ClassificationInstance:
                 if self.examples[i].cls != self.examples[j].cls:
                     found = False
                     for c_f, c_v in key:
+                        if self.examples[i].features[c_f] == "?" or self.examples[j].features[c_f] == "?":
+                            continue
                         if c_f in self.is_categorical:
                             if (self.examples[i].features[c_f] == c_v) ^ (self.examples[j].features[c_f] == c_v):
                                 found = True
@@ -184,8 +192,9 @@ class ClassificationInstance:
         if self.reduced_key is not None:
             raise RuntimeError("Instance has already been reduced")
 
-        if not self.test_key(key):
-            print("Not a key")
+        # This is super slow
+        # if not self.test_key(key):
+        #     print("Not a key")
 
         reduce_features = set()
         reduce_thresholds = defaultdict(list)

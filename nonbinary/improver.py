@@ -46,7 +46,7 @@ def build_unique_set(root, samples, limit=maxsize, reduce=False, use_smt=False):
     return new_instance, len(c_leafs), depth
 
 
-def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit, reduce, encoding, use_smt=0):
+def build_reduced_set(root, tree, instance, assigned, depth_limit, sample_limit, reduce, encoding, use_smt=0):
     max_dist = root.get_depth()
     q = [[] for _ in range(0, max_dist+1)]
     q[max_dist].append((0, root))
@@ -334,9 +334,7 @@ def leaf_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_l
 
         # Either the branch is done, or
         if new_tree is not None:
-            print(f"{new_tree.get_accuracy(new_instance.examples)}")
             new_instance.unreduce(new_tree)
-            print(f"{new_tree.get_accuracy(new_instance.examples)}")
             stitch(tree, new_tree, node, None)
             return True, prev_idx
 
@@ -350,7 +348,7 @@ def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_li
     if len(assigned[path[path_idx].id]) > 2000 and reduce:
         return False, path_idx
     c_parent = path[path_idx]
-    new_instance, i_depth, leaves = build_reduced_set(c_parent, tree, instance.examples, assigned, depth_limit, sample_limit, reduce, encoding, use_smt=not encoding.is_sat())
+    new_instance, i_depth, leaves = build_reduced_set(c_parent, tree, instance, assigned, depth_limit, sample_limit, reduce, encoding, use_smt=not encoding.is_sat())
 
     if new_instance is None or len(new_instance.examples) == 0:
         return False, path_idx
@@ -367,9 +365,7 @@ def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_li
                           ub=min(new_ub, i_depth - 1), opt_size=opt_size, slim=opt_slim, maintain=maintain)
 
     if new_tree is not None:
-        print(f"BR {new_tree.get_accuracy(new_instance.examples)}")
         new_instance.unreduce(new_tree)
-        print(f"AR {new_tree.get_accuracy(new_instance.examples)}")
 
         # Stitch the new tree in the middle
         stitch(tree, new_tree, c_parent, instance)
