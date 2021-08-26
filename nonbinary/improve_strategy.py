@@ -122,8 +122,8 @@ def run(tree, instance, test, slv, enc, limit_idx=1, timelimit=0, opt_size=False
                 if result:
                     op = "ls"
                 if not result:
-                    result, _ = improver.leaf_rearrange(tree, instance, 0, [root], assigned, depth_limit, sample_limit,
-                                                        time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, maintain=maintain)
+                    result, _ = improver.leaf_reduced(tree, instance, 0, [root], assigned, depth_limit, sample_limit,
+                                                      time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, maintain=maintain)
                     if result:
                         op = "la"
 
@@ -133,7 +133,9 @@ def run(tree, instance, test, slv, enc, limit_idx=1, timelimit=0, opt_size=False
                     if result:
                         op = "ma"
             else:
-                result, _ = improver.reduced_leaf(tree, instance, 0, [root], assigned, depth_limit, sample_limit, time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, maintain=maintain)
+                result, _ = result, _ = improver.leaf_reduced(tree, instance, 0, [root], assigned, depth_limit, sample_limit,
+                                                              time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, maintain=maintain,
+                                                              reduce=True)
                 if result:
                     op = "lr"
                 if not result:

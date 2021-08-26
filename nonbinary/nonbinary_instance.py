@@ -190,6 +190,9 @@ class ClassificationInstance:
         if self.reduced_key is not None:
             raise RuntimeError("Instance has already been reduced")
 
+        if not self.test_key(key):
+            print("Not a key")
+
         reduce_features = set()
         reduce_thresholds = defaultdict(list)
         if isinstance(next(iter(key)), int):
