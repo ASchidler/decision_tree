@@ -32,7 +32,7 @@ def mini_interrupt(s):
     interrupt(s, None, set_done=False)
 
 
-def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False, check_mem=True, slim=True, maintain=False, limit_size=0):
+def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False, check_mem=True, slim=True, maintain=False, limit_size=0, log=True):
     clb = enc.lb()
     c_bound = max(clb, start_bound)
     best_model = None
@@ -57,7 +57,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
     # Compute decision tree
     while clb < ub:
         print(f"Running {c_bound}, " + '{:,}'.format(enc.estimate_size(instance, c_bound)))
-
+        start = time.time()
         with solver() as slv:
             if check_mem:
                 check_memory(slv, interrupted)
@@ -74,17 +74,30 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
                     timer.start()
                 solved = slv.solve_limited(expect_interrupt=True)
             except MemoryError:
+                if log:
+                    print(
+                        f"E:{len(instance.examples)} T:MO C:{len(instance.classes)} F:{instance.num_features} DS:{sum(len(instance.domains[x]) for x in range(1, instance.num_features + 1))}"
+                        f" DM:{max(len(instance.domains[x]) for x in range(1, instance.num_features + 1))} D:{c_bound} S:{enc.estimate_size(instance, c_bound)}")
                 return best_model
             finally:
                 if timer is not None:
                     timer.cancel()
 
             if interrupted:
+                if log:
+                    print(
+                        f"E:{len(instance.examples)} T:TO C:{len(instance.classes)} F:{instance.num_features} DS:{sum(len(instance.domains[x]) for x in range(1, instance.num_features + 1))}"
+                        f" DM:{max(len(instance.domains[x]) for x in range(1, instance.num_features + 1))} D:{c_bound} S:{enc.estimate_size(instance, c_bound)}")
                 break
             elif solved:
                 model = {abs(x): x > 0 for x in slv.get_model()}
                 best_model = enc._decode(model, instance, c_bound, vs)
                 best_depth = c_bound
+
+                if log:
+                    print(
+                        f"E:{len(instance.examples)} T:{time.time() - start} C:{len(instance.classes)} F:{instance.num_features} DS:{sum(len(instance.domains[x]) for x in range(1, instance.num_features + 1))}"
+                        f" DM:{max(len(instance.domains[x]) for x in range(1, instance.num_features + 1))} D:{c_bound} S:{enc.estimate_size(instance, c_bound)}")
 
                 ub = best_model.get_depth()
                 c_bound = ub - enc.increment()

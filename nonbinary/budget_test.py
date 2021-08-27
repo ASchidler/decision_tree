@@ -118,7 +118,7 @@ for i in range(50, len(instance.examples), 50):
             print(f"E:{i} T:{time.time()-start} C:{len(instance.classes)} F:{new_instance.num_features} DS:{sum(len(new_instance.domains[x]) for x in range(1, new_instance.num_features+1))}"
                   f" DM:{max(len(new_instance.domains[x]) for x in range(1, new_instance.num_features+1))} D:{tree.get_depth()} S:{esize}")
         else:
-            print(f"E: {i} Time: -1")
+            print(f"E: {i} Time: -1 C:{len(instance.classes)} F:{new_instance.num_features} DS:{sum(len(new_instance.domains[x]) for x in range(1, new_instance.num_features+1))} DM:{max(len(new_instance.domains[x]) for x in range(1, new_instance.num_features+1))}")
             to += 1
     if to == 3:
         break
