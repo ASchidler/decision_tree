@@ -1,0 +1,63 @@
+a(23) <= 63.5
+-a(15) <= 6.09748
+--a(6) = t
+---c(hypothyroid)
+---a(23) <= 16.5
+----a(15) <= 2.75
+-----c(hypothyroid)
+-----c(negative)
+----a(21) <= 0.905
+-----a(21) <= 0.894999
+------c(negative)
+------c(hypothyroid)
+-----c(negative)
+--a(5) = t
+---c(negative)
+---a(17) <= 3.75000
+----a(3) = f
+-----a(15) <= 191.5
+------a(6) = t
+-------a(19) <= 29.5
+--------c(negative)
+--------c(hypothyroid)
+-------c(hypothyroid)
+------a(1) <= 69
+-------c(hypothyroid)
+-------c(negative)
+-----a(15) <= 20.5
+------c(negative)
+------a(15) <= 161.5
+-------c(hypothyroid)
+-------c(negative)
+----c(negative)
+-a(23) <= 68.5
+--a(15) <= 7.80000
+---c(negative)
+---a(23) <= 64.5
+----c(hypothyroid)
+----a(23) <= 67.5
+-----a(15) <= 65.5
+------c(negative)
+------c(hypothyroid)
+-----a(15) <= 20
+------c(hypothyroid)
+------c(negative)
+--a(15) <= 14.9500
+---a(17) <= 6.65000
+----c(negative)
+----a(17) <= 6.85000
+-----a(7) = f
+------c(hypothyroid)
+------c(negative)
+-----c(negative)
+---a(15) <= 15.5
+----a(1) <= 59.6305
+-----c(negative)
+-----c(hypothyroid)
+----a(15) <= 34.5
+-----c(negative)
+-----a(15) <= 35.5
+------a(17) <= 1.75000
+-------c(hypothyroid)
+-------c(negative)
+------c(negative)

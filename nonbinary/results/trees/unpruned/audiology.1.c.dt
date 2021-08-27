@@ -1,0 +1,91 @@
+a(1) = t
+-a(15) = f
+--a(66) = a
+---a(14) = f
+----a(2) = severe
+-----c(cochlear_age_plus_poss_menieres)
+-----a(70) = p191
+------c(normal_ear)
+------c(cochlear_age)
+----a(6) = normal
+-----c(normal_ear)
+-----c(possible_menieres)
+---a(70) = p116
+----c(mixed_cochlear_age_s_om)
+----a(66) = as
+-----c(mixed_cochlear_age_fixation)
+-----c(mixed_cochlear_age_otitis_media)
+--a(6) = mild
+---a(3) = t
+----c(mixed_cochlear_age_s_om)
+----c(cochlear_age_and_noise)
+---a(26) = t
+----c(cochlear_age_and_noise)
+----a(14) = f
+-----a(37) = t
+------c(cochlear_age_and_noise)
+------c(cochlear_age)
+-----c(possible_menieres)
+-a(15) = t
+--a(58) = t
+---c(cochlear_poss_noise)
+---a(57) = t
+----c(cochlear_poss_noise)
+----a(59) = normal
+-----a(7) = f
+------a(64) = normal
+-------a(70) = p157
+--------c(normal_ear)
+--------c(cochlear_unknown)
+-------c(cochlear_noise_and_heredity)
+------c(cochlear_poss_noise)
+-----a(6) = normal
+------a(3) = t
+-------c(otitis_media)
+-------c(mixed_cochlear_unk_discontinuity)
+------c(mixed_poss_noise_om)
+--a(66) = a
+---a(11) = f
+----a(2) = normal
+-----a(57) = f
+------a(65) = f
+-------a(40) = f
+--------c(possible_brainstem_disorder)
+--------c(cochlear_unknown)
+-------a(7) = f
+--------a(18) = t
+---------c(cochlear_unknown)
+---------a(64) = poor
+----------c(poss_central)
+----------a(55) = f
+-----------a(70) = p80
+------------c(cochlear_unknown)
+------------a(70) = p20
+-------------c(cochlear_unknown)
+-------------c(normal_ear)
+-----------c(cochlear_unknown)
+--------c(cochlear_unknown)
+------c(cochlear_unknown)
+-----a(68) = t
+------c(retrocochlear_unknown)
+------a(67) = t
+-------c(bells_palsy)
+-------a(6) = normal
+--------c(otitis_media)
+--------a(70) = p29
+---------c(acoustic_neuroma)
+---------c(cochlear_unknown)
+----c(possible_menieres)
+---a(6) = normal
+----a(66) = as
+-----c(conductive_fixation)
+-----a(66) = c
+------c(mixed_poss_central_om)
+------c(conductive_discontinuity)
+----a(66) = as
+-----c(mixed_cochlear_unk_fixation)
+-----a(7) = f
+------a(64) = very_poor
+-------c(conductive_discontinuity)
+-------c(otitis_media)
+------c(mixed_cochlear_unk_ser_om)
