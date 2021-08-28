@@ -23,6 +23,7 @@ class ClassificationInstance:
         self.domains = []
         self.num_features = -1
         self.classes = set()
+        self.class_distribution = defaultdict(int)
         self.has_missing = False
         self.domains = []
         self.domain_counts = []
@@ -89,6 +90,7 @@ class ClassificationInstance:
             else:
                 self.has_missing = True
         self.classes.add(e.cls)
+        self.class_distribution[e.cls] += 1
         if e.surrogate_cls:
             self.classes.add(e.surrogate_cls)
 
@@ -262,6 +264,7 @@ class ClassificationInstance:
                 if known_entries[values] != c_e.cls:
                     raise RuntimeError("Key is not a real key, duplicate with different classes found.")
                 self.reduced_dropped.append(c_e)
+                self.class_distribution[c_e.cls] -= 1
             else:
                 known_entries[values] = c_e.cls
 
@@ -319,6 +322,7 @@ class ClassificationInstance:
             c_e.features = c_e.original_values
             c_e.original_values = None
             c_e.id = len(self.examples)
+            self.class_distribution[c_e.cls] += 1
             self.examples.append(c_e)
         self.reduced_dropped = None
 
