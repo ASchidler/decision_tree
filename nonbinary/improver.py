@@ -7,7 +7,7 @@ import nonbinary.depth_avellaneda_base as bs
 literal_limit = 200 * 1000 * 1000
 
 
-def build_unique_set(root, samples, limit=maxsize, reduce=False, use_smt=False):
+def build_unique_set(parameters, root, samples, reduce, limit=maxsize):
     c_features = set()
     c_leafs = []
 
@@ -36,17 +36,31 @@ def build_unique_set(root, samples, limit=maxsize, reduce=False, use_smt=False):
     new_instance.finish()
 
     if reduce:
-        new_instance.reduce_with_key(only_features=use_smt)
+        new_instance.reduce_with_key(numeric_full=parameters.reduce_numeric_full or parameters.use_smt,
+                                     cat_full=parameters.reduce_categoric_full or parameters.use_smt)
     else:
-        if use_smt:
-            new_instance.reduce(set(x[0] for x in c_features))
+        if not (parameters.use_smt or parameters.reduce_numeric_full or parameters.reduce_categoric_full):
+            feature_key = c_features
         else:
-            new_instance.reduce(c_features)
+            feature_key = set()
+            for c_f, c_v in c_features:
+                if c_f in new_instance.is_categorical:
+                    if parameters.use_smt or parameters.reduce_categoric_full:
+                        feature_key.add((c_f, None))
+                    else:
+                        feature_key.add((c_f, c_v))
+                else:
+                    if parameters.use_smt or parameters.reduce_numeric_full:
+                        feature_key.add((c_f, None))
+                    else:
+                        feature_key.add((c_f, c_v))
+
+        new_instance.reduce(feature_key)
 
     return new_instance, len(c_leafs), depth
 
 
-def build_reduced_set(root, tree, instance, assigned, depth_limit, sample_limit, reduce, encoding, use_smt=0):
+def build_reduced_set(parameters, root, assigned, depth_limit, sample_limit, reduce):
     max_dist = root.get_depth()
     q = [[] for _ in range(0, max_dist+1)]
     q[max_dist].append((0, root))
@@ -81,7 +95,7 @@ def build_reduced_set(root, tree, instance, assigned, depth_limit, sample_limit,
 
         # Complete with leafs, if possible, as they won't add any samples
         for cl in list(frontier):
-            c_n = tree.nodes[cl]
+            c_n = parameters.tree.nodes[cl]
             if not c_n.is_leaf and c_n.left.is_leaf and c_n.right.is_leaf:
                 frontier.remove(cl)
                 features.add((c_n.feature, c_n.threshold))
@@ -99,13 +113,13 @@ def build_reduced_set(root, tree, instance, assigned, depth_limit, sample_limit,
             classes = set()
             for c_leaf in frontier:
                 for s in assigned[c_leaf]:
-                    if tree.nodes[c_leaf].is_leaf:
-                        class_mapping[s.id] = (f"-{tree.nodes[c_leaf].cls}", True)
-                        classes.add(tree.nodes[c_leaf].cls)
+                    if parameters.tree.nodes[c_leaf].is_leaf:
+                        class_mapping[s.id] = (f"-{parameters.tree.nodes[c_leaf].cls}", True)
+                        classes.add(parameters.tree.nodes[c_leaf].cls)
                     else:
                         cnt_internal += 1
                         class_mapping[s.id] = (f"{c_leaf}", False)
-                        class_sizes[f"{c_leaf}"] = tree.nodes[c_leaf].get_leaves()
+                        class_sizes[f"{c_leaf}"] = parameters.tree.nodes[c_leaf].get_leaves()
 
 
             # If all "leaves" are leaves, this method is not required, as it will be handled by separate improvements
@@ -123,17 +137,31 @@ def build_reduced_set(root, tree, instance, assigned, depth_limit, sample_limit,
                 new_instance.finish()
 
                 if reduce:
-                    new_instance.reduce_with_key(only_features=use_smt)
+                    new_instance.reduce_with_key(numeric_full=parameters.reduce_numeric_full or parameters.use_smt,
+                                                 cat_full=parameters.reduce_categoric_full or parameters.use_smt)
                 else:
-                    if use_smt:
-                        new_instance.reduce(set(x[0] for x in features))
+                    if not (parameters.use_smt or parameters.reduce_numeric_full or parameters.reduce_categoric_full):
+                        feature_key = features
                     else:
-                        new_instance.reduce(features)
+                        feature_key = set()
+                        for c_f, c_v in features:
+                            if c_f in new_instance.is_categorical:
+                                if parameters.use_smt or parameters.reduce_categoric_full:
+                                    feature_key.add((c_f, None))
+                                else:
+                                    feature_key.add((c_f, c_v))
+                            else:
+                                if parameters.use_smt or parameters.reduce_numeric_full:
+                                    feature_key.add((c_f, None))
+                                else:
+                                    feature_key.add((c_f, c_v))
+
+                    new_instance.reduce(feature_key)
 
                 # TODO: This leads to adding as many nodes as possible. To emphasize the remaining depth more,
                 #  one should stop when the node with the highest remaining depth fails due to too high depth
                 #  or too many samples
-                if encoding.estimate_size(new_instance, c_max_depth-1) <= literal_limit:
+                if parameters.encoding.estimate_size(new_instance, c_max_depth-1) <= literal_limit:
                     if len(new_instance.examples) <= sample_limit[c_max_depth] \
                             or (last_instance is None and len(new_instance.examples) < sample_limit[1]):
                         last_instance = new_instance
@@ -243,7 +271,7 @@ def _get_max_bound(size, sample_limit):
     return new_ub
 
 
-def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False, opt_slim=False, maintain=False):
+def leaf_select(parameters, path_idx, path, assigned, depth_limit, sample_limit, time_limit):
     last_idx = path_idx
     while path_idx < len(path):
         c_d = path[path_idx].get_depth()
@@ -270,38 +298,32 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
         new_instance.add_example(n_s)
 
     new_instance.finish()
-    if len(new_instance.examples) == 0 or encoding.estimate_size(new_instance, c_d-1) > literal_limit:
+    if len(new_instance.examples) == 0 or parameters.encoding.estimate_size(new_instance, c_d-1) > literal_limit:
         return False, last_idx
 
-    if encoding.is_sat():
-        new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, c_d - 1), timeout=time_limit,
-                          ub=min(new_ub, c_d - 1), opt_size=opt_size, slim=opt_slim, maintain=maintain,
-                          limit_size=leaves)
-    else:
-        new_tree = encoding.run(new_instance, start_bound=min(new_ub, c_d - 1), timeout=time_limit,
-               ub=min(new_ub, c_d - 1), opt_size=opt_size, slim=opt_slim, maintain=maintain)
+    new_tree = parameters.call_solver(new_instance, new_ub, c_d, time_limit, leaves)
 
     if new_tree is None:
         return False, last_idx
     else:
-        stitch(tree, new_tree, node, None)
+        stitch(parameters.tree, new_tree, node, None)
         return True, last_idx
 
 
-def leaf_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, encoding, slv, opt_size=False, opt_slim=False, maintain=False, reduce=False):
+def leaf_reduced(parameters, path_idx, path, assigned, depth_limit, sample_limit, time_limit, reduce=False):
     prev_instance = None
     prev_idx = path_idx
 
     while path_idx < len(path):
         c_d = path[path_idx].get_depth()
-        if c_d > depth_limit or (reduce and len(assigned[path[path_idx].id]) > 2000):
+        if c_d > depth_limit:
             break
 
-        new_instance = build_unique_set(path[path_idx], assigned[path[path_idx].id], reduce=reduce, use_smt=not encoding.is_sat())
+        new_instance = build_unique_set(parameters, path[path_idx], assigned[path[path_idx].id], reduce=reduce)
         if new_instance is None or len(new_instance[0].examples) == 0:
             break
 
-        if encoding.estimate_size(new_instance[0], c_d) > literal_limit:
+        if parameters.encoding.estimate_size(new_instance[0], c_d) > literal_limit:
             break
 
         if len(new_instance[0].examples) > sample_limit[c_d]:
@@ -324,31 +346,24 @@ def leaf_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_l
             return False, prev_idx
 
         # Solve instance
-        if encoding.is_sat():
-            new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, cd-1), timeout=time_limit,
-                              ub=min(new_ub, cd-1), opt_size=opt_size, slim=opt_slim, maintain=maintain,
-                              limit_size=leaves)
-        else:
-            new_tree = encoding.run(new_instance, start_bound=min(new_ub, cd - 1), timeout=time_limit,
-                              ub=min(new_ub, cd - 1), opt_size=opt_size, slim=opt_slim, maintain=maintain)
+        new_tree = parameters.call_solver(new_instance, new_ub, cd, time_limit, leaves)
 
         # Either the branch is done, or
         if new_tree is not None:
             new_instance.unreduce(new_tree)
-            stitch(tree, new_tree, node, None)
+            stitch(parameters.tree, new_tree, node, None)
             return True, prev_idx
 
     return False, prev_idx
 
 
-def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, reduce, time_limit, encoding, slv, opt_size=False, opt_slim=False, maintain=False):
+def mid_reduced(parameters, path_idx, path, assigned, depth_limit, sample_limit, time_limit, reduce):
     # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
     if path[path_idx].is_leaf:
         return False, path_idx
-    if len(assigned[path[path_idx].id]) > 2000 and reduce:
-        return False, path_idx
+
     c_parent = path[path_idx]
-    new_instance, i_depth, leaves = build_reduced_set(c_parent, tree, instance, assigned, depth_limit, sample_limit, reduce, encoding, use_smt=not encoding.is_sat())
+    new_instance, i_depth, leaves = build_reduced_set(parameters, c_parent, assigned, depth_limit, sample_limit, reduce)
 
     if new_instance is None or len(new_instance.examples) == 0:
         return False, path_idx
@@ -356,19 +371,13 @@ def mid_reduced(tree, instance, path_idx, path, assigned, depth_limit, sample_li
     if new_ub < 1:
         return False, path_idx
 
-    if encoding.is_sat():
-        new_tree = bs.run(encoding, new_instance, slv, start_bound=min(new_ub, i_depth - 1), timeout=time_limit,
-                          ub=min(new_ub, i_depth - 1), opt_size=opt_size, slim=opt_slim, maintain=maintain,
-                          limit_size=leaves)
-    else:
-        new_tree = encoding.run(new_instance, start_bound=min(new_ub, i_depth - 1), timeout=time_limit,
-                          ub=min(new_ub, i_depth - 1), opt_size=opt_size, slim=opt_slim, maintain=maintain)
+    new_tree = parameters.call_solver(new_instance, new_ub, i_depth, time_limit, leaves)
 
     if new_tree is not None:
         new_instance.unreduce(new_tree)
 
         # Stitch the new tree in the middle
-        stitch(tree, new_tree, c_parent, instance)
+        stitch(parameters.tree, new_tree, c_parent, parameters.instance)
         return True, path_idx
 
     return False, path_idx

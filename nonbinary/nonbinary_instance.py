@@ -104,7 +104,7 @@ class ClassificationInstance:
                     if not found:
                         raise RuntimeError("Not a real support set.")
 
-    def min_key_random(self):
+    def min_key_random(self, cat_full=False, numeric_full=True):
         supset = []
         features = list(range(1, self.num_features + 1))
         random.shuffle(features)
@@ -113,7 +113,6 @@ class ClassificationInstance:
         classes = defaultdict(list)
         for c_e in self.examples:
             classes[c_e.cls].append(c_e)
-        iterations = sum(len(v1) * len(v2) for (k1, v1) in classes.items() for (k2, v2) in classes.items() if k1 < k2)
 
         # Check for each pair of examples
         for c_c, c_es in classes.items():
@@ -131,13 +130,22 @@ class ClassificationInstance:
                                 continue
 
                             if c_f in self.is_categorical:
-                                if (c_e1.features[c_f] == c_v) ^ (c_e2.features[c_f] == c_v):
+                                if c_v is None:
+                                    if c_e1.features[c_f] != c_e2.features[c_f]:
+                                        found = True
+                                        break
+                                elif (c_e1.features[c_f] == c_v) ^ (c_e2.features[c_f] == c_v):
                                     found = True
                                     break
-                            elif (c_e1.features[c_f] <= c_v < c_e2.features[c_f])\
-                                    or (c_e1.features[c_f] > c_v >= c_e2.features[c_f]):
-                                found = True
-                                break
+                            else:
+                                if c_v is None:
+                                    if c_e1.features[c_f] != c_e2.features[c_f]:
+                                        found = True
+                                        break
+                                elif (c_e1.features[c_f] <= c_v < c_e2.features[c_f])\
+                                        or (c_e1.features[c_f] > c_v >= c_e2.features[c_f]):
+                                    found = True
+                                    break
 
                         if not found:
                             for c_f in features:
@@ -146,22 +154,27 @@ class ClassificationInstance:
 
                                 if c_e1.features[c_f] != c_e2.features[c_f]:
                                     if c_f in self.is_categorical:
-                                        supset.append((c_f, c_e1.features[c_f]))
+                                        if cat_full:
+                                            supset.append((c_f, None))
+                                        else:
+                                            supset.append((c_f, c_e1.features[c_f]))
                                     else:
-                                        supset.append((c_f, min(c_e1.features[c_f], c_e2.features[c_f])))
+                                        if numeric_full:
+                                            supset.append((c_f, None))
+                                        else:
+                                            supset.append((c_f, min(c_e1.features[c_f], c_e2.features[c_f])))
                                     break
                             random.shuffle(features)
 
         return supset
 
-    def reduce_with_key(self, randomized_runs=1, only_features=False):
+    def reduce_with_key(self, randomized_runs=1, cat_full=False, numeric_full=False):
         keys = []
         for _ in range(0, randomized_runs):
-            keys.append(self.min_key_random())
+            keys.append(self.min_key_random(cat_full, numeric_full))
 
         key = min(keys, key=lambda x: len(x))
-        if only_features:
-            key = set(x[0] for x in key)
+
         self.reduce(key)
 
     def test_key(self, key):
@@ -199,26 +212,24 @@ class ClassificationInstance:
         reduce_features = set()
         reduce_thresholds = defaultdict(list)
 
-        if isinstance(next(iter(key)), int):
-            # Nothing to reduce
-            if len(key) == self.num_features:
-                return
-            reduce_features = key
-        else:
-            for c_f, c_v in key:
-                if len(self.domains[c_f]) > 0:
+        for c_f, c_v in key:
+            if len(self.domains[c_f]) > 0:
+                if c_v is None:
+                    reduce_features.add(c_f)
+                    reduce_thresholds[c_f].extend(self.domains[c_f])
+                else:
                     reduce_features.add(c_f)
                     reduce_thresholds[c_f].append(c_v)
 
-            for c_l in reduce_thresholds.values():
-                c_l.sort()
+        for c_l in reduce_thresholds.values():
+            c_l.sort()
 
-            for c_f in reduce_features:
-                if c_f not in self.is_categorical:
-                    if reduce_thresholds[c_f][-1] != self.domains[c_f][-1]:
-                        reduce_thresholds[c_f].append(self.domains[c_f][-1])
-                else:
-                    reduce_thresholds[c_f] = list(reduce_thresholds[c_f])
+        for c_f in reduce_features:
+            if c_f not in self.is_categorical:
+                if reduce_thresholds[c_f][-1] != self.domains[c_f][-1]:
+                    reduce_thresholds[c_f].append(self.domains[c_f][-1])
+            else:
+                reduce_thresholds[c_f] = list(reduce_thresholds[c_f])
         reduce_features = list(reduce_features)
         self.reduced_map = {f: i+1 for i, f in enumerate(reduce_features)}
         self.reduced_key = key

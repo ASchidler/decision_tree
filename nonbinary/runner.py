@@ -55,6 +55,12 @@ ap.add_argument("-m", dest="slim", action="store_true", default=False,
                 help="Use local improvement instead of exact results.")
 ap.add_argument("-u", dest="maintain", action="store_true", default=False,
                 help="Force maintaining of sizes for SLIM.")
+ap.add_argument("-o", dest="reduce_categoric", action="store_true", default=False,
+                help="In SLIM use full categoric features instead of just single thresholds.")
+ap.add_argument("-n", dest="reduce_numeric", action="store_true", default=False,
+                help="In SLIM use full numeric features instead of just single thresholds.")
+ap.add_argument("-i", dest="limit_idx", action="store", default=1, type=int,
+                help="Set of limits.")
 
 args = ap.parse_args()
 
@@ -130,12 +136,14 @@ if args.slim:
     dirs = "validation" if args.validation else "unpruned"
     tree = tree_parsers.parse_internal_tree(f"nonbinary/results/trees/{dirs}/{target_instance}.{args.slice}.{algo}.dt")
 
+    parameters = improve_strategy.SlimParameters(tree, instance, enc, Glucose3, args.size, args.slim_opt,
+                                                 args.maintain, args.reduce_numeric, args.reduce_categoric, args.time_limit)
+
     print(f"START Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
           f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
           f"Time: {time.time() - start_time}")
 
-    improve_strategy.run(tree, instance, test_instance, Glucose3, enc, timelimit=args.time_limit, opt_size=args.size,
-                         opt_slim=args.slim_opt, maintain=args.maintain)
+    improve_strategy.run(parameters, test_instance, limit_idx=args.limit_idx)
 else:
     if not args.use_smt:
         tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size)

@@ -3,6 +3,7 @@ import time
 import sys
 import decision_tree
 import time
+import nonbinary.depth_avellaneda_base as bs
 
 sample_limit_short = [175,
                       175, 175, 175, 175, 175,
@@ -29,6 +30,33 @@ time_limits = [60, 300, 800]
 depth_limits = [12, 12, 12]
 
 reduce_runs = 1
+
+
+class SlimParameters:
+    def __init__(self, tree, instance, encoding, slv, opt_size, opt_slim, maintain, reduce_numeric, reduce_categoric, timelimit):
+        self.tree = tree
+        self.instance = instance
+        self.encoding = encoding
+        self.slv = slv
+        self.opt_size = opt_size
+        self.opt_slim = opt_slim
+        self.maintain = maintain
+        self.reduce_numeric_full = reduce_numeric
+        self.reduce_categoric_full = reduce_categoric
+        self.timelimit = timelimit
+        self.use_smt = not self.encoding.is_sat()
+
+    def call_solver(self, new_instance, new_ub, cd, time_out, leaves):
+        if self.encoding.is_sat():
+            return bs.run(self.encoding, new_instance, self.slv, start_bound=min(new_ub, cd - 1),
+                              timeout=time_out,
+                              ub=min(new_ub, cd - 1), opt_size=self.opt_size, slim=self.opt_slim,
+                              maintain=self.maintain,
+                              limit_size=leaves)
+        else:
+            return self.encoding.run(new_instance, start_bound=min(new_ub, cd - 1), timeout=time_out,
+                                               ub=min(new_ub, cd - 1), opt_size=self.opt_size,
+                                               slim=self.opt_slim, maintain=self.maintain)
 
 
 def find_deepest_leaf(tree, ignore=None):
@@ -77,7 +105,7 @@ def clear_ignore(ignore, root):
             q.append(c_n.right)
 
 
-def run(tree, instance, test, slv, enc, limit_idx=1, timelimit=0, opt_size=False, opt_slim=False, maintain=False):
+def run(parameters, test, limit_idx=1):
     sample_limit = [sample_limit_short, sample_limit_mid, sample_limit_long][limit_idx]
     time_limit = time_limits[limit_idx]
     depth_limit = depth_limits[limit_idx]
@@ -90,22 +118,22 @@ def run(tree, instance, test, slv, enc, limit_idx=1, timelimit=0, opt_size=False
 
     def process_change(mth):
         print(f"Time: {time.time() - start_time:.4f}\t"
-              f"Training {tree.get_accuracy(instance.examples):.4f}\t"
-              f"Test {tree.get_accuracy(test.examples):.4f}\t"
-              f"Depth {tree.get_depth():03}\t"              
-              f"Nodes {tree.get_nodes()}\t"
+              f"Training {parameters.tree.get_accuracy(parameters.instance.examples):.4f}\t"
+              f"Test {parameters.tree.get_accuracy(test.examples):.4f}\t"
+              f"Depth {parameters.tree.get_depth():03}\t"              
+              f"Nodes {parameters.tree.get_nodes()}\t"
               f"Method {mth}")
         sys.stdout.flush()
 
-    assigned = tree.assign(instance)
-    tree_size = tree.get_nodes()
+    assigned = parameters.tree.assign(parameters.instance)
+    tree_size = parameters.tree.get_nodes()
     while tree_size > len(c_ignore_reduce):
         allow_reduction = False
-        pth = find_deepest_leaf(tree, c_ignore)
+        pth = find_deepest_leaf(parameters.tree, c_ignore)
 
         if pth is None:
             allow_reduction = True
-            pth = find_deepest_leaf(tree, c_ignore_reduce)
+            pth = find_deepest_leaf(parameters.tree, c_ignore_reduce)
             if pth is None:
                 return
 
@@ -118,37 +146,38 @@ def run(tree, instance, test, slv, enc, limit_idx=1, timelimit=0, opt_size=False
             op = None
             result = False
             if not allow_reduction:
-                result, _ = improver.leaf_select(tree, instance, 0, [root], assigned, depth_limit, sample_limit, time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, maintain=maintain)
+                result, _ = improver.leaf_select(parameters, 0, [root], assigned, depth_limit, sample_limit, time_limit)
                 if result:
                     op = "ls"
                 if not result:
-                    result, _ = improver.leaf_reduced(tree, instance, 0, [root], assigned, depth_limit, sample_limit,
-                                                      time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, maintain=maintain)
+                    result, _ = improver.leaf_reduced(parameters, 0, [root], assigned, depth_limit, sample_limit,
+                                                      time_limit, False)
                     if result:
                         op = "la"
 
                 if not result:
-                    result, _ = improver.mid_reduced(tree, instance, 0, [root], assigned, depth_limit, sample_limit, False,
-                                                     time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, maintain=maintain)
+                    result, _ = improver.mid_reduced(parameters, 0, [root], assigned, depth_limit, sample_limit,
+                                                     time_limit, False)
                     if result:
                         op = "ma"
             else:
-                result, _ = result, _ = improver.leaf_reduced(tree, instance, 0, [root], assigned, depth_limit, sample_limit,
-                                                              time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, maintain=maintain,
-                                                              reduce=True)
-                if result:
-                    op = "lr"
-                if not result:
-                    result, _ = improver.mid_reduced(tree, instance, 0, [root], assigned, depth_limit, sample_limit,
-                                                     True,
-                                                     time_limit, enc, slv, opt_size=opt_size, opt_slim=opt_slim, maintain=maintain)
+                reduced_limits = [x * 2 for x in sample_limit]
+                max_samples = 2 * max(reduced_limits)
+                if len(assigned[root]) <= max_samples:
+                    result, _ = improver.leaf_reduced(parameters, 0, [root], assigned, depth_limit, reduced_limits,
+                                                      time_limit, True)
                     if result:
-                        op = "mr"
+                        op = "lr"
+                    if not result:
+                        result, _ = improver.mid_reduced(parameters, 0, [root], assigned, depth_limit, reduced_limits,
+                                                         time_limit, True)
+                        if result:
+                            op = "mr"
 
             if result:
                 process_change(op)
 
-            if 0 < timelimit < (time.time() - start_time):
+            if 0 < parameters.timelimit < (time.time() - start_time):
                 return
 
             if not allow_reduction:
@@ -157,10 +186,10 @@ def run(tree, instance, test, slv, enc, limit_idx=1, timelimit=0, opt_size=False
                 c_ignore_reduce.add(root.id)
             if result:
                 # TODO: This could be more efficient... We only have to re-compute assigned from the current root!
-                assigned = tree.assign(instance)
-                tree_size = tree.get_nodes()
+                assigned = parameters.tree.assign(parameters.instance)
+                tree_size = parameters.tree.get_nodes()
                 # May have been replaced if we reduce the tree to a leaf
-                if tree.nodes[root.id] == root:
+                if parameters.tree.nodes[root.id] == root:
                     clear_ignore(c_ignore, root)
                     clear_ignore(c_ignore_reduce, root)
                 # Break as the path may have become invalid
