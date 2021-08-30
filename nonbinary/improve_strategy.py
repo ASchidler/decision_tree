@@ -5,6 +5,7 @@ import decision_tree
 import time
 import nonbinary.depth_avellaneda_base as bs
 import math
+from nonbinary.nonbinary_instance import Example
 
 sample_limit_short = [175,
                       175, 175, 175, 175, 175,
@@ -26,6 +27,8 @@ sample_limit_long = [500,
                      105, 105, 105, 105, 105,
                      105, 105, 105, 105, 105,
                      105, 105, 105, 105, 105]
+
+literal_limit = 200 * 1000 * 1000
 
 time_limits = [60, 300, 800]
 depth_limits = [12, 12, 12]
@@ -51,31 +54,62 @@ class SlimParameters:
         self.maximum_examples = 500
         self.maximum_depth = 12
         self.sample_limits = [self.maximum_examples for _ in range(0, self.maximum_depth + 1)]
+        self.solver_time_limit = 300
 
-    def call_solver(self, new_instance, new_ub, cd, time_out, leaves):
+    def call_solver(self, new_instance, new_ub, cd, leaves):
         if self.encoding.is_sat():
             return bs.run(self.encoding, new_instance, self.slv, start_bound=min(new_ub, cd - 1),
-                              timeout=time_out,
+                              timeout=self.solver_time_limit,
                               ub=min(new_ub, cd - 1), opt_size=self.opt_size, slim=self.opt_slim,
                               maintain=self.maintain,
                               limit_size=leaves)
         else:
-            return self.encoding.run(new_instance, start_bound=min(new_ub, cd - 1), timeout=time_out,
+            return self.encoding.run(new_instance, start_bound=min(new_ub, cd - 1), timeout=self.solver_time_limit,
                                                ub=min(new_ub, cd - 1), opt_size=self.opt_size,
                                                slim=self.opt_slim, maintain=self.maintain)
 
+    def _create_tree_sample(self, new_instance, c_bound):
+        return Example(None, [new_instance.reduced_key is not None, self.encoding.estimate_size(new_instance, c_bound),
+                      c_bound, sum(len(new_instance.domains[x]) for x in range(1, new_instance.num_features + 1)),
+                      max(len(new_instance.domains[x]) for x in range(1, new_instance.num_features + 1)),
+                      len(new_instance.examples), len(new_instance.classes), new_instance.num_features,
+                      -1 * sum(x / len(new_instance.examples) * math.log2(x / len(new_instance.examples)) for x in
+                               new_instance.class_distribution.values())
+            ], None)
+
     def decide_instance(self, new_instance, c_bound):
-        if len(new_instance) > self.maximum_examples:
+        if len(new_instance.examples) > self.maximum_examples or c_bound > self.maximum_depth \
+                or self.encoding.estimate_size(new_instance, c_bound) > literal_limit or \
+                len(new_instance.examples) == 0:
             return False
 
-        sample = [None, new_instance.reduced_key is not None, self.encoding.estimate_size(new_instance, c_bound),
-                  c_bound-1, sum(len(new_instance.domains[x]) for x in range(1, new_instance.num_features + 1)),
-                  max(len(new_instance.domains[x]) for x in range(1, new_instance.num_features + 1)),
-                  len(new_instance.examples), len(new_instance.classes), new_instance.num_features,
-                  -1 * sum(x / len(new_instance.examples) * math.log2(x / len(new_instance.examples)) for x in
-                           new_instance.class_distribution.values())
-        ]
-        return self.example_decision_tree.decide(sample) == "1"
+        if self.example_decision_tree is not None:
+            sample = self._create_tree_sample(new_instance, c_bound)
+            return self.example_decision_tree.root.decide(sample)[0] == "1"
+        else:
+            return self.sample_limits[c_bound] >= len(new_instance.examples)
+
+    def get_max_bound(self, new_instance):
+        new_ub = -1
+        if len(new_instance.examples) == 0:
+            return -1
+
+        sample = None if self.example_decision_tree is None else self._create_tree_sample(new_instance, new_ub)
+        for cb, sl in enumerate(self.sample_limits):
+            if 1 <= cb <= self.maximum_depth and self.encoding.estimate_size(new_instance, cb) < literal_limit:
+                if self.example_decision_tree is not None:
+                    sample.features[3] = cb
+                    if self.example_decision_tree.root.decide(sample)[0] == "1":
+                        new_ub = cb
+                    else:
+                        break
+                else:
+                    if sl >= len(new_instance.examples):
+                        new_ub = cb
+                    else:
+                        break
+
+        return new_ub
 
 
 def find_deepest_leaf(tree, ignore=None):
@@ -128,7 +162,7 @@ def run(parameters, test, limit_idx=1):
     parameters.sample_limits = [sample_limit_short, sample_limit_mid, sample_limit_long][limit_idx]
     parameters.maximum_depth = depth_limits[limit_idx]
     parameters.maximum_examples = parameters.sample_limits[1]
-
+    parameters.solver_time_limit = time_limits[limit_idx]
     # Select nodes based on the depth
     c_ignore = set()
     c_ignore_reduce = set()
@@ -166,31 +200,25 @@ def run(parameters, test, limit_idx=1):
             op = None
             result = False
             if not allow_reduction:
-                result, _ = improver.leaf_select(parameters, 0, [root], assigned, depth_limit, sample_limit, time_limit)
+                result = improver.leaf_select(parameters, root, assigned)
                 if result:
                     op = "ls"
                 if not result:
-                    result, _ = improver.leaf_reduced(parameters, 0, [root], assigned, depth_limit, sample_limit,
-                                                      time_limit, False)
+                    result = improver.leaf_reduced(parameters, root, assigned, False)
                     if result:
                         op = "la"
 
                 if not result:
-                    result, _ = improver.mid_reduced(parameters, 0, [root], assigned, depth_limit, sample_limit,
-                                                     time_limit, False)
+                    result = improver.mid_reduced(parameters, root, assigned, False)
                     if result:
                         op = "ma"
             else:
-                reduced_limits = [x * 2 for x in sample_limit]
-                max_samples = 2 * max(reduced_limits)
-                if len(assigned[root]) <= max_samples:
-                    result, _ = improver.leaf_reduced(parameters, 0, [root], assigned, depth_limit, reduced_limits,
-                                                      time_limit, True)
+                if len(assigned[root]) <= 2 * parameters.maximum_examples:
+                    result = improver.leaf_reduced(parameters, root, assigned, True)
                     if result:
                         op = "lr"
                     if not result:
-                        result, _ = improver.mid_reduced(parameters, 0, [root], assigned, depth_limit, reduced_limits,
-                                                         time_limit, True)
+                        result = improver.mid_reduced(parameters, root, assigned, True)
                         if result:
                             op = "mr"
 

@@ -107,6 +107,12 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
                 ub = best_model.get_depth()
                 c_bound = ub - enc.increment()
             else:
+                if log:
+                    print(
+                        f"E:{len(instance.examples)} T:{time.time()-start} C:{len(instance.classes)} F:{instance.num_features} DS:{sum(len(instance.domains[x]) for x in range(1, instance.num_features + 1))}"
+                        f" DM:{max(len(instance.domains[x]) for x in range(1, instance.num_features + 1))} D:{c_bound} S:{enc.estimate_size(instance, c_bound)}"
+                        f" R:{instance.reduced_key is not None} E:{-1 * sum(x / len(instance.examples) * math.log2(x / len(instance.examples)) for x in instance.class_distribution.values())}")
+
                 c_bound += enc.increment()
                 clb = c_bound + enc.increment()
 

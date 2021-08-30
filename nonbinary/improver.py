@@ -1,10 +1,6 @@
 from sys import maxsize
-from nonbinary.nonbinary_instance import ClassificationInstance, Example
-from decision_tree import DecisionTreeLeaf, DecisionTreeNode
-from collections import defaultdict
-import nonbinary.depth_avellaneda_base as bs
 
-literal_limit = 200 * 1000 * 1000
+from nonbinary.nonbinary_instance import ClassificationInstance
 
 
 def build_unique_set(parameters, root, samples, reduce, limit=maxsize):
@@ -60,7 +56,7 @@ def build_unique_set(parameters, root, samples, reduce, limit=maxsize):
     return new_instance, len(c_leafs), depth
 
 
-def build_reduced_set(parameters, root, assigned, depth_limit, sample_limit, reduce):
+def build_reduced_set(parameters, root, assigned, reduce):
     max_dist = root.get_depth()
     q = [[] for _ in range(0, max_dist+1)]
     q[max_dist].append((0, root))
@@ -103,7 +99,7 @@ def build_reduced_set(parameters, root, assigned, depth_limit, sample_limit, red
                 frontier.add(c_n.left.id)
                 frontier.add(c_n.right.id)
 
-        if c_max_depth > depth_limit:
+        if c_max_depth > parameters.maximum_depth:
             break
 
         if cnt >= 3:
@@ -161,11 +157,10 @@ def build_reduced_set(parameters, root, assigned, depth_limit, sample_limit, red
                 # TODO: This leads to adding as many nodes as possible. To emphasize the remaining depth more,
                 #  one should stop when the node with the highest remaining depth fails due to too high depth
                 #  or too many samples
-                if parameters.encoding.estimate_size(new_instance, c_max_depth-1) <= literal_limit:
-                    if len(new_instance.examples) <= sample_limit[c_max_depth] \
-                            or (last_instance is None and len(new_instance.examples) < sample_limit[1]):
-                        last_instance = new_instance
-                        max_depth = c_max_depth
+                if parameters.decide_instance(new_instance, c_max_depth) or \
+                        (last_instance is None and parameters.decide_instance(new_instance, 1)):
+                    last_instance = new_instance
+                    max_depth = c_max_depth
                 else:
                     q = None
 
@@ -263,121 +258,79 @@ def stitch(old_tree, new_tree, root, instance):
         old_tree.clean(instance)
 
 
-def _get_max_bound(size, sample_limit):
-    new_ub = -1
-    for cb, sl in enumerate(sample_limit):
-        if sl < size:
-            new_ub = cb
-    return new_ub
-
-
-def leaf_select(parameters, path_idx, path, assigned, depth_limit, sample_limit, time_limit):
-    last_idx = path_idx
-    while path_idx < len(path):
-        c_d = path[path_idx].get_depth()
-        if c_d > depth_limit or len(assigned[path[path_idx].id]) > sample_limit[c_d]:
-            break
-        last_idx = path_idx
-        path_idx += 1
-
-    node = path[last_idx]
+def leaf_select(parameters, node, assigned):
+    if len(assigned[node.id]) > parameters.maximum_examples:
+        return False
     c_d = node.get_depth()
-    if c_d <= 2:
-        return False, last_idx
+    if c_d < 2:
+        return False
 
-    new_ub = _get_max_bound(len(assigned[node.id]), sample_limit)
-
-    if new_ub < 1:
-        return False, last_idx
-
-    leaves = node.get_leaves()
     new_instance = ClassificationInstance()
     for s in assigned[node.id]:
         n_s = s.copy(new_instance)
         n_s.cls = f"-{n_s.cls}"
         new_instance.add_example(n_s)
-
     new_instance.finish()
-    if len(new_instance.examples) == 0 or parameters.encoding.estimate_size(new_instance, c_d-1) > literal_limit:
-        return False, last_idx
 
-    new_tree = parameters.call_solver(new_instance, new_ub, c_d, time_limit, leaves)
+    new_ub = parameters.get_max_bound(new_instance)
+    if new_ub < 1:
+        return False
+
+    leaves = node.get_leaves()
+    new_tree = parameters.call_solver(new_instance, new_ub, c_d, leaves)
 
     if new_tree is None:
-        return False, last_idx
+        return False
     else:
         stitch(parameters.tree, new_tree, node, None)
-        return True, last_idx
+        return True
 
 
-def leaf_reduced(parameters, path_idx, path, assigned, depth_limit, sample_limit, time_limit, reduce=False):
-    prev_instance = None
-    prev_idx = path_idx
+def leaf_reduced(parameters, node, assigned, reduce=False):
+    new_instance, leaves, cd = build_unique_set(parameters, node, assigned[node.id], reduce=reduce)
 
-    while path_idx < len(path):
-        c_d = path[path_idx].get_depth()
-        if c_d > depth_limit:
-            break
+    if cd < 2:
+        return False
 
-        new_instance = build_unique_set(parameters, path[path_idx], assigned[path[path_idx].id], reduce=reduce)
-        if new_instance is None or len(new_instance[0].examples) == 0:
-            break
+    new_ub = parameters.get_max_bound(new_instance)
 
-        if parameters.encoding.estimate_size(new_instance[0], c_d) > literal_limit:
-            break
+    if new_ub < 1:
+        return False
 
-        if len(new_instance[0].examples) > sample_limit[c_d]:
-            if prev_instance is not None or len(new_instance[0].examples) > sample_limit[1]:
-                break
+    # Solve instance
+    new_tree = parameters.call_solver(new_instance, new_ub, cd, leaves)
 
-        prev_instance = new_instance
-        prev_idx = path_idx
-        path_idx += 1
+    # Either the branch is done, or
+    if new_tree is not None:
+        new_instance.unreduce(new_tree)
+        stitch(parameters.tree, new_tree, node, None)
+        return True
 
-    if prev_instance is not None and len(prev_instance[0].examples) > 0:
-        node = path[prev_idx]
-        new_instance, leaves, cd = prev_instance
-
-        if cd < 2:
-            return False, prev_idx
-        new_ub = _get_max_bound(len(new_instance.examples), sample_limit)
-
-        if new_ub < 1:
-            return False, prev_idx
-
-        # Solve instance
-        new_tree = parameters.call_solver(new_instance, new_ub, cd, time_limit, leaves)
-
-        # Either the branch is done, or
-        if new_tree is not None:
-            new_instance.unreduce(new_tree)
-            stitch(parameters.tree, new_tree, node, None)
-            return True, prev_idx
-
-    return False, prev_idx
+    return False
 
 
-def mid_reduced(parameters, path_idx, path, assigned, depth_limit, sample_limit, time_limit, reduce):
+def mid_reduced(parameters, node, assigned, reduce):
     # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
-    if path[path_idx].is_leaf:
-        return False, path_idx
+    if node.is_leaf:
+        return False
 
-    c_parent = path[path_idx]
-    new_instance, i_depth, leaves = build_reduced_set(parameters, c_parent, assigned, depth_limit, sample_limit, reduce)
+    c_parent = node
+    new_instance, i_depth, leaves = build_reduced_set(parameters, c_parent, assigned, reduce)
 
     if new_instance is None or len(new_instance.examples) == 0:
-        return False, path_idx
-    new_ub = _get_max_bound(len(new_instance.examples), sample_limit)
-    if new_ub < 1:
-        return False, path_idx
+        return False
 
-    new_tree = parameters.call_solver(new_instance, new_ub, i_depth, time_limit, leaves)
+    new_ub = parameters.get_max_bound(new_instance)
+    if new_ub < 1:
+        return False
+
+    new_tree = parameters.call_solver(new_instance, new_ub, i_depth, leaves)
 
     if new_tree is not None:
         new_instance.unreduce(new_tree)
 
         # Stitch the new tree in the middle
         stitch(parameters.tree, new_tree, c_parent, parameters.instance)
-        return True, path_idx
+        return True
 
-    return False, path_idx
+    return False
