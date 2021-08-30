@@ -48,6 +48,14 @@ def parse_file(fl, experiment):
                     c_val = "v"
                 elif cfs[0] == "weka" and cfs[1] == "True":
                     c_algo = "w"
+                elif cfs[0] == "maintain" and cfs[1] == "True":
+                    flags += "u"
+                elif cfs[0] == "reduce_numeric" and cfs[1] == "True":
+                    flags += "n"
+                elif cfs[0] == "reduce_categoric" and cfs[1] == "True":
+                    flags += "o"
+                elif cfs[0] == "slim_opt" and cfs[1] == "True":
+                    flags += "e"
             if c_encoding == "":
                 c_encoding = "0"
             flags = c_val + flags + c_encoding

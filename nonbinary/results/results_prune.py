@@ -7,7 +7,7 @@ import nonbinary.pruning as p
 algos = ["w"]
 trees = ["k"]
 #flags = ["0", "a", "y"]
-flags = ["z0"]
+flags = ["ze0"]
 #flags = ["uzy"]
 
 for c_file in sorted(os.listdir("../instances")):

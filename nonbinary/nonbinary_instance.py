@@ -43,7 +43,7 @@ class ClassificationInstance:
         self.class_sizes = None
         self.layer_reduced = False
 
-    def finish(self):
+    def finish(self, base_instance=None):
         c_idx = 1
         self.domains_max = [0 for _ in range(0, self.num_features + 1)]
 
@@ -52,6 +52,10 @@ class ClassificationInstance:
                 self.is_categorical.add(i)
             self.feature_idx[i] = c_idx
             c_idx += len(self.domains[i])
+            if base_instance is not None:
+                for c_v, c_c in self.domain_counts[i].items():
+                    self.domain_counts[i][c_v] += c_c
+
             self.domains[i] = sorted(list(self.domains[i]))
             if len(self.domains[i]) > 0:
                 if i in self.is_categorical:
@@ -392,8 +396,12 @@ def parse(path, filename, slice, use_validation=False, use_test=True):
         target_idx = (slice + 2) % len(target_files)
         validation_file = _parse_file([os.path.join(path, target_files[target_idx])])
         target_files.pop(target_idx)
-
     data_file = _parse_file([os.path.join(path, x) for x in target_files])
+    data_file.finish()
+    if validation_file is not None:
+        validation_file.finish(data_file)
+    if test_file:
+        test_file.finish(data_file)
 
     return data_file, test_file, validation_file
 
@@ -440,6 +448,5 @@ def _parse_file(filenames):
                 cls = fields[-1].strip()
                 instance.add_example(Example(instance, example, cls))
 
-    instance.finish()
     return instance
 

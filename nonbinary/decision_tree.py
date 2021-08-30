@@ -50,6 +50,9 @@ class DecisionTreeNode:
     def decide(self, e):
         return self._decide(e).decide(e)
 
+    def decide_length(self, e):
+        return self._decide(e).decide_length(e) + 1
+
     def get_depth(self):
         return max(self.left.get_depth(), self.right.get_depth()) + 1
 
@@ -122,6 +125,9 @@ class DecisionTreeLeaf:
 
     def get_leaves(self):
         return 1
+
+    def decide_length(self, e):
+        return 0
 
     def remap(self, mapping):
         return
@@ -206,6 +212,13 @@ class DecisionTree:
                 errors += 1
 
         return (len(examples) - errors) / len(examples)
+
+    def get_avg_length(self, examples):
+        lengths = 0
+        for c_e in examples:
+            lengths += self.root.decide_length(c_e)
+
+        return lengths / len(examples)
 
     def get_depth(self):
         return self.root.get_depth()

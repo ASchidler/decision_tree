@@ -4,6 +4,7 @@ import sys
 import decision_tree
 import time
 import nonbinary.depth_avellaneda_base as bs
+import math
 
 sample_limit_short = [175,
                       175, 175, 175, 175, 175,
@@ -33,7 +34,7 @@ reduce_runs = 1
 
 
 class SlimParameters:
-    def __init__(self, tree, instance, encoding, slv, opt_size, opt_slim, maintain, reduce_numeric, reduce_categoric, timelimit):
+    def __init__(self, tree, instance, encoding, slv, opt_size, opt_slim, maintain, reduce_numeric, reduce_categoric, timelimit, use_dt):
         self.tree = tree
         self.instance = instance
         self.encoding = encoding
@@ -45,6 +46,11 @@ class SlimParameters:
         self.reduce_categoric_full = reduce_categoric
         self.timelimit = timelimit
         self.use_smt = not self.encoding.is_sat()
+        self.use_dt = use_dt
+        self.example_decision_tree = None
+        self.maximum_examples = 500
+        self.maximum_depth = 12
+        self.sample_limits = [self.maximum_examples for _ in range(0, self.maximum_depth + 1)]
 
     def call_solver(self, new_instance, new_ub, cd, time_out, leaves):
         if self.encoding.is_sat():
@@ -57,6 +63,19 @@ class SlimParameters:
             return self.encoding.run(new_instance, start_bound=min(new_ub, cd - 1), timeout=time_out,
                                                ub=min(new_ub, cd - 1), opt_size=self.opt_size,
                                                slim=self.opt_slim, maintain=self.maintain)
+
+    def decide_instance(self, new_instance, c_bound):
+        if len(new_instance) > self.maximum_examples:
+            return False
+
+        sample = [None, new_instance.reduced_key is not None, self.encoding.estimate_size(new_instance, c_bound),
+                  c_bound-1, sum(len(new_instance.domains[x]) for x in range(1, new_instance.num_features + 1)),
+                  max(len(new_instance.domains[x]) for x in range(1, new_instance.num_features + 1)),
+                  len(new_instance.examples), len(new_instance.classes), new_instance.num_features,
+                  -1 * sum(x / len(new_instance.examples) * math.log2(x / len(new_instance.examples)) for x in
+                           new_instance.class_distribution.values())
+        ]
+        return self.example_decision_tree.decide(sample) == "1"
 
 
 def find_deepest_leaf(tree, ignore=None):
@@ -106,9 +125,9 @@ def clear_ignore(ignore, root):
 
 
 def run(parameters, test, limit_idx=1):
-    sample_limit = [sample_limit_short, sample_limit_mid, sample_limit_long][limit_idx]
-    time_limit = time_limits[limit_idx]
-    depth_limit = depth_limits[limit_idx]
+    parameters.sample_limits = [sample_limit_short, sample_limit_mid, sample_limit_long][limit_idx]
+    parameters.maximum_depth = depth_limits[limit_idx]
+    parameters.maximum_examples = parameters.sample_limits[1]
 
     # Select nodes based on the depth
     c_ignore = set()
@@ -122,7 +141,8 @@ def run(parameters, test, limit_idx=1):
               f"Test {parameters.tree.get_accuracy(test.examples):.4f}\t"
               f"Depth {parameters.tree.get_depth():03}\t"              
               f"Nodes {parameters.tree.get_nodes()}\t"
-              f"Method {mth}")
+              f"Avg. Length {parameters.tree.get_avg_length(parameters.instance.examples)}\t"
+              f"Method {mth}\t")
         sys.stdout.flush()
 
     assigned = parameters.tree.assign(parameters.instance)
