@@ -91,7 +91,7 @@ class SlimParameters:
 
     def get_max_bound(self, new_instance):
         new_ub = -1
-        if len(new_instance.examples) == 0:
+        if len(new_instance.examples) == 0 or len(new_instance.examples) > self.maximum_examples:
             return -1
 
         sample = None if self.example_decision_tree is None else self._create_tree_sample(new_instance, new_ub)
@@ -161,7 +161,7 @@ def clear_ignore(ignore, root):
 def run(parameters, test, limit_idx=1):
     parameters.sample_limits = [sample_limit_short, sample_limit_mid, sample_limit_long][limit_idx]
     parameters.maximum_depth = depth_limits[limit_idx]
-    parameters.maximum_examples = parameters.sample_limits[1]
+    parameters.maximum_examples = 1000 if parameters.example_decision_tree is not None else parameters.sample_limits[1]
     parameters.solver_time_limit = time_limits[limit_idx]
     # Select nodes based on the depth
     c_ignore = set()
