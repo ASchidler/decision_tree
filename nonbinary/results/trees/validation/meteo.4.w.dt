@@ -1,0 +1,7 @@
+a(1) = overcast
+-c(+)
+-a(1) = sunny
+--c(-)
+--a(4) = false
+---c(+)
+---c(-)
