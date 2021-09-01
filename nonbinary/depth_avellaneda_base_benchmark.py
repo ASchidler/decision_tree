@@ -9,6 +9,8 @@ import time
 from collections import defaultdict
 from decision_tree import DecisionTree
 
+from nonbinary import depth_avellaneda_sat, depth_avellaneda_sat2, depth_avellaneda_sat3
+
 
 def check_memory(s, done):
     used = psutil.Process().memory_info().vms
@@ -34,7 +36,24 @@ def mini_interrupt(s):
     interrupt(s, None, set_done=False)
 
 
-def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False, check_mem=True, slim=True, maintain=False, limit_size=0, log=True):
+def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False, check_mem=True, slim=True, maintain=False, limit_size=0, log=True):
+    trees = []
+    encodings = [depth_avellaneda_sat, depth_avellaneda_sat2]
+    if instance.reduced_key is None or all(x[1] is None for x in instance.reduced_key):
+        encodings.append(depth_avellaneda_sat3)
+
+    for i, c_enc in enumerate(encodings):
+        print(f"Testing Encoding {i+1}")
+        tree = run2(c_enc, instance, solver, start_bound, timeout, ub, opt_size, check_mem, slim, maintain, limit_size, log)
+        if tree is not None:
+            trees.append(tree)
+
+    if len(trees) == 0:
+        return None
+    return min(trees, key=lambda x: x.get_depth())
+
+
+def run2(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False, check_mem=True, slim=True, maintain=False, limit_size=0, log=True):
     clb = enc.lb()
     c_bound = max(clb, start_bound)
     best_model = None

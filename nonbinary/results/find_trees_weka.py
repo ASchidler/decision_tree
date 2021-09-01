@@ -10,7 +10,7 @@ from collections import deque
 from nonbinary.decision_tree import DecisionTree, DecisionTreeLeaf, DecisionTreeNode
 from decimal import Decimal, InvalidOperation
 
-use_validation = False
+use_validation = True
 pruning = 1  # 0 is no pruning
 
 pth = "nonbinary/instances"

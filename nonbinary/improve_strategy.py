@@ -4,6 +4,7 @@ import sys
 import decision_tree
 import time
 import nonbinary.depth_avellaneda_base as bs
+import nonbinary.depth_avellaneda_base_benchmark as bbs
 import math
 from nonbinary.nonbinary_instance import Example
 
@@ -37,7 +38,7 @@ reduce_runs = 1
 
 
 class SlimParameters:
-    def __init__(self, tree, instance, encoding, slv, opt_size, opt_slim, maintain, reduce_numeric, reduce_categoric, timelimit, use_dt):
+    def __init__(self, tree, instance, encoding, slv, opt_size, opt_slim, maintain, reduce_numeric, reduce_categoric, timelimit, use_dt, benchmark):
         self.tree = tree
         self.instance = instance
         self.encoding = encoding
@@ -55,18 +56,26 @@ class SlimParameters:
         self.maximum_depth = 12
         self.sample_limits = [self.maximum_examples for _ in range(0, self.maximum_depth + 1)]
         self.solver_time_limit = 300
+        self.benchmark = benchmark
 
     def call_solver(self, new_instance, new_ub, cd, leaves):
-        if self.encoding.is_sat():
-            return bs.run(self.encoding, new_instance, self.slv, start_bound=min(new_ub, cd - 1),
-                              timeout=self.solver_time_limit,
-                              ub=min(new_ub, cd - 1), opt_size=self.opt_size, slim=self.opt_slim,
-                              maintain=self.maintain,
-                              limit_size=leaves)
+        if not self.benchmark:
+            if self.encoding.is_sat():
+                return bs.run(self.encoding, new_instance, self.slv, start_bound=min(new_ub, cd - 1),
+                                  timeout=self.solver_time_limit,
+                                  ub=min(new_ub, cd - 1), opt_size=self.opt_size, slim=self.opt_slim,
+                                  maintain=self.maintain,
+                                  limit_size=leaves)
+            else:
+                return self.encoding.run(new_instance, start_bound=min(new_ub, cd - 1), timeout=self.solver_time_limit,
+                                                   ub=min(new_ub, cd - 1), opt_size=self.opt_size,
+                                                   slim=self.opt_slim, maintain=self.maintain)
         else:
-            return self.encoding.run(new_instance, start_bound=min(new_ub, cd - 1), timeout=self.solver_time_limit,
-                                               ub=min(new_ub, cd - 1), opt_size=self.opt_size,
-                                               slim=self.opt_slim, maintain=self.maintain)
+            return bbs.run(new_instance, self.slv, start_bound=min(new_ub, cd - 1),
+                          timeout=self.solver_time_limit,
+                          ub=min(new_ub, cd - 1), opt_size=self.opt_size, slim=self.opt_slim,
+                          maintain=self.maintain,
+                          limit_size=leaves)
 
     def _create_tree_sample(self, new_instance, c_bound):
         return Example(None, [new_instance.reduced_key is not None, self.encoding.estimate_size(new_instance, c_bound),

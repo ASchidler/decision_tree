@@ -32,6 +32,8 @@ ap = argp.ArgumentParser(description="Python implementation for computing and im
 ap.add_argument("instance", type=str)
 ap.add_argument("-r", dest="reduce", action="store_true", default=False,
                 help="Use support set based reduction. Decreases instance size, but tree may be sub-optimal.")
+ap.add_argument("-b", dest="benchmark", action="store_true", default=False,
+                help="Benchmark all encodings together.")
 ap.add_argument("-c", dest="categorical", action="store_true", default=False,
                 help="Treat all features as categorical, this means a one hot encoding as in previous encodings.")
 ap.add_argument("-t", dest="time_limit", action="store", default=0, type=int,
@@ -75,7 +77,8 @@ fls.sort()
 #     for i, cf in enumerate(fls):
 #         print(f"{i+1}: {cf}")
 #     exit(0)
-
+# for i, cf in enumerate(fls):
+#     print(f"{i} {cf}")
 try:
     target_instance_idx = int(args.instance)
 
@@ -141,7 +144,7 @@ if args.slim:
     tree = tree_parsers.parse_internal_tree(f"nonbinary/results/trees/{dirs}/{target_instance}.{args.slice}.{algo}.dt")
 
     parameters = improve_strategy.SlimParameters(tree, instance, enc, Glucose3, args.size, args.slim_opt,
-                                                 args.maintain, args.reduce_numeric, args.reduce_categoric, args.time_limit, args.use_dt)
+                                                 args.maintain, args.reduce_numeric, args.reduce_categoric, args.time_limit, args.use_dt, args.benchmark)
     if args.use_dt:
         parameters.example_decision_tree = tree_parsers.parse_internal_tree("nonbinary/benchmark_tree.dt")
 

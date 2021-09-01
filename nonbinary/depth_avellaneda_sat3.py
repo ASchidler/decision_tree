@@ -61,18 +61,15 @@ def encode(instance, limit, solver, opt_size=False):
             for f2, f2v in f[i].items():
                 if f2 > f1:
                     solver.add_clause([-f1v, -f2v])
+
         # In case of categorical data, enforce =
         for cf in range(1, instance.num_features+1):
-            if cf in instance.is_categorical and len(instance.domains[f]) > 0:
+            if cf in instance.is_categorical and len(instance.domains[cf]) > 0:
                 base_idx = instance.feature_idx[cf]
-                for i2 in range(0, len(instance.domains[f])):
+                for i2 in range(0, len(instance.domains[cf])):
                     solver.add_clause([-f[i][base_idx + i2], e[i]])
 
         solver.add_clause(clause)
-
-    for i in range(0, len(instance.examples)):
-        _alg1(instance, i, limit, 0, 1, list(), f, x, e, solver)
-        _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, solver)
 
     # each leaf has a class
     if len(class_map) > 2:
@@ -87,6 +84,10 @@ def encode(instance, limit, solver, opt_size=False):
 
             if not opt_size:
                 solver.add_clause(clause)
+
+    for i in range(0, len(instance.examples)):
+        _alg1(instance, i, limit, 0, 1, list(), f, x, e, solver)
+        _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, solver)
 
     return {"f": f, "x": x, "c": c, "class_map": class_map, "pool": p, "e": e}
 
@@ -105,28 +106,22 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, e, solver):
         for i2 in range(0, len(instance.domains[f]) - (0 if f in instance.is_categorical else 1)):
             c_val = example.features[f] if example.features[f] != "?" else instance.domains_max[f]
             if not is_cat and c_val > instance.domains[f][i2]:
-                solver.add_clause([*clause, -x[e_idx][lvl], e[q], -fs[q][base_idx + i2]])
-            if c_val != instance.domains[f][i2]:
+                solver.add_clause([*clause, -x[e_idx][lvl], -fs[q][base_idx + i2]])
+            elif c_val != instance.domains[f][i2]:
                 solver.add_clause([*clause, -x[e_idx][lvl], -e[q], -fs[q][base_idx + i2]])
-    n_cl = list(clause)
-    n_cl.append(-x[e_idx][lvl])
-    _alg1(instance, e_idx, limit, lvl+1, 2 * q + 1, n_cl, fs, x, e, solver)
 
-    for f in range(1, instance.num_features + 1):
-        if len(instance.domains[f]) == 0:
-            continue
-
-        base_idx = instance.feature_idx[f]
-        is_cat = f in instance.is_categorical
-        for i2 in range(0, len(instance.domains[f]) - (0 if f in instance.is_categorical else 1)):
-            c_val = example.features[f] if example.features[f] != "?" else instance.domains_max[f]
             if not is_cat and c_val < instance.domains[f][i2]:
                 solver.add_clause([*clause, x[e_idx][lvl], e[q], -fs[q][base_idx + i2]])
             if c_val == instance.domains[f][i2]:
                 solver.add_clause([*clause, x[e_idx][lvl], -fs[q][base_idx + i2]])
-    n_cl2 = list(clause)
-    n_cl2.append(x[e_idx][lvl])
-    _alg1(instance, e_idx, limit, lvl+1, 2*q, n_cl2, fs, x, e, solver)
+
+    clause.append(-x[e_idx][lvl])
+    _alg1(instance, e_idx, limit, lvl+1, 2 * q + 1, clause, fs, x, e, solver)
+    clause.pop()
+
+    clause.append(x[e_idx][lvl])
+    _alg1(instance, e_idx, limit, lvl+1, 2*q, clause, fs, x, e, solver)
+    clause.pop()
 
 
 def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, solver):
@@ -220,7 +215,7 @@ def _decode(model, instance, limit, vs):
                 else:
                     for r_f in range(2, instance.num_features+1):
                         real_f = None
-                        if f >= instance.feature_idx[r_f - 1] and f < instance.feature_idx[r_f]:
+                        if instance.feature_idx[r_f - 1] <= f < instance.feature_idx[r_f]:
                             real_f = r_f - 1
                         elif r_f == instance.num_features:
                             real_f = r_f

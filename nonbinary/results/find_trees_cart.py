@@ -11,8 +11,8 @@ import nonbinary.tree_parsers as tp
 from decimal import Decimal
 
 
-use_validation = False
-pruning = 1  # 0 is no pruning
+use_validation = True
+pruning = 1 # 0 is no pruning
 
 pth = "nonbinary/instances"
 #fls = {".".join(x.split(".")[:-2]) for x in list(os.listdir(pth)) if x.endswith("primary-tumor.1.data")}

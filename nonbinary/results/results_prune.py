@@ -5,9 +5,9 @@ import nonbinary.nonbinary_instance as nbi
 import nonbinary.pruning as p
 
 algos = ["w"]
-trees = ["k"]
+trees = ["m"]
 #flags = ["0", "a", "y"]
-flags = ["ze0"]
+flags = ["z0"]
 #flags = ["uzy"]
 
 for c_file in sorted(os.listdir("../instances")):

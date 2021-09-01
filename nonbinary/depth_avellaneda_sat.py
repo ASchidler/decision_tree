@@ -199,7 +199,7 @@ def _decode(model, instance, limit, vs):
                 else:
                     for r_f in range(2, instance.num_features+1):
                         real_f = None
-                        if f >= instance.feature_idx[r_f - 1] and f < instance.feature_idx[r_f]:
+                        if instance.feature_idx[r_f - 1] <= f < instance.feature_idx[r_f]:
                             real_f = r_f - 1
                         elif r_f == instance.num_features:
                             real_f = r_f
