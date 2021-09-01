@@ -38,7 +38,8 @@ reduce_runs = 1
 
 
 class SlimParameters:
-    def __init__(self, tree, instance, encoding, slv, opt_size, opt_slim, maintain, reduce_numeric, reduce_categoric, timelimit, use_dt, benchmark):
+    def __init__(self, tree, instance, encoding, slv, opt_size, opt_slim, maintain, reduce_numeric, reduce_categoric, timelimit, use_dt, benchmark,
+                 size_first):
         self.tree = tree
         self.instance = instance
         self.encoding = encoding
@@ -57,6 +58,7 @@ class SlimParameters:
         self.sample_limits = [self.maximum_examples for _ in range(0, self.maximum_depth + 1)]
         self.solver_time_limit = 300
         self.benchmark = benchmark
+        self.size_first = size_first
 
     def call_solver(self, new_instance, new_ub, cd, leaves):
         if not self.benchmark:
@@ -65,7 +67,7 @@ class SlimParameters:
                                   timeout=self.solver_time_limit,
                                   ub=min(new_ub, cd - 1), opt_size=self.opt_size, slim=self.opt_slim,
                                   maintain=self.maintain,
-                                  limit_size=leaves)
+                                  limit_size=leaves, c_depth=cd, size_first=self.size_first)
             else:
                 return self.encoding.run(new_instance, start_bound=min(new_ub, cd - 1), timeout=self.solver_time_limit,
                                                    ub=min(new_ub, cd - 1), opt_size=self.opt_size,
@@ -93,10 +95,10 @@ class SlimParameters:
             return False
 
         if self.example_decision_tree is not None:
-            sample = self._create_tree_sample(new_instance, c_bound)
+            sample = self._create_tree_sample(new_instance, c_bound if not self.size_first else c_bound+1)
             return self.example_decision_tree.root.decide(sample)[0] == "1"
         else:
-            return self.sample_limits[c_bound] >= len(new_instance.examples)
+            return self.sample_limits[c_bound if not self.size_first else c_bound+1] >= len(new_instance.examples)
 
     def get_max_bound(self, new_instance):
         new_ub = -1
@@ -170,7 +172,7 @@ def clear_ignore(ignore, root):
 def run(parameters, test, limit_idx=1):
     parameters.sample_limits = [sample_limit_short, sample_limit_mid, sample_limit_long][limit_idx]
     parameters.maximum_depth = depth_limits[limit_idx]
-    parameters.maximum_examples = 1000 if parameters.example_decision_tree is not None else parameters.sample_limits[1]
+    parameters.maximum_examples = 500 if parameters.example_decision_tree is not None else parameters.sample_limits[1]
     parameters.solver_time_limit = time_limits[limit_idx]
     # Select nodes based on the depth
     c_ignore = set()

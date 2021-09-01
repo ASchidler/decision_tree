@@ -34,7 +34,7 @@ def mini_interrupt(s):
     interrupt(s, None, set_done=False)
 
 
-def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False, check_mem=True, slim=True, maintain=False, limit_size=0, log=True):
+def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=maxsize, opt_size=False, check_mem=True, slim=True, maintain=False, limit_size=0, size_first=False, log=True):
     clb = enc.lb()
     c_bound = max(clb, start_bound)
     best_model = None
@@ -56,6 +56,54 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
         dt.set_root_leaf(cls)
         return dt
 
+    # Size first
+    if size_first:
+        c_bound = min(ub, c_depth)
+        with solver() as slv:
+            if check_mem:
+                check_memory(slv, interrupted)
+            print('{:,}'.format(enc.estimate_size(instance, min(ub, c_depth)) + enc.estimate_size_add(instance, c_bound)))
+            c_size_bound = limit_size - 1
+            solved = True
+
+            try:
+                vs = enc.encode(instance, c_bound, slv, True)
+                enc.encode_extended_leaf_limit(vs, slv, c_bound)
+                card = enc.encode_size(vs, instance, slv, c_bound)
+                c_size_bound = min(c_size_bound, len(card)-1)
+                tot = ITotalizer(card, c_size_bound+1, top_id=vs["pool"].top + 1)
+                slv.append_formula(tot.cnf)
+                slv.add_clause([-tot.rhs[c_size_bound]])
+            except MemoryError:
+                solved = False
+
+            timer = None
+
+            if timeout > 0:
+                timer = Timer(timeout, interrupt, [slv, interrupted])
+                timer.start()
+
+            while solved and c_size_bound >= 0:
+                try:
+                    print(f"Running size {c_size_bound}")
+                    solved = slv.solve_limited(expect_interrupt=True)
+                except MemoryError:
+                    break
+
+                if solved:
+                    model = {abs(x): x > 0 for x in slv.get_model()}
+                    best_model = enc._decode(model, instance, c_bound, vs)
+                    c_size_bound = best_model.root.get_leaves() - 1
+                    slv.add_clause([-tot.rhs[c_size_bound]])
+                else:
+                    break
+        if best_model is not None:
+            c_bound = best_model.get_depth()
+            ub = c_bound
+            limit_size = best_model.root.get_leaves()
+        if timer is not None:
+            timer.cancel()
+
     # Compute decision tree
     while clb < ub:
         print(f"Running {c_bound}, " + '{:,}'.format(enc.estimate_size(instance, c_bound)))
@@ -66,8 +114,8 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
 
             timer = None
             try:
-                vs = enc.encode(instance, c_bound, slv, opt_size or (maintain and limit_size > 0))
-                if limit_size > 0 and maintain:
+                vs = enc.encode(instance, c_bound, slv, opt_size or (maintain and limit_size > 0) or size_first)
+                if limit_size > 0 and (maintain or size_first):
                     enc.encode_extended_leaf_limit(vs, slv, c_bound)
                     card = enc.encode_size(vs, instance, slv, c_bound)
                     slv.append_formula(CardEnc.atmost(card, bound=limit_size, vpool=vs["pool"], encoding=EncType.totalizer).clauses)
@@ -117,7 +165,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
                 clb = c_bound + enc.increment()
 
     best_extension = None
-    if best_model and slim and not maintain:
+    if best_model and slim and not maintain and not size_first:
         best_extension = best_model.root.get_extended_leaves()
         # Try to remove extended leaves
         extension_count = best_model.root.get_extended_leaves()
@@ -158,7 +206,8 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
                 if timer is not None:
                     timer.cancel()
 
-    if opt_size and best_model and enc.estimate_size(instance, best_depth) + enc.estimate_size_add(instance, best_depth) < limits.size_limit:
+    if opt_size and best_model and not size_first and enc.estimate_size(instance, best_depth) + enc.estimate_size_add(instance, best_depth) < limits.size_limit\
+            and not size_first:
         with solver() as slv:
             if check_mem:
                 check_memory(slv, interrupted)
@@ -173,6 +222,9 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=Fa
                     slv.append_formula(
                         CardEnc.atmost(card, bound=best_extension, vpool=vs["pool"], encoding=EncType.totalizer).clauses
                     )
+                elif maintain:
+                    enc.encode_extended_leaf_limit(vs, slv, c_bound)
+
                 card = enc.encode_size(vs, instance, slv, best_depth)
                 tot = ITotalizer(card, c_size_bound+1, top_id=vs["pool"].top + 1)
                 slv.append_formula(tot.cnf)

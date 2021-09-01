@@ -32,3 +32,4 @@ soybean-large
 spect
 wine
 zoo
+tic-tac-toe

@@ -42,6 +42,8 @@ ap.add_argument("-z", dest="size", action="store_true", default=False,
                 help="Decrease the size as well as the depth.")
 ap.add_argument("-e", dest="slim_opt", action="store_true", default=False,
                 help="Optimize away extension leaves.")
+ap.add_argument("-f", dest="size_first", action="store_true", default=False,
+                help="Optimize size before depth.")
 ap.add_argument("-d", dest="validation", action="store_true", default=False,
                 help="Use data with validation set.")
 ap.add_argument("-s", dest="use_smt", action="store_true", default=False)
@@ -144,7 +146,8 @@ if args.slim:
     tree = tree_parsers.parse_internal_tree(f"nonbinary/results/trees/{dirs}/{target_instance}.{args.slice}.{algo}.dt")
 
     parameters = improve_strategy.SlimParameters(tree, instance, enc, Glucose3, args.size, args.slim_opt,
-                                                 args.maintain, args.reduce_numeric, args.reduce_categoric, args.time_limit, args.use_dt, args.benchmark)
+                                                 args.maintain, args.reduce_numeric, args.reduce_categoric,
+                                                 args.time_limit, args.use_dt, args.benchmark, args.size_first)
     if args.use_dt:
         parameters.example_decision_tree = tree_parsers.parse_internal_tree("nonbinary/benchmark_tree.dt")
 

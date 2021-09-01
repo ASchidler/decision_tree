@@ -30,6 +30,10 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
     if c_file.endswith(".info"):
         with open(os.path.join("trees", experiment, c_file)) as info_file:
             files[file_name][file_fields[3]][file_fields[1]].depth_lb = int(info_file.readline().strip())
+            info_file.readline()
+            time_used = info_file.readline().strip()
+            if time_used != "None" and time_used != '':
+                files[file_name][file_fields[3]][file_fields[1]].time = float(time_used)
     elif c_file.endswith(".dt"):
         instance, instance_test, _ = nbi.parse("../instances", file_name, int(file_fields[1]))
         tree = tp.parse_internal_tree(os.path.join("trees", experiment, c_file))
@@ -50,7 +54,7 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
 with open(f"results_{experiment}.csv", "w") as outf:
     outf.write("Instance;E;F;Values;C")
     for c_f in sorted(flags):
-        outf.write(f";{c_f} Solved;{c_f} Depth LB;{c_f} Nodes;{c_f} Depth;{c_f} Train Acc;{c_f} Test Acc")
+        outf.write(f";{c_f} Solved;{c_f} Depth LB;{c_f} Nodes;{c_f} Depth;{c_f} Train Acc;{c_f} Test Acc;{c_f} Time")
     outf.write(os.linesep)
 
     for c_file in sorted(files.keys()):
@@ -62,11 +66,11 @@ with open(f"results_{experiment}.csv", "w") as outf:
         print(c_file)
         for c_f in sorted(flags):
             if c_f not in files[c_file]:
-                outf.write(";;;;;;")
+                outf.write(";;;;;;;")
                 continue
 
             c_data = files[c_file][c_f].values()
-            sums = [0, 0, 0, 0, 0]
+            sums = [0, 0, 0, 0, 0, 0]
             cnt = 0
             for c_data_entry in c_data:
                 if c_data_entry.depth_lb is not None:
@@ -77,6 +81,7 @@ with open(f"results_{experiment}.csv", "w") as outf:
                     sums[2] += c_data_entry.depth
                     sums[3] += c_data_entry.training
                     sums[4] += c_data_entry.test
+                    sums[5] += c_data_entry.time
 
             outf.write(f";{cnt}")
             outf.write(f";{sums[0] / len(c_data)}")
