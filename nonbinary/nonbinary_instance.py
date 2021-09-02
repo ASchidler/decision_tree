@@ -174,7 +174,7 @@ class ClassificationInstance:
 
         return supset
 
-    def reduce_with_key(self, randomized_runs=1, cat_full=False, numeric_full=False):
+    def reduce_with_key(self, randomized_runs=3, cat_full=False, numeric_full=False):
         keys = []
         for _ in range(0, randomized_runs):
             keys.append(self.min_key_random(cat_full, numeric_full))

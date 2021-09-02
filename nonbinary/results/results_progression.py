@@ -5,15 +5,15 @@ import tarfile
 import matplotlib.pyplot as plt
 
 logfiles = [
-    ("dt-nb-k-1.tar.bz2", "SZ,EX"),
+    ("dt-nb-k-1.tar.bz2", "SZ,EX"), ("dt-nb-k-2.tar.bz2", "SZ,EX"),
     ("dt-nb-m-1.tar.bz2", "SZ"),
-    ("dt-nb-n-1.tar.bz2", "M"),
-    ("dt-nb-q-1.tar.bz2", "None")
+    ("dt-nb-n-1.tar.bz2", "M"), ("dt-nb-n-2.tar.bz2", "M"),
+    ("dt-nb-q-1.tar.bz2", "None"), ("dt-nb-q-2.tar.bz2", "None")
 ]
 instance_name = sys.argv[1]
 slice = sys.argv[2]
 
-fields = [(1, "Depth"), (2, "Size")]
+fields = [(1, "Depth"), (2, "Size"), (4, "Accuracy"), (5, "Avg. Decision Length")]
 field_idx = 0
 
 colors = ['black', '#eecc66', '#bb5566', '#004488']
@@ -21,17 +21,18 @@ symbols = ['s', 'o', 'x', 'v']
 
 c_file = None
 
-fig, ax = plt.subplots(figsize=(4, 4), dpi=300)
+fig, ax = plt.subplots(figsize=(4, 3), dpi=300)
 min_x = sys.maxsize
 max_x = 0
 min_y = sys.maxsize
 max_y = 0
 
-legend = []
+legend = {x[1] for x in logfiles}
+file_entries = {x: [] for x in legend}
 
 for logfile, logfile_name in logfiles:
     with tarfile.open(logfile) as tar_file:
-        entries = []
+        entries = file_entries[logfile_name]
         done = False
         for ctf in tar_file:
             if done:
@@ -53,28 +54,38 @@ for logfile, logfile_name in logfiles:
                         break
                 done = True
                 if cl.startswith("START") or cl.startswith("END"):
+                    cl = cl.replace(":", "")[len("START Tree"):]
                     cf = cl.split(",")
-                    cv = [x.strip().split(":")[1].strip() for x in cf]
-                    entries.append((cv[-1], cv[-5], cv[-4], cv[-3], cv[-2]))
+                    cv = [x.strip().split(" ")[-1].strip() for x in cf]
+                    avg_d = None if len(cv) < 6 else cv[4]
+                    entries.append((cv[-1], cv[0], cv[1], cv[2], cv[3], avg_d))
                 elif cl.startswith("Time:"):
                     # Time: 230.2385	Training 1.0000	Test 0.8406	Depth 019	Nodes 139	Method ma
-                    cf = cl.split("\t")
-                    cv = [x.strip().split(" ")[1].strip() for x in cf]
-                    entries.append((cv[0], cv[-3], cv[-2], cv[1], cv[2]))
+                    cf = cl.replace(":", "").strip().split("\t")
+                    cv = [x.strip().split(" ")[-1].strip() for x in cf]
+                    avg_d = None if len(cv) < 7 else cv[5]
+                    entries.append((cv[0], cv[3], cv[4], cv[1], cv[2], avg_d))
 
-        x = []
-        y = []
-        for ce in entries:
-            x.append(float(ce[0]) / 60)
-            y.append(float(ce[fields[field_idx][0]]))
+legend = []
+done = set()
+for _, c_k in logfiles:
+    if c_k in done:
+        continue
+    done.add(c_k)
+    entries = file_entries[c_k]
+    x = []
+    y = []
+    for ce in entries:
+        x.append(float(ce[0]) / 60)
+        y.append(float(ce[fields[field_idx][0]]))
 
-        max_x = max(max_x, max(x))
-        min_x = min(min_x, min(x))
-        max_y = max(max_y, max(y))
-        min_y = min(min_y, min(y))
+    max_x = max(max_x, max(x))
+    min_x = min(min_x, min(x))
+    max_y = max(max_y, max(y))
+    min_y = min(min_y, min(y))
 
-        ax.scatter(x, y, marker=symbols.pop(), s=10, color=colors.pop(), alpha=0.5)
-        legend.append(logfile_name)
+    ax.scatter(x, y, marker=symbols.pop(), s=10, color=colors.pop(), alpha=0.5)
+    legend.append(c_k)
 
 ax.set_axisbelow(True)
 names = []
@@ -82,7 +93,7 @@ names = []
 ax.set_xlabel('Minutes')
 ax.set_ylabel(fields[field_idx][1])
 # ax.set_title('scatter plot')
-plt.rcParams["legend.loc"] = 'upper left'
+plt.rcParams["legend.loc"] = 'upper right'
 plt.rcParams['savefig.pad_inches'] = 0
 plt.autoscale(tight=True)
 plt.legend(legend)

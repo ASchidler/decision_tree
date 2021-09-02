@@ -181,7 +181,7 @@ def run(parameters, test, limit_idx=1):
     start_time = time.time()
 
     def process_change(mth):
-        print(f"Time: {time.time() - start_time:.4f}\t"
+        print(f"Time {time.time() - start_time:.4f}\t"
               f"Training {parameters.tree.get_accuracy(parameters.instance.examples):.4f}\t"
               f"Test {parameters.tree.get_accuracy(test.examples):.4f}\t"
               f"Depth {parameters.tree.get_depth():03}\t"              

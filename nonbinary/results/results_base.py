@@ -1,3 +1,4 @@
+import math
 import os
 import nonbinary.tree_parsers as tp
 import parser
@@ -51,6 +52,91 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
         else:
             print(f"No tree in {c_file}")
 
+# Get aggregates for encoding
+
+solved = set()
+for c_f in sorted(flags):
+    cnt_unique = 0
+    time_common = []
+    cnt_total = 0
+    var_time_common = 0
+
+    is_size = c_f.find("z") > -1
+
+    for c_file, c_file_v in files.items():
+        if c_f in c_file_v:
+            for c_slice, c_slice_data in c_file_v[c_f].items():
+                if c_slice_data.time is not None and c_slice_data.time <= 3600.0 * 6:
+                    solved.add((c_file, c_slice))
+                    is_in_none = True
+                    is_in_all = True
+                    cnt_total += 1
+                    for c_f2 in flags:
+                        if c_f2 != c_f and ((c_f2.find("z") > -1) == is_size):
+                            if c_f2 in c_file_v and c_slice in c_file_v[c_f2] and c_file_v[c_f2][c_slice].depth is not None:
+                                is_in_none = False
+                            else:
+                                is_in_all = False
+
+                    if is_in_none:
+                        cnt_unique += 1
+                    elif is_in_all:
+                        time_common.append(c_slice_data.time)
+
+    time_avg = sum(time_common) / len(time_common)
+    time_sigma = math.sqrt(sum((x - time_avg)**2 for x in time_common) / len(time_common))
+    print(f"{c_f} {cnt_total} {cnt_unique} {time_avg} {time_sigma} {len(time_common)}")
+
+print(f"Totally solved: {solved}")
+
+# Get aggregates for decision tree types
+
+groups = {"0": {"0", "a", "s"}, "c": {"c"}, "y": {"y"}}
+
+for c_g, c_fs in groups.items():
+    depths = []
+    accuracies = []
+    sizes = []
+    size_accuracies = []
+
+    for c_pfx in ["", "z"]:
+        for c_file, c_file_v in files.items():
+            done = False
+            for c_f in c_fs:
+                if done:
+                    break
+                if c_pfx + c_f in c_file_v:
+                    for c_slice, c_slice_data in c_file_v[c_f].items():
+                        if c_slice_data.time is not None and c_slice_data.time <= 3600.0 * 6:
+                            is_in_all = True
+                            for c_g2, c_fs2 in groups.items():
+                                if c_g2 != c_g:
+                                    is_in_any = False
+                                    for c_f2 in c_fs2:
+                                        if c_pfx + c_f2 in c_file_v and c_slice in c_file_v[c_pfx + c_f2] and c_file_v[c_f2][c_slice].depth is not None:
+                                            is_in_any = True
+                                            break
+                                    if not is_in_any:
+                                        is_in_all = False
+                                        break
+
+                            if is_in_all:
+                                done = True
+                                if c_pfx == "":
+                                    depths.append(c_slice_data.depth)
+                                    accuracies.append(c_slice_data.test)
+                                else:
+                                    sizes.append(c_slice_data.nodes)
+                                    size_accuracies.append(c_slice_data.test)
+
+    print(c_g)
+    for c_metric in [depths, accuracies, sizes, size_accuracies]:
+        metric_avg = sum(c_metric) / len(c_metric)
+        metric_sigma = math.sqrt(sum((x - metric_avg)**2 for x in c_metric) / len(c_metric))
+        print(f"{metric_avg} {metric_sigma}")
+    print("")
+exit(0)
+
 with open(f"results_{experiment}.csv", "w") as outf:
     outf.write("Instance;E;F;Values;C")
     for c_f in sorted(flags):
@@ -91,3 +177,5 @@ with open(f"results_{experiment}.csv", "w") as outf:
                 else:
                     outf.write(f";{sums[c_s_entry] / cnt}")
         outf.write(os.linesep)
+
+

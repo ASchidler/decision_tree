@@ -79,7 +79,11 @@ fls.sort()
 #     for i, cf in enumerate(fls):
 #         print(f"{i+1}: {cf}")
 #     exit(0)
+# names = set()
 # for i, cf in enumerate(fls):
+#     print(f"{i} {cf}")
+#     names.add(cf.split(".")[0])
+# for i, cf in enumerate(names):
 #     print(f"{i} {cf}")
 try:
     target_instance_idx = int(args.instance)
@@ -107,7 +111,7 @@ def exit_timeout():
     #tree.clean(instance, min_samples=args.min_samples)
     print(f"END Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
           f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
-          f"Avg. Length {tree.get_avg_length(instance.examples)}, "
+          f"Avg. Length: {tree.get_avg_length(instance.examples)}, "
           f"Time: {time.time() - start_time}")
 
     print(tree.as_string())
@@ -153,7 +157,7 @@ if args.slim:
 
     print(f"START Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
           f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
-          f"Avg. Length {tree.get_avg_length(instance.examples)}, "
+          f"Avg. Length: {tree.get_avg_length(instance.examples)}, "
           f"Time: {time.time() - start_time}")
 
     improve_strategy.run(parameters, test_instance, limit_idx=args.limit_idx)
@@ -171,7 +175,7 @@ instance.unreduce(tree)
 print(f"{instance.num_features}, {len(instance.examples)}")
 print(f"END Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
       f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "
-      f"Avg. Length {tree.get_avg_length(instance.examples)}, "
+      f"Avg. Length: {tree.get_avg_length(instance.examples)}, "
       f"Time: {time.time() - start_time}")
 
 print(tree.as_string())
