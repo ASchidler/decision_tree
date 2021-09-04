@@ -67,7 +67,8 @@ ap.add_argument("-i", dest="limit_idx", action="store", default=1, type=int,
                 help="Set of limits.")
 ap.add_argument("-x", dest="use_dt", action="store_true", default=False,
                 help="Use a decision tree to decide if an instance should be solved.")
-
+ap.add_argument("-g", dest="use_encoding_dt", action="store_true", default=False,
+                help="Use a decision tree to decide which encoding to use.")
 
 args = ap.parse_args()
 
@@ -151,9 +152,12 @@ if args.slim:
 
     parameters = improve_strategy.SlimParameters(tree, instance, enc, Glucose3, args.size, args.slim_opt,
                                                  args.maintain, args.reduce_numeric, args.reduce_categoric,
-                                                 args.time_limit, args.use_dt, args.benchmark, args.size_first)
+                                                 args.time_limit, args.use_dt, args.benchmark, args.size_first,
+                                                 args.use_encoding_dt)
     if args.use_dt:
         parameters.example_decision_tree = tree_parsers.parse_internal_tree("nonbinary/benchmark_tree.dt")
+    elif args.use_encoding_dt:
+        parameters.enc_decision_tree = tree_parsers.parse_internal_tree("nonbinary/benchmark_tree_encodings.dt")
 
     print(f"START Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
           f"Training: {tree.get_accuracy(instance.examples)}, Test: {tree.get_accuracy(test_instance.examples)}, "

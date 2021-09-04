@@ -20,7 +20,7 @@ def build_unique_set(parameters, root, samples, reduce, limit=maxsize):
         else:
             q.append((c_q.left, d + 1))
             q.append((c_q.right, d + 1))
-            c_features.add((c_q.feature, c_q.threshold))
+            c_features.add((c_q.feature, c_q.threshold, c_q.is_categorical))
 
     new_instance = ClassificationInstance()
     for s in samples:
@@ -39,17 +39,17 @@ def build_unique_set(parameters, root, samples, reduce, limit=maxsize):
             feature_key = c_features
         else:
             feature_key = set()
-            for c_f, c_v in c_features:
+            for c_f, c_v, c_c in c_features:
                 if c_f in new_instance.is_categorical:
                     if parameters.use_smt or parameters.reduce_categoric_full:
-                        feature_key.add((c_f, None))
+                        feature_key.add((c_f, None, None))
                     else:
-                        feature_key.add((c_f, c_v))
+                        feature_key.add((c_f, c_v, c_c))
                 else:
                     if parameters.use_smt or parameters.reduce_numeric_full:
-                        feature_key.add((c_f, None))
+                        feature_key.add((c_f, None, None))
                     else:
-                        feature_key.add((c_f, c_v))
+                        feature_key.add((c_f, c_v, c_c))
 
         new_instance.reduce(feature_key)
 
@@ -81,7 +81,7 @@ def build_reduced_set(parameters, root, assigned, reduce):
             cnt += 1
 
             if not new_root.is_leaf and new_root.id in frontier:
-                features.add((new_root.feature, new_root.threshold))
+                features.add((new_root.feature, new_root.threshold, new_root.is_categorical))
                 q[new_root.left.get_depth()].append((c_depth + 1, new_root.left))
                 q[new_root.right.get_depth()].append((c_depth + 1, new_root.right))
 
@@ -94,7 +94,7 @@ def build_reduced_set(parameters, root, assigned, reduce):
             c_n = parameters.tree.nodes[cl]
             if not c_n.is_leaf and c_n.left.is_leaf and c_n.right.is_leaf:
                 frontier.remove(cl)
-                features.add((c_n.feature, c_n.threshold))
+                features.add((c_n.feature, c_n.threshold, c_n.is_categorical))
 
                 frontier.add(c_n.left.id)
                 frontier.add(c_n.right.id)
@@ -137,20 +137,20 @@ def build_reduced_set(parameters, root, assigned, reduce):
                                                  cat_full=parameters.reduce_categoric_full or parameters.use_smt)
                 else:
                     if not (parameters.use_smt or parameters.reduce_numeric_full or parameters.reduce_categoric_full):
-                        feature_key = features
+                        feature_key = set(features)
                     else:
                         feature_key = set()
-                        for c_f, c_v in features:
+                        for c_f, c_v, c_c in features:
                             if c_f in new_instance.is_categorical:
                                 if parameters.use_smt or parameters.reduce_categoric_full:
-                                    feature_key.add((c_f, None))
+                                    feature_key.add((c_f, None, None))
                                 else:
-                                    feature_key.add((c_f, c_v))
+                                    feature_key.add((c_f, c_v, c_c))
                             else:
                                 if parameters.use_smt or parameters.reduce_numeric_full:
-                                    feature_key.add((c_f, None))
+                                    feature_key.add((c_f, None, None))
                                 else:
-                                    feature_key.add((c_f, c_v))
+                                    feature_key.add((c_f, c_v, c_c))
 
                     new_instance.reduce(feature_key)
 

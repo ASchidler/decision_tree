@@ -131,7 +131,7 @@ class ClassificationInstance:
                         found = False
 
                         # Check if there is a disagreement for any feature in the set
-                        for c_f, c_v in supset:
+                        for c_f, c_v, _ in supset:
                             if c_e1.features[c_f] == "?" or c_e2.features[c_f] == "?":
                                 continue
 
@@ -161,14 +161,14 @@ class ClassificationInstance:
                                 if c_e1.features[c_f] != c_e2.features[c_f]:
                                     if c_f in self.is_categorical:
                                         if cat_full:
-                                            supset.append((c_f, None))
+                                            supset.append((c_f, None, None))
                                         else:
-                                            supset.append((c_f, c_e1.features[c_f]))
+                                            supset.append((c_f, c_e1.features[c_f], False))
                                     else:
                                         if numeric_full:
-                                            supset.append((c_f, None))
+                                            supset.append((c_f, None, None))
                                         else:
-                                            supset.append((c_f, min(c_e1.features[c_f], c_e2.features[c_f])))
+                                            supset.append((c_f, min(c_e1.features[c_f], c_e2.features[c_f]), False))
                                     break
                             random.shuffle(features)
 
@@ -218,12 +218,16 @@ class ClassificationInstance:
         reduce_features = set()
         reduce_thresholds = defaultdict(list)
 
-        for c_f, c_v in key:
+        for c_f, c_v, c_c in key:
             if len(self.domains[c_f]) > 0:
                 if c_v is None:
                     reduce_features.add(c_f)
                     reduce_thresholds[c_f].extend(self.domains[c_f])
                 else:
+                    if c_c:
+                        idx = self.domains[c_f].index(c_v)
+                        if idx > 0:
+                            reduce_thresholds[c_f].append(self.domains[c_f][idx-1])
                     reduce_features.add(c_f)
                     reduce_thresholds[c_f].append(c_v)
 

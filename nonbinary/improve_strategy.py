@@ -4,6 +4,9 @@ import sys
 import decision_tree
 import time
 import nonbinary.depth_avellaneda_base as bs
+import nonbinary.depth_avellaneda_sat as s1
+import nonbinary.depth_avellaneda_sat2 as s2
+import nonbinary.depth_avellaneda_sat3 as s3
 import nonbinary.depth_avellaneda_base_benchmark as bbs
 import math
 from nonbinary.nonbinary_instance import Example
@@ -36,10 +39,12 @@ depth_limits = [12, 12, 12]
 
 reduce_runs = 1
 
+encodings = [None, s1, s2, s3]
+
 
 class SlimParameters:
     def __init__(self, tree, instance, encoding, slv, opt_size, opt_slim, maintain, reduce_numeric, reduce_categoric, timelimit, use_dt, benchmark,
-                 size_first):
+                 size_first, use_enc_dt):
         self.tree = tree
         self.instance = instance
         self.encoding = encoding
@@ -59,11 +64,27 @@ class SlimParameters:
         self.solver_time_limit = 300
         self.benchmark = benchmark
         self.size_first = size_first
+        self.use_enc_dt = use_enc_dt
+        self.enc_decision_tree = None
 
     def call_solver(self, new_instance, new_ub, cd, leaves):
         if not self.benchmark:
+            use_encoding = self.encoding
+            if self.enc_decision_tree is not None:
+                sample = self._create_tree_sample(new_instance, min(new_ub, cd - 1) if not self.size_first else min(new_ub, cd))
+                target_encoding = int(self.enc_decision_tree.root.decide(sample)[0])
+                if target_encoding <= 0:
+                    return None
+                # Encoding 3 can only run on non threshold-reduced instances, use encoding 1 as default replacement
+                # This is not valid anymore, but since thresholds can only used as thresholds and not for =,
+                # using encoding 3 for threshold reduced instances makes little sense
+                if target_encoding == 3 and new_instance.reduced_key is not None and \
+                    any(x[1] is not None for x in new_instance.reduced_key):
+                    target_encoding = 1
+                use_encoding = encodings[target_encoding]
+
             if self.encoding.is_sat():
-                return bs.run(self.encoding, new_instance, self.slv, start_bound=min(new_ub, cd - 1),
+                return bs.run(use_encoding, new_instance, self.slv, start_bound=min(new_ub, cd - 1),
                                   timeout=self.solver_time_limit,
                                   ub=min(new_ub, cd - 1), opt_size=self.opt_size, slim=self.opt_slim,
                                   maintain=self.maintain,
@@ -97,6 +118,9 @@ class SlimParameters:
         if self.example_decision_tree is not None:
             sample = self._create_tree_sample(new_instance, c_bound if not self.size_first else c_bound+1)
             return self.example_decision_tree.root.decide(sample)[0] == "1"
+        elif self.enc_decision_tree is not None:
+            sample = self._create_tree_sample(new_instance, c_bound if not self.size_first else c_bound + 1)
+            return self.enc_decision_tree.root.decide(sample)[0] != "-1"
         else:
             return self.sample_limits[c_bound if not self.size_first else c_bound+1] >= len(new_instance.examples)
 
@@ -105,12 +129,19 @@ class SlimParameters:
         if len(new_instance.examples) == 0 or len(new_instance.examples) > self.maximum_examples:
             return -1
 
-        sample = None if self.example_decision_tree is None else self._create_tree_sample(new_instance, new_ub)
+        sample = None if self.example_decision_tree is None and self.enc_decision_tree is None\
+            else self._create_tree_sample(new_instance, new_ub)
         for cb, sl in enumerate(self.sample_limits):
             if 1 <= cb <= self.maximum_depth and self.encoding.estimate_size(new_instance, cb) < literal_limit:
                 if self.example_decision_tree is not None:
                     sample.features[3] = cb
                     if self.example_decision_tree.root.decide(sample)[0] == "1":
+                        new_ub = cb
+                    else:
+                        break
+                elif self.enc_decision_tree is not None:
+                    sample.features[3] = cb
+                    if self.enc_decision_tree.root.decide(sample)[0] != "-1":
                         new_ub = cb
                     else:
                         break

@@ -3,10 +3,11 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 
 cmp_heur = True
-experiments = [("k", "DP-SL-SZ"), ("m", "DP-SZ"), ("n", "MT"), ("q", "DP"), ("f", "SZ")]
+#experiments = [("k", "SZ,EX"), ("m", "SZ"), ("n", "M"), ("q", "None")]
+experiments = [("k", "D-SZ-EX"), ("m", "D-SZ")]
 
-fields = [(5, "Depth"), (4, "Size"), (7, "Accuracy"), (8, "Avg. Decision Length")]
-field_idx = 0
+fields = [(10, "Depth"), (9, "Size"), (12, "Accuracy"), (13, "Avg. Decision Length")]
+field_idx = 3
 
 colors = ['#228833', 'black', '#eecc66', '#bb5566', '#004488']
 symbols = ['d', 'x', 's', 'v', 'o']
@@ -26,7 +27,7 @@ for c_experiment, c_ex_name in experiments:
     if cmp_heur or c_ex_name != experiments[0][1]:
         legend.append(c_ex_name)
 
-    with open(f"results_{c_experiment}.csv") as inp:
+    with open(f"results_{c_experiment}_comp.csv") as inp:
         for i, cl in enumerate(inp):
             if i > 0:
                 cf = cl.split(";")
@@ -36,8 +37,7 @@ for c_experiment, c_ex_name in experiments:
                     # else:
                     #     if results[cf[0]][0] != cf[target_idx]:
                     #         raise RuntimeError("Base mismatch")
-                results[cf[0]].append(cf[target_idx + 6])
-
+                results[cf[0]].append(cf[target_idx + 12])
 
 y = []
 X = [[] for _ in range(0 if cmp_heur else 1, len(experiments))]
@@ -90,12 +90,12 @@ if field_idx == 0 or field_idx == 3:
     plt.xlim(min_x - 1, max_x + 1)
     plt.ylim(min_y - 1, max_y + 1)
 if field_idx == 1:
-    plt.xlim(min_x-10, max_x+500)
-    plt.ylim(min_y-10, max_y+500)
+    plt.xlim(min_x, max_x+200)
+    plt.ylim(min_y, max_y+200)
 if field_idx == 2:
     plt.xlim(min_x-0.01, max_x+0.01)
     plt.ylim(min_y-0.01, max_y+0.01)
 ax.axline([0, 0], [1, 1], linestyle="--", color="grey", zorder=0)
 
-plt.savefig(f"scatter_{field_idx}.pdf", bbox_inches='tight')
+plt.savefig(f"scatter_prune_{field_idx}.pdf", bbox_inches='tight')
 plt.show()

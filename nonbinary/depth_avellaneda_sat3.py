@@ -69,6 +69,19 @@ def encode(instance, limit, solver, opt_size=False):
                 for i2 in range(0, len(instance.domains[cf])):
                     solver.add_clause([-f[i][base_idx + i2], e[i]])
 
+        # In case of a reduction, such that a value is represented as a threshold, enforce <=
+        # otherwise an edge may occur, where a <= threshold is used as = which will cause
+        # misclassifications on unreduce
+        if instance.reduced_key:
+            for cf, c_t, c_c in instance.reduced_key:
+                if c_c is not None and not c_c:
+                    cf = instance.reduced_map[cf]
+                    if cf not in instance.is_categorical:
+                        base_idx = instance.feature_idx[cf]
+                        offset = instance.domains[cf].index(c_t)
+                        for i2 in range(0, len(instance.domains[cf])-1):
+                            solver.add_clause([-f[i][base_idx + i2], -e[i]])
+
         solver.add_clause(clause)
 
     # each leaf has a class
