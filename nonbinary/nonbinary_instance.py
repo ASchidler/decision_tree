@@ -224,12 +224,15 @@ class ClassificationInstance:
                     reduce_features.add(c_f)
                     reduce_thresholds[c_f].extend(self.domains[c_f])
                 else:
-                    if c_c:
-                        idx = self.domains[c_f].index(c_v)
-                        if idx > 0:
-                            reduce_thresholds[c_f].append(self.domains[c_f][idx-1])
-                    reduce_features.add(c_f)
-                    reduce_thresholds[c_f].append(c_v)
+                    try:  # This might happen, if there tree has a threshold that does not occur in the instance
+                        if c_c:
+                            idx = self.domains[c_f].index(c_v)
+                            if idx > 0:
+                                reduce_thresholds[c_f].append(self.domains[c_f][idx-1])
+                        reduce_features.add(c_f)
+                        reduce_thresholds[c_f].append(c_v)
+                    except ValueError:
+                        pass
 
         for c_l in reduce_thresholds.values():
             c_l.sort()
@@ -349,7 +352,7 @@ class ClassificationInstance:
 
         self.finish()
 
-    def export_c45(self, path, write_names=True):
+    def export_c45(self, path, write_names=True, categorical=False):
         with open(path, "w") as outp:
             for c_e in self.examples:
                 for c_f in c_e.features[1:]:
@@ -368,7 +371,7 @@ class ClassificationInstance:
                     is_cat = any(isinstance(x, str) for x in c_d)
 
                     outp.write(f"att{c_i + 1}: ")
-                    if not is_cat:
+                    if not is_cat and not categorical:
                         outp.write("continuous." + os.linesep)
                     else:
                         for c_di, c_v in enumerate(c_d):
