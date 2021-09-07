@@ -56,6 +56,13 @@ def parse_file(fl, experiment):
                     flags += "o"
                 elif cfs[0] == "slim_opt" and cfs[1] == "True":
                     flags += "e"
+                elif cfs[0] == "use_dt" and cfs[1] == "True":
+                    flags += "x"
+                elif cfs[0] == "use_encoding_dt" and cfs[1] == "True":
+                    flags += "g"
+                elif cfs[0] == "size_first" and cfs[1] == "True":
+                    flags += "f"
+
             if c_encoding == "":
                 c_encoding = "0"
             flags = c_val + flags + c_encoding

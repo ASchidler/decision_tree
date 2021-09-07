@@ -16,6 +16,18 @@ class DecisionTreeNode:
         self.count_left = 0
         self.count_right = 0
 
+    def __ge__(self, other):
+        return self.id >= other.id
+
+    def __gt__(self, other):
+        return self.id > other.id
+
+    def __le__(self, other):
+        return self.id <= other.id
+
+    def __lt__(self, other):
+        return self.id < other.id
+
     def _decide(self, e):
         c_val = e.features[self.feature]
         if c_val == "?" and len(e.instance.domains[self.feature]) > 0:
@@ -110,6 +122,18 @@ class DecisionTreeLeaf:
         self.tree = tree
         self.parent = None
         self.count = 0
+
+    def __ge__(self, other):
+        return self.id >= other.id
+
+    def __gt__(self, other):
+        return self.id > other.id
+
+    def __le__(self, other):
+        return self.id <= other.id
+
+    def __lt__(self, other):
+        return self.id < other.id
 
     def decide(self, e):
         return self.cls, self

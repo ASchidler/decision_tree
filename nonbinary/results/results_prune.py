@@ -5,10 +5,11 @@ import nonbinary.nonbinary_instance as nbi
 import nonbinary.pruning as p
 
 algos = ["w"]
-trees = ["m"]
+trees = ["g"]
 #flags = ["0", "a", "y"]
-flags = ["z0"]
+flags = ["zg0"]
 #flags = ["uzy"]
+use_ccp = False
 
 for c_file in sorted(os.listdir("../instances")):
     if c_file.endswith(".data"):
@@ -21,7 +22,7 @@ for c_file in sorted(os.listdir("../instances")):
                 full_instance, _, _ = nbi.parse("../instances", fd[0], int(fd[1]), False, True)
 
                 for c_f in flags:
-                    out_path = os.path.join("trees", "p", f"{c_file[:-5]}.{c_t}.{c_f}.{c_a}.dt")
+                    out_path = os.path.join("trees", "p" if not use_ccp else "p2", f"{c_file[:-5]}.{c_t}.{c_f}.{c_a}.dt")
                     if os.path.exists(out_path):
                         continue
 
@@ -40,7 +41,10 @@ for c_file in sorted(os.listdir("../instances")):
                     v_tree = tp.parse_internal_tree(v_tree_path)
 
                     print(f"{tree_path}: {tree.get_nodes()} {tree.get_depth()} {tree.get_accuracy(test_instance.examples)}")
-                    p.prune_c45_optimized(tree, full_instance, v_tree, validation_instance, validation_test)
+                    if use_ccp:
+                        p.cost_complexity(tree, full_instance, v_tree, validation_instance, validation_test)
+                    else:
+                        p.prune_c45_optimized(tree, full_instance, v_tree, validation_instance, validation_test)
                     print(f"{tree_path}: {tree.get_nodes()} {tree.get_depth()} {tree.get_accuracy(test_instance.examples)}")
 
                     with open(out_path, "w") as out_file:

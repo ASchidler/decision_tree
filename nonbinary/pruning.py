@@ -2,6 +2,7 @@ import math
 from collections import defaultdict
 from collections import deque
 from scipy.stats import norm
+from sys import maxsize
 
 from nonbinary.decision_tree import DecisionTreeLeaf
 
@@ -171,3 +172,161 @@ def prune_c45_optimized(tree, instance, validation_tree, validation_training, va
         prune_c45(tree, instance, best_c, best_m, subtree_raise)
         tree.root.reclassify(instance.examples)
     return best_accuracy, best_c, best_m
+
+
+
+def _cost_complexity_alphas(tree, instance):
+    errors = {}
+    branch_error = {}
+    leafs = {}
+    classes = {}
+    tree = tree.copy()
+    assigned = tree.assign(instance)
+
+    def find_errors(node):
+        distribution = defaultdict(int)
+        for s in assigned[node.id]:
+            distribution[s.cls] += 1
+
+        if node.is_leaf:
+            incorrect = sum(x[1] for x in distribution.items() if x[0] != node.cls)
+            errors[node.id] = incorrect
+            branch_error[node.id] = incorrect
+            return incorrect, 1
+
+        new_cls, _ = max(distribution.items(), key=lambda k: k[1])
+        le, ll = find_errors(node.left)
+        re, rl = find_errors(node.right)
+        errors[node.id] = sum(x[1] for x in distribution.items() if x[0] != new_cls)
+        classes[node.id] = new_cls
+
+        branch_error[node.id] = le + re
+        leafs[node.id] = ll + rl
+
+        return le + re, ll + rl
+
+    find_errors(tree.root)
+
+    def do_pass(node):
+        if node.is_leaf:
+            return maxsize, node
+        else:
+            min_alpha = min(do_pass(node.left), do_pass(node.right))
+            rt = errors[node.id]
+            branch = branch_error[node.id]
+            c_alpha = (rt - branch) / (leafs[node.id] - 1) / len(instance.examples)#len(assigned[node.id])
+
+            if c_alpha < min_alpha[0]:
+                return c_alpha, node
+            return min_alpha
+
+    alphas = []
+    while True:
+        c_min = do_pass(tree.root)
+        alphas.append(c_min[0])
+        if c_min[1].id == tree.root.id:
+            break
+
+        # Prune node
+        new_node = DecisionTreeLeaf(classes[c_min[1].id], c_min[1].id, tree)
+        new_node.parent = c_min[1].parent
+        tree.nodes[c_min[1].id] = new_node
+        if c_min[1].parent.left.id == c_min[1].id:
+            c_min[1].parent.left = new_node
+        else:
+            c_min[1].parent.right = new_node
+
+        diff = errors[c_min[1].id] - branch_error[c_min[1].id]
+        cnode = c_min[1]
+        while cnode.parent is not None:
+            cp = cnode.parent
+            leafs[cp.id] -= leafs[c_min[1].id] - 1
+            branch_error[cp.id] += diff
+            cnode = cp
+
+    return alphas
+
+
+def _cost_complexity_prune(tree, instance, test_instance, alphas):
+    errors = {}
+    branch_error = {}
+    leafs = {}
+    classes = {}
+    assigned = tree.assign(instance)
+
+    def find_errors(node):
+        distribution = defaultdict(int)
+        for s in assigned[node.id]:
+            distribution[s.cls] += 1
+
+        if node.is_leaf:
+            incorrect = sum(x[1] for x in distribution.items() if x[0] != node.cls)
+            errors[node.id] = incorrect
+            branch_error[node.id] = incorrect
+            return incorrect, 1
+
+        new_cls, _ = max(distribution.items(), key=lambda k: k[1])
+        le, ll = find_errors(node.left)
+        re, rl = find_errors(node.right)
+        errors[node.id] = sum(x[1] for x in distribution.items() if x[0] != new_cls)
+        classes[node.id] = new_cls
+
+        branch_error[node.id] = le + re
+        leafs[node.id] = ll + rl
+
+        return le + re, ll + rl
+
+    find_errors(tree.root)
+
+    def do_pass(node, alpha):
+        if node.is_leaf:
+            return None, 0, 0
+        else:
+            l_result = do_pass(node.left, alpha)
+            r_result = do_pass(node.right, alpha)
+
+            be_correction = l_result[1] + r_result[1]
+            l_correction = l_result[2] + r_result[2]
+
+            branch_error[node.id] += be_correction
+            leafs[node.id] -= l_correction
+
+            rt = errors[node.id]
+            branch = branch_error[node.id]
+            c_alpha = (rt - branch) / (leafs[node.id] - 1) / len(instance.examples) # len(assigned[node.id])
+
+            if c_alpha <= alpha:
+                new_leaf = DecisionTreeLeaf(classes[node.id], node.id, tree)
+                tree.nodes[node.id] = new_leaf
+                return new_leaf, errors[node.id] - branch_error[node.id], leafs[node.id] - 1
+
+            if l_result[0] is not None:
+                node.left = l_result[0]
+            if r_result[0] is not None:
+                node.right = r_result[0]
+            return None, be_correction, l_correction
+
+    results = []
+    for new_alpha in alphas:
+        ret = do_pass(tree.root, new_alpha)
+        if ret[0] is not None:
+            tree.root = ret[0]
+
+        results.append(tree.get_accuracy(test_instance.examples))
+
+    return results
+
+
+def cost_complexity(tree, instance, validation_tree, validation_training, validation_test):
+    tree.clean(instance)
+
+    alphas = _cost_complexity_alphas(tree, instance)
+
+    new_tree = validation_tree.copy()
+    new_tree.clean(validation_training)
+    accuracies = _cost_complexity_prune(new_tree, validation_training, validation_test, alphas)
+
+    best_alpha, best_accuracy = max(list(enumerate(accuracies)), key=lambda k: k[1])
+    _cost_complexity_prune(tree, instance, instance, [alphas[best_alpha]])
+    tree.root.reclassify(instance.examples)
+    return best_accuracy

@@ -23,6 +23,7 @@ def build_unique_set(parameters, root, samples, reduce, limit=maxsize):
             c_features.add((c_q.feature, c_q.threshold, c_q.is_categorical))
 
     new_instance = ClassificationInstance()
+    new_instance.is_categorical.update(parameters.instance.is_categorical)
     for s in samples:
         if root.decide(s)[0] != s.cls:  # Skip misclassified
             continue
@@ -50,7 +51,6 @@ def build_unique_set(parameters, root, samples, reduce, limit=maxsize):
                         feature_key.add((c_f, None, None))
                     else:
                         feature_key.add((c_f, c_v, c_c))
-
         new_instance.reduce(feature_key)
 
     return new_instance, len(c_leafs), depth
@@ -121,6 +121,7 @@ def build_reduced_set(parameters, root, assigned, reduce):
             # If all "leaves" are leaves, this method is not required, as it will be handled by separate improvements
             if cnt_internal > 0:
                 new_instance = ClassificationInstance()
+                new_instance.is_categorical.update(parameters.instance.is_categorical)
                 for s in assigned[root.id]:
                     if root.decide(s)[0] != s.cls:  # Skip misclassified
                         continue
@@ -130,6 +131,7 @@ def build_reduced_set(parameters, root, assigned, reduce):
                         n_s.surrogate_cls = f"-{s.cls}"
                     new_instance.add_example(n_s)
                 new_instance.class_sizes = class_sizes
+                new_instance.is_categorical.update(parameters.instance.is_categorical)
                 new_instance.finish()
 
                 if reduce:
@@ -270,6 +272,7 @@ def leaf_select(parameters, node, assigned):
         n_s = s.copy(new_instance)
         n_s.cls = f"-{n_s.cls}"
         new_instance.add_example(n_s)
+    new_instance.is_categorical.update(parameters.instance.is_categorical)
     new_instance.finish()
 
     new_ub = parameters.get_max_bound(new_instance)

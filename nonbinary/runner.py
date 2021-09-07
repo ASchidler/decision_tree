@@ -18,6 +18,7 @@ import nonbinary.depth_avellaneda_sat3 as nbs3
 import nonbinary.depth_avellaneda_smt as nbt
 import nonbinary.depth_avellaneda_base as base
 from threading import Timer
+import pruning
 
 instance_path = "nonbinary/instances"
 instance_validation_path = "datasets/validate"
@@ -82,7 +83,7 @@ fls.sort()
 #     exit(0)
 # names = set()
 # for i, cf in enumerate(fls):
-#     print(f"{i} {cf}")
+#     print(f"{i+1} {cf}")
 #     names.add(cf.split(".")[0])
 # for i, cf in enumerate(names):
 #     print(f"{i} {cf}")
@@ -148,6 +149,8 @@ else:
 if args.slim:
     algo = "w" if args.weka else "c"
     dirs = "validation" if args.validation else "unpruned"
+    # if args.categorical:
+    #     dirs = "categorical"
     tree = tree_parsers.parse_internal_tree(f"nonbinary/results/trees/{dirs}/{target_instance}.{args.slice}.{algo}.dt")
 
     parameters = improve_strategy.SlimParameters(tree, instance, enc, Glucose3, args.size, args.slim_opt,

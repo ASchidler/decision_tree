@@ -11,11 +11,16 @@ logfiles = [
     ("dt-nb-q-1.tar.bz2", "DP"), ("dt-nb-q-2.tar.bz2", "DP"),
     ("dt-nb-f-1.tar.bz2", "SZ")
 ]
+logfiles = [
+    ("dt-nb-m-1.tar.bz2", "Old Budget"),
+    ("dt-nb-x-1.tar.bz2", "DT Budget"),
+    ("dt-nb-g-1.tar.bz2", "DT Encoding"),
+]
 instance_name = sys.argv[1]
 slice = sys.argv[2]
 
 fields = [(1, "Depth"), (2, "Size"), (4, "Accuracy"), (5, "Avg. Decision Length")]
-field_idx = 3
+field_idx = 1
 
 colors = ['#228833', 'black', '#eecc66', '#bb5566', '#004488']
 symbols = ['d', 'x', 's', 'v', 'o']
@@ -60,7 +65,7 @@ for logfile, logfile_name in logfiles:
                     cv = [x.strip().split(" ")[-1].strip() for x in cf]
                     avg_d = None if len(cv) < 6 else cv[4]
                     entries.append((cv[-1], cv[0], cv[1], cv[2], cv[3], avg_d))
-                elif cl.startswith("Time:"):
+                elif cl.startswith("Time:") or cl.startswith("Time "):
                     # Time: 230.2385	Training 1.0000	Test 0.8406	Depth 019	Nodes 139	Method ma
                     cf = cl.replace(":", "").strip().split("\t")
                     cv = [x.strip().split(" ")[-1].strip() for x in cf]
