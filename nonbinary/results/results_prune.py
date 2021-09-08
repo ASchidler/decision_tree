@@ -5,11 +5,11 @@ import nonbinary.nonbinary_instance as nbi
 import nonbinary.pruning as p
 
 algos = ["w"]
-trees = ["g"]
+trees = ["r"]
 #flags = ["0", "a", "y"]
-flags = ["zg0"]
+flags = ["oz0"]
 #flags = ["uzy"]
-use_ccp = False
+use_ccp = True
 
 for c_file in sorted(os.listdir("../instances")):
     if c_file.endswith(".data"):

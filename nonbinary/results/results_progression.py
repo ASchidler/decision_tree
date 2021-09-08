@@ -7,20 +7,20 @@ import matplotlib.pyplot as plt
 logfiles = [
     ("dt-nb-k-1.tar.bz2", "DP-SL-SZ"), ("dt-nb-k-2.tar.bz2", "DP-SL-SZ"),
     ("dt-nb-m-1.tar.bz2", "DP-SZ"),
-    ("dt-nb-n-1.tar.bz2", "MT"), ("dt-nb-n-2.tar.bz2", "MT"),
+    ("dt-nb-n-1.tar.bz2", "MT-DP"), ("dt-nb-n-2.tar.bz2", "MT-DP"),
     ("dt-nb-q-1.tar.bz2", "DP"), ("dt-nb-q-2.tar.bz2", "DP"),
-    ("dt-nb-f-1.tar.bz2", "SZ")
+    ("dt-nb-f-1.tar.bz2", "SZ-DP")
 ]
-logfiles = [
-    ("dt-nb-m-1.tar.bz2", "Old Budget"),
-    ("dt-nb-x-1.tar.bz2", "DT Budget"),
-    ("dt-nb-g-1.tar.bz2", "DT Encoding"),
-]
+# logfiles = [
+#     ("dt-nb-m-1.tar.bz2", "Old Budget"),
+#     ("dt-nb-x-1.tar.bz2", "DT Budget"),
+#     ("dt-nb-g-1.tar.bz2", "DT Encoding"),
+# ]
 instance_name = sys.argv[1]
 slice = sys.argv[2]
 
 fields = [(1, "Depth"), (2, "Size"), (4, "Accuracy"), (5, "Avg. Decision Length")]
-field_idx = 1
+field_idx = 0
 
 colors = ['#228833', 'black', '#eecc66', '#bb5566', '#004488']
 symbols = ['d', 'x', 's', 'v', 'o']
@@ -90,7 +90,7 @@ for _, c_k in logfiles:
     max_y = max(max_y, max(y))
     min_y = min(min_y, min(y))
 
-    ax.scatter(x, y, marker=symbols.pop(), s=10, alpha=0.5 if colors[-1] != '#eecc66' else 1,
+    ax.scatter(x, y, marker=symbols.pop(), s=15, alpha=1 if colors[-1] != '#eecc66' else 1,
                zorder=2 if colors[-1] != '#eecc66' else 1, color=colors.pop())
     legend.append(c_k)
 
@@ -103,7 +103,7 @@ ax.set_ylabel(fields[field_idx][1])
 plt.rcParams["legend.loc"] = 'upper right'
 plt.rcParams['savefig.pad_inches'] = 0
 plt.autoscale(tight=True)
-plt.legend(legend)
+plt.legend(legend, fontsize=12)
 # if c_col == 1:
 #     plt.xscale("log")
 #     plt.yscale("log")

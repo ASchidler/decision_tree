@@ -5,21 +5,26 @@ import math
 
 cmp_heur = True
 use_virtual_best = True
+use_virtual_all = True
+use_cart = False
+use_binoct = True
 #experiments = [("k", "SZ,EX"), ("m", "SZ"), ("n", "M"), ("q", "None")]
 #experiments = [("k", "DP-SL-SZ"), ("m", "DP-SZ")]
-experiments = [("k", "DP-SL-SZ"), ("m", "DP-SZ"), ("n", "MT-DP"), ("x", "DT Budget"),
-               ("q", "DP"), ("f", "SZ-DP")]
+experiments = [("m", "DP-SZ"), ("k", "DP-SL-SZ"), ("n", "MT-DP"), ("x", "DT Budget"),
+               ("q", "DP"), ("f", "SZ-DP"), ("g", "DT Encoding"), ("r", "Reduce Categoric")]
 
 all_experiments = ["k", "m"]
 
-fields = [(10, "Depth"), (9, "Size"), (12, "Accuracy"), (13, "Avg. Decision Length")]
-field_idx = 3
+fields = [(10, "Depth"), (9, "Size"), (12, "Accuracy"), (13, "Avg. Decision Length"),
+          (11, "Training Accuracy")
+          ]
+field_idx = 2
 bar_idx = [0, 1, 2]
 
 colors = ['#228833', 'black', '#eecc66', '#bb5566', '#004488']
 symbols = ['d', 'x', 's', 'v', 'o']
 
-fig, ax = plt.subplots(figsize=(4, 2.5), dpi=300)
+
 min_x = sys.maxsize * 1.0
 max_x = 0.0
 min_y = sys.maxsize * 1.0
@@ -34,7 +39,7 @@ for c_experiment, c_ex_name in experiments:
     if cmp_heur or c_ex_name != experiments[0][1]:
         legend.append(c_ex_name)
 
-    with open(f"results_{c_experiment}_comp.csv") as inp:
+    with open(f"results_{c_experiment}_comp{('' if c_experiment != 'm' or not use_binoct else '_binoct') if not use_cart else '_c'}.csv") as inp:
         for i, cl in enumerate(inp):
             if i > 0:
                 cf = cl.split(";")
@@ -44,10 +49,20 @@ for c_experiment, c_ex_name in experiments:
                     # else:
                     #     if results[cf[0]][0] != cf[target_idx]:
                     #         raise RuntimeError("Base mismatch")
-                results[cf[0]].append([cf[x[0] + 12].strip() for x in fields])
+                result1 = [cf[x[0] + 12].strip() for x in fields]
+                result2 = [cf[x[0] + 18].strip() for x in fields]
+                results[cf[0]].append(result1)
+                # if float(result2[2]) > float(result1[2]):
+                #     results[cf[0]].append(result2)
+                # else:
+                #     results[cf[0]].append(result1)
 
 if use_virtual_best:
-    legend.append("Virtual Best")
+    if use_virtual_all:
+        for idx in bar_idx:
+            legend.append(f"Virtual Best {fields[idx][1]}")
+    else:
+        legend.append("Virtual Best")
 
 X = [[] for _ in range(0 if cmp_heur else 1, len(legend))]
 y = []
@@ -62,19 +77,27 @@ for cl in results.values():
 
     if not any(x == "-1" for x in cl):
         if use_virtual_best:
-            max_entry = max(cl[1:], key=lambda x: x[2])
-            cl.append(max_entry)
+            if use_virtual_all:
+                for idx in bar_idx:
+                    if idx == 2 or idx == 4:
+                        max_entry = max((x for x in cl[1:] if x[idx] != "-1"), key=lambda x: (float(x[idx]), -float(x[0])))
+                    else:
+                        max_entry = min((x for x in cl[1:] if x[idx] != "-1"), key=lambda x: (float(x[idx]), -float(x[2])))
+                    cl.append(max_entry)
+            else:
+                max_entry = max((x for x in cl[1:] if x[2] != "-1"), key=lambda x: float(x[2]))
+                cl.append(max_entry)
 
         y.append(float(cl[0][field_idx]))
         for i, cv in enumerate(cl[1:]):
             X[i].append(float(cv[field_idx]))
             for idx in range(0, len(fields)):
-                if float(cv[idx]) < float(cl[0][idx]):
+                if round(float(cv[idx]), 2) < round(float(cl[0][idx]), 2):
                     lts[i][idx] += 1
                     if (idx != 2 and float(cv[idx]) < float(cl[0][idx]) * 0.9) or \
                         (idx == 2 and float(cl[0][idx]) - float(cv[idx]) > 0.01):
                         lts2[i][idx] += 1
-                elif float(cv[idx]) > float(cl[0][idx]):
+                elif round(float(cv[idx]), 2) > round(float(cl[0][idx]),2):
                     gts[i][idx] += 1
                     if (idx != 2 and float(cv[idx]) * 0.9 > float(cl[0][idx])) or \
                             (idx == 2 and float(cv[idx]) - float(cl[0][idx]) > 0.01):
@@ -86,21 +109,30 @@ for i in range(0, len(lts)):
 if use_virtual_best:
     best_counts = {x: 0 for x in range(0, len(legend)-1)}
     for cl in results.values():
-        best_val = max(float(x[2]) for x in cl[1:-1])
+        best_val = max(float(x[2]) for x in cl[1:-1 * (len(bar_idx) if use_virtual_all else 1)])
 
-        for i, cv in enumerate(cl[1:-1]):
+        for i, cv in enumerate(cl[1:-1 * (len(bar_idx) if use_virtual_all else 1)]):
             if math.fabs(best_val - float(cv[2])) <= 0.0001:
                 best_counts[i] += 1
+
     _, best_idx = max((v, k) for k, v in best_counts.items())
-    legend = [legend[best_idx], legend[-1]]
-    X = [X[best_idx], X[-1]]
-    lts = [lts[best_idx], lts[-1]]
-    lts2 = [lts2[best_idx], lts2[-1]]
-    gts = [gts[best_idx], gts[-1]]
-    gts2 = [gts2[best_idx], gts2[-1]]
+    if use_virtual_all:
+        legend = ["Single Best", *legend[-1 * len(bar_idx):]]
+        X = [X[best_idx], *X[-1 * len(bar_idx):]]
+        lts = [lts[best_idx], *lts[-1 * len(bar_idx):]]
+        lts2 = [lts2[best_idx], *lts2[-1 * len(bar_idx):]]
+        gts = [gts[best_idx], *gts[-1 * len(bar_idx):]]
+        gts2 = [gts2[best_idx], *gts2[-1 * len(bar_idx):]]
+    else:
+        legend = ["Single Best", legend[-1]]
+        X = [X[best_idx], X[-1]]
+        lts = [lts[best_idx], lts[-1]]
+        lts2 = [lts2[best_idx], lts2[-1]]
+        gts = [gts[best_idx], gts[-1]]
+        gts2 = [gts2[best_idx], gts2[-1]]
 
 # Bar plot
-fig, ax = plt.subplots(figsize=(4, 1 * len(lts)))
+#fig, ax = plt.subplots(figsize=(4, 1 * len(lts)))
 yticks = []
 ylabels = []
 
@@ -155,17 +187,18 @@ ylabels = []
 #         plt.text(max(lts[i][idx] + 0.1, 3), y_pos - bar_height - 0.01, f"{lts[i][idx]} ({lts2[i][idx]})", ha='left', va='center', size=8)
 #
 
-
+lts = [lts[0]]
+fig, ax = plt.subplots(figsize=(4, 1.5 * len(lts)))
 bar_height = 0.06
 y_scale = len(lts) * bar_height + 0.1
 for idx_idx, idx in enumerate(bar_idx):
-    plt.text(len(results)/2, -idx_idx * y_scale, fields[idx][1], fontsize=10, ha='center')
+    plt.text(len(results)/2, -idx_idx * y_scale, fields[idx][1], fontsize=10, ha='center', color='black')
 
     for i in range(0, len(lts)):
         #plt.plot([0, 0], [-i*y_scale - 0.045, -i*y_scale - 0.045 - len(bar_idx) * (bar_height + 0.02) + 0.027], color='black', lw=0.5)
         y_pos = -1 * (idx_idx * y_scale + i * (bar_height + 0.01) + 0.04)
 
-        plt.text(len(results)/2, y_pos, f"{legend[i]}", ha='center', va='center', size=8) #  {'C4.5' if cmp_heur else experiments[0][1]}
+        plt.text(0+0.2, y_pos, f"{legend[i]}", ha='left', va='center', size=8, color="black", fontweight=600)
         # plt.text(0.2, y_pos - bar_height, f"{legend[i]} <", ha='left', va='center', size=8)
         ax.barh(y_pos, lts2[i][idx], align='center', color='#1B7837' if idx != 2 else '#B2182B', height=bar_height,
                 label=lts2[i][idx])
@@ -204,11 +237,11 @@ ax.spines['right'].set_color('none')
 ax.spines['top'].set_color('none')
 
 #ax.invert_yaxis()  # labels read top-to-bottom
-#ax.set_xlabel('Performance')
+ax.set_xlabel('Instances')
 plt.rcParams['savefig.pad_inches'] = 0
 plt.autoscale(tight=True)
 
-plt.savefig(f"bar_prune_{field_idx}.pdf", bbox_inches='tight')
+plt.savefig(f"bar_prune.pdf", bbox_inches='tight')
 plt.show()
 
 fig, ax = plt.subplots(figsize=(4, 2.5), dpi=300)
@@ -228,10 +261,10 @@ names = []
 ax.set_xlabel('DT-SLIM')
 ax.set_ylabel('C4.5' if cmp_heur else experiments[0][1])
 # ax.set_title('scatter plot')
-plt.rcParams["legend.loc"] = 'lower right'
+plt.rcParams["legend.loc"] = 'upper left'
 plt.rcParams['savefig.pad_inches'] = 0
 plt.autoscale(tight=True)
-plt.legend(legend)
+plt.legend([x.replace("Virtual ","") for x in legend])
 if field_idx == 1:
     plt.xscale("log")
     plt.yscale("log")

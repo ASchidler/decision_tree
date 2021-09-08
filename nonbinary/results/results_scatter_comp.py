@@ -7,9 +7,9 @@ cmp_heur = False
 #experiments = [("m", "DP-SZ"), ("k", "DP-SL-SZ"), ("n", "MT-DP"), ("q", "DP"), ("f", "SZ-DP")]
 #experiments = [("m", "DP-SZ"), ("o", "Old"), ("r", "Cat")]
 #experiments = [("m", "DP-SZ"), ("c", "Old")]
-#experiments = [("m", "DP-SZ"), ("x", "DT Budget"), ("g", "DT Encoding")]
+experiments = [("r", "DP-SZ"), ("x", "DT Budget"), ("g", "DT Encoding"), ("h", "2")]
 #experiments = [("m", "DP-SZ"), ("g", "Encoding")]
-experiments = [("o", "DP-SZ"), ("c", "DT Budget")]
+#experiments = [("o", "DP-SZ"), ("c", "DT Budget")]
 
 fields = [(5, "Depth"), (4, "Size"), (7, "Accuracy"), (8, "Avg. Decision Length")]
 field_idx = 1
@@ -140,7 +140,7 @@ for idx_idx, idx in enumerate(bar_idx):
         #plt.plot([0, 0], [-i*y_scale - 0.045, -i*y_scale - 0.045 - len(bar_idx) * (bar_height + 0.02) + 0.027], color='black', lw=0.5)
         y_pos = -1 * (idx_idx * y_scale + i * (bar_height + 0.01) + 0.04)
 
-        plt.text(len(results)/2, y_pos, f"{legend[i]}", ha='center', va='center', size=8) #  {'C4.5' if cmp_heur else experiments[0][1]}
+        plt.text(0.2, y_pos, f"{legend[i]}", ha='left', va='center', size=8, fontweight=600) #  {'C4.5' if cmp_heur else experiments[0][1]}
         # plt.text(0.2, y_pos - bar_height, f"{legend[i]} <", ha='left', va='center', size=8)
         ax.barh(y_pos, lts2[i][idx], align='center', color='#1B7837' if idx != 2 else '#B2182B', height=bar_height, label=lts2[i][idx])
         ax.barh(y_pos, lts[i][idx] - lts2[i][idx], align='center', color='#5AAE61' if idx != 2 else '#F5a582', height=bar_height, left=lts2[i][idx])
@@ -178,7 +178,7 @@ ax.spines['top'].set_color('none')
 plt.rcParams['savefig.pad_inches'] = 0
 plt.autoscale(tight=True)
 
-plt.savefig(f"bar_{field_idx}.pdf", bbox_inches='tight')
+plt.savefig(f"bar.pdf", bbox_inches='tight')
 plt.show()
 
 max_y = max(max_y, max(y))

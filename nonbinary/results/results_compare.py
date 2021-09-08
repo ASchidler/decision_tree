@@ -5,9 +5,10 @@ from collections import defaultdict
 import nonbinary.nonbinary_instance as nbi
 import pruning
 
-experiment = "n"
+experiment = "x"
 flags = set()
 ignore = set()
+target_algorithm = "c"
 
 with open("ignore.txt") as ip:
     for _, cl in enumerate(ip):
@@ -23,7 +24,7 @@ class TreeData:
         self.test = None
         self.avg_length = None
 
-files = defaultdict(lambda: defaultdict(lambda: [defaultdict(TreeData), defaultdict(TreeData)]))
+files = defaultdict(lambda: defaultdict(lambda: [defaultdict(TreeData), defaultdict(TreeData), defaultdict(TreeData)]))
 sizes = defaultdict(list)
 
 original = defaultdict(lambda: [defaultdict(TreeData), defaultdict(TreeData)])
@@ -44,9 +45,12 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
         tree_p = None
         if os.path.exists(os.path.join("trees", "p", c_file)):
             tree_p = tp.parse_internal_tree(os.path.join("trees", "p", c_file))
+        tree_p2 = None
+        if os.path.exists(os.path.join("trees", "p2", c_file)):
+            tree_p2 = tp.parse_internal_tree(os.path.join("trees", "p2", c_file))
         sizes[file_name].append((len(instance.examples), instance.num_features, len(instance.classes)))
 
-        for c_idx, c_t in enumerate([tree, tree_p]):
+        for c_idx, c_t in enumerate([tree, tree_p, tree_p2]):
             if c_t is not None:
                 tree.train(instance)
                 files[file_name][file_fields[3]][c_idx][file_fields[1]].nodes = c_t.get_nodes()
@@ -56,11 +60,11 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
                 files[file_name][file_fields[3]][c_idx][file_fields[1]].avg_length = c_t.get_avg_length(instance_test.examples)
 
                 print(f"Parsed {c_file}")
-                if file_fields[1] not in original[file_name]:
+                if file_fields[1] not in original[file_name] and c_idx < 2:
                     if os.path.exists(os.path.join("trees", "unpruned" if c_idx == 0 else "pruned",
-                                                                f"{file_name}.{file_fields[1]}.w.dt")):
+                                                                f"{file_name}.{file_fields[1]}.{target_algorithm}.dt")):
                         tree2 = tp.parse_internal_tree(os.path.join("trees", "unpruned" if c_idx == 0 else "pruned",
-                                                                    f"{file_name}.{file_fields[1]}.w.dt"))
+                                                                    f"{file_name}.{file_fields[1]}.{target_algorithm}.dt"))
                         tree2.train(instance)
                         original[file_name][c_idx][file_fields[1]].nodes = tree2.get_nodes()
                         original[file_name][c_idx][file_fields[1]].depth = tree2.get_depth()
@@ -70,13 +74,13 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
             else:
                 print(f"No tree in {c_file} {c_idx}")
 
-with open(f"results_{experiment}_comp.csv", "w") as outf:
+with open(f"results_{experiment}_comp{'' if target_algorithm == 'w' else f'_{target_algorithm}'}.csv", "w") as outf:
     outf.write("Instance;E;F;C")
     for c_p in ["U", "P"]:
         outf.write(f";{c_p} Nodes;{c_p} Depth;{c_p} Train Acc;{c_p} Test Acc;{c_p} Avg. Test Length")
 
     for c_f in sorted(flags):
-        for c_p in ["U", "P"]:
+        for c_p in ["U", "P", "P2"]:
             outf.write(f";{c_f} {c_p} Solved;{c_f} {c_p} Nodes;{c_f} {c_p} Depth;{c_f} {c_p} Train Acc;{c_f} {c_p} Test Acc;{c_f} {c_p} Avg. Test Length")
 
     outf.write(os.linesep)
@@ -108,7 +112,7 @@ with open(f"results_{experiment}_comp.csv", "w") as outf:
             print(c_file)
 
         for c_f in sorted(flags):
-            for c_idx in [0, 1]:
+            for c_idx in [0, 1, 2]:
                 if c_f not in files[c_file] or len(files[c_file][c_f]) <= c_idx:
                     outf.write(";;;;;;")
                     continue

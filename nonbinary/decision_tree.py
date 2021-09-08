@@ -166,8 +166,8 @@ class DecisionTreeLeaf:
         classes = defaultdict(int)
         for cs in samples:
             classes[cs.cls] += 1
-
-        _, self.cls = max((v, k) for k, v in classes.items())
+        if len(samples) > 0:
+            _, self.cls = max((v, k) for k, v in classes.items())
 
     def copy(self, new_tree, c_p, is_left):
         if c_p is None:
