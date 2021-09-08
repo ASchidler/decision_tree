@@ -117,7 +117,7 @@ if use_virtual_best:
 
     _, best_idx = max((v, k) for k, v in best_counts.items())
     if use_virtual_all:
-        legend = ["Single Best", *legend[-1 * len(bar_idx):]]
+        legend = [legend[best_idx], *legend[-1 * len(bar_idx):]]
         X = [X[best_idx], *X[-1 * len(bar_idx):]]
         lts = [lts[best_idx], *lts[-1 * len(bar_idx):]]
         lts2 = [lts2[best_idx], *lts2[-1 * len(bar_idx):]]
@@ -187,7 +187,7 @@ ylabels = []
 #         plt.text(max(lts[i][idx] + 0.1, 3), y_pos - bar_height - 0.01, f"{lts[i][idx]} ({lts2[i][idx]})", ha='left', va='center', size=8)
 #
 
-lts = [lts[0]]
+#lts = [lts[0]]
 fig, ax = plt.subplots(figsize=(4, 1.5 * len(lts)))
 bar_height = 0.06
 y_scale = len(lts) * bar_height + 0.1

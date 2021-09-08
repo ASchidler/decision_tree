@@ -7,13 +7,13 @@ cmp_heur = False
 #experiments = [("m", "DP-SZ"), ("k", "DP-SL-SZ"), ("n", "MT-DP"), ("q", "DP"), ("f", "SZ-DP")]
 #experiments = [("m", "DP-SZ"), ("o", "Old"), ("r", "Cat")]
 #experiments = [("m", "DP-SZ"), ("c", "Old")]
-experiments = [("r", "DP-SZ"), ("x", "DT Budget"), ("g", "DT Encoding"), ("h", "2")]
+experiments = [("m", "DP-SZ"), ("g", "DT Encoding"), ("x", "DT Budget")]
 #experiments = [("m", "DP-SZ"), ("g", "Encoding")]
 #experiments = [("o", "DP-SZ"), ("c", "DT Budget")]
 
 fields = [(5, "Depth"), (4, "Size"), (7, "Accuracy"), (8, "Avg. Decision Length")]
-field_idx = 1
-bar_idx = [0, 1, 2]
+field_idx = 0
+bar_idx = [0, 1]
 
 colors = ['#228833', 'black', '#eecc66', '#bb5566', '#004488']
 symbols = ['d', 'x', 's', 'v', 'o']
@@ -88,7 +88,7 @@ for i in range(0, len(lts)):
     print(f"{max_counts[i]}")
 
 # Bar plot
-fig, ax = plt.subplots(figsize=(4, 1 * len(lts)))
+fig, ax = plt.subplots(figsize=(4, 0.6 * len(lts)))
 yticks = []
 ylabels = []
 
