@@ -4,6 +4,13 @@ import resource
 import sys
 import time
 from threading import Timer
+from collections import defaultdict
+
+import improve_strategy
+import tree_parsers
+import nonbinary.decision_tree as decision_tree
+from nonbinary.nonbinary_instance import ClassificationInstance
+from nonbinary.decision_tree import DecisionTreeNode
 
 from pysat.solvers import Glucose3
 
@@ -63,6 +70,8 @@ ap.add_argument("-x", dest="use_dt", action="store_true", default=False,
                 help="Use a decision tree to decide if an instance should be solved.")
 ap.add_argument("-g", dest="use_encoding_dt", action="store_true", default=False,
                 help="Use a decision tree to decide which encoding to use.")
+ap.add_argument("-j", dest="incremental", action="store_true", default=False)
+ap.add_argument("-v", dest="recursive", action="store_true", default=False)
 
 args = ap.parse_args()
 
@@ -139,7 +148,52 @@ else:
     else:
         enc = nbs
 
-if args.slim:
+if args.incremental:
+    from nonbinary.incremental.strategy import SupportSetStrategy
+
+    tree = base.run_incremental(enc, Glucose3, SupportSetStrategy(instance))
+elif args.recursive:
+    from nonbinary.incremental.strategy import SupportSetStrategy
+    leaf_sets = [(list(instance.examples), None)]
+    tree = None
+
+    while leaf_sets:
+        new_leaf_sets = []
+        for c_set, c_root in leaf_sets:
+            new_instance = ClassificationInstance()
+            new_instance.is_categorical.update(instance.is_categorical)
+            for c_e in c_set:
+                new_instance.add_example(c_e.copy(new_instance))
+            new_instance.finish()
+            if len(instance.classes) == 1:
+                continue
+
+            new_partial_tree = base.run_incremental(enc, Glucose3, SupportSetStrategy(new_instance), timeout=10)
+            if tree is None:
+                tree = new_partial_tree
+                new_root = tree.root
+            else:
+                new_root = new_partial_tree.root
+                tree.nodes[c_root] = DecisionTreeNode(new_root.feature, new_root.threshold, c_root, tree, is_categorical=new_root.is_categorical)
+                new_root = tree.nodes[c_root]
+                c_n = [(new_root.left, c_root, True), (new_root.right, c_root, False)]
+                while c_n:
+                    c_node, c_parent, c_left = c_n.pop()
+                    if c_node.is_leaf:
+                        tree.add_leaf(c_node.cls, c_parent, c_left)
+                    else:
+                        new_n = tree.add_node(c_node.feature, c_node.threshold, c_parent, c_left, c_node.is_categorical)
+                        c_n.extend([(c_node.left, new_n.id, True), (c_node.right, new_n.id, False)])
+
+            new_leaves = defaultdict(list)
+            for c_e in c_set:
+                _, lf = new_root.decide(c_e)
+                new_leaves[lf.id].append(c_e)
+            new_leaf_sets.extend([(x, i) for i, x in new_leaves.items()])
+
+        leaf_sets = new_leaf_sets
+
+elif args.slim:
     algo = "w" if args.weka else "c"
     dirs = "validation" if args.validation else "unpruned"
     # if args.categorical:
