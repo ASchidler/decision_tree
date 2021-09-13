@@ -269,32 +269,41 @@ def run_incremental(enc, solver, strategy, increment=5, timeout=300):
     strategy.current_instance.reduce(strategy.support_set)
     while len(done) == 0:
         # Compute decision tree
+        # Edge cases
+        if len(strategy.current_instance.classes) == 1:
+            best_model = DecisionTree()
+            best_model.set_root_leaf(next(iter(strategy.current_instance.classes)))
+            solved = True
+        else:
+            with solver() as slv:
+                check_memory(slv, done)
+                print(f"Running {len(strategy.current_instance.examples)} / {c_bound}")
 
-        with solver() as slv:
-            check_memory(slv, done)
-            print(f"Running {len(strategy.current_instance.examples)} / {c_bound}")
+                try:
+                    vs = enc.encode(strategy.current_instance, c_bound, slv, False)
 
-            try:
-                vs = enc.encode(strategy.current_instance, c_bound, slv, False)
+                    timer = Timer(timeout - (time.time() - start_time), interrupt, [slv, done])
+                    timer.start()
+                    solved = slv.solve_limited(expect_interrupt=True)
+                except MemoryError:
+                    return best_model
+                finally:
+                    if timer is not None:
+                        timer.cancel()
 
-                timer = Timer(timeout - (time.time() - start_time), interrupt, [slv, done])
-                timer.start()
-                solved = slv.solve_limited(expect_interrupt=True)
-            except MemoryError:
+                if done:
+                    return best_model
+                elif solved:
+                    model = {abs(x): x > 0 for x in slv.get_model()}
+                    best_model = enc._decode(model, strategy.current_instance, c_bound, vs)
+                else:
+                    c_bound += enc.increment()
+        if solved:
+            strategy.current_instance.unreduce(best_model)
+            strategy.find_next(increment)
+
+            if len(strategy.current_instance.examples) == len(strategy.original_instance.examples):
                 return best_model
-            finally:
-                if timer is not None:
-                    timer.cancel()
-
-            if done:
-                return best_model
-            elif solved:
-                model = {abs(x): x > 0 for x in slv.get_model()}
-                best_model = enc._decode(model, strategy.current_instance, c_bound, vs)
-                strategy.current_instance.unreduce(best_model)
-                strategy.find_next(increment)
-                strategy.current_instance.reduce(strategy.support_set)
-            else:
-                c_bound += enc.increment()
+            strategy.current_instance.reduce(strategy.support_set)
 
     return best_model

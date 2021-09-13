@@ -32,7 +32,7 @@ class SupportSetStrategy:
                         all_nondiffering = True
                         for c_f, c_v, _ in self.support_set:
                             if c_f in self.original_instance.is_categorical:
-                                if e.features[c_f] == c_v ^ e2.features[c_f] == c_v:
+                                if (e.features[c_f] == c_v) ^ (e2.features[c_f] == c_v):
                                     all_nondiffering = False
                                     break
                             else:
@@ -61,7 +61,7 @@ class SupportSetStrategy:
                 c_idx += 1
 
             # None found? Add random sample and start again
-            if not found_nondiffering and c_idx == len(self.possible_examples) - 1:
+            if not found_nondiffering and c_idx >= len(self.possible_examples):
                 self.current_instance.add_example(self.possible_examples[-1].copy(self.current_instance))
                 self.possible_examples.pop()
                 self.by_class[self.current_instance.examples[-1].cls].append(self.current_instance.examples[-1])
