@@ -258,3 +258,43 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
 
     return best_model
 
+
+def run_incremental(enc, solver, strategy, increment=5, timeout=300):
+    c_bound = 1
+    best_model = None
+    done = []
+
+    start_time = time.time()
+    strategy.find_next(increment)
+    strategy.current_instance.reduce(strategy.support_set)
+    while len(done) == 0:
+        # Compute decision tree
+
+        with solver() as slv:
+            check_memory(slv, done)
+            print(f"Running {len(strategy.current_instance.examples)} / {c_bound}")
+
+            try:
+                vs = enc.encode(strategy.current_instance, c_bound, slv, False)
+
+                timer = Timer(timeout - (time.time() - start_time), interrupt, [slv, done])
+                timer.start()
+                solved = slv.solve_limited(expect_interrupt=True)
+            except MemoryError:
+                return best_model
+            finally:
+                if timer is not None:
+                    timer.cancel()
+
+            if done:
+                return best_model
+            elif solved:
+                model = {abs(x): x > 0 for x in slv.get_model()}
+                best_model = enc._decode(model, strategy.current_instance, c_bound, vs)
+                strategy.current_instance.unreduce(best_model)
+                strategy.find_next(increment)
+                strategy.current_instance.reduce(strategy.support_set)
+            else:
+                c_bound += enc.increment()
+
+    return best_model
