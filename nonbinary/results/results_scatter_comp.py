@@ -7,7 +7,7 @@ cmp_heur = False
 #experiments = [("m", "DP-SZ"), ("k", "DP-SL-SZ"), ("n", "MT-DP"), ("q", "DP"), ("f", "SZ-DP")]
 #experiments = [("m", "DP-SZ"), ("o", "Old"), ("r", "Cat")]
 #experiments = [("m", "DP-SZ"), ("c", "Old")]
-experiments = [("m", "DP-SZ"), ("g", "DT Encoding"), ("x", "DT Budget")]
+experiments = [("m", "DP-SZ"), ("g", "Dynamic Runtime Prediction"), ("x", "Static Runtime Prediction")]
 #experiments = [("m", "DP-SZ"), ("g", "Encoding")]
 #experiments = [("o", "DP-SZ"), ("c", "DT Budget")]
 
@@ -142,14 +142,14 @@ for idx_idx, idx in enumerate(bar_idx):
 
         plt.text(0.2, y_pos, f"{legend[i]}", ha='left', va='center', size=8, fontweight=600) #  {'C4.5' if cmp_heur else experiments[0][1]}
         # plt.text(0.2, y_pos - bar_height, f"{legend[i]} <", ha='left', va='center', size=8)
-        ax.barh(y_pos, lts2[i][idx], align='center', color='#1B7837' if idx != 2 else '#B2182B', height=bar_height, label=lts2[i][idx])
-        ax.barh(y_pos, lts[i][idx] - lts2[i][idx], align='center', color='#5AAE61' if idx != 2 else '#F5a582', height=bar_height, left=lts2[i][idx])
+        ax.barh(y_pos, lts2[i][idx], align='center', color='#4eb265' if idx != 2 else '#d6604d', height=bar_height, label=lts2[i][idx])
+        ax.barh(y_pos, lts[i][idx] - lts2[i][idx], align='center', color='#cae0ab' if idx != 2 else '#F5a582', height=bar_height, left=lts2[i][idx])
 
         ax.barh(y_pos, len(results) - gts[i][idx] - lts[i][idx], left=lts[i][idx], align='center', color='#FFEE99',
                 height=bar_height)
 
-        ax.barh(y_pos, gts[i][idx] - gts2[i][idx], align='center', color='#F5a582' if idx != 2 else '#5AAE61', height=bar_height, left=len(results) - gts[i][idx])
-        ax.barh(y_pos, gts2[i][idx], align='center', color='#B2182B' if idx != 2 else '#1B7837', height=bar_height, left=len(results) - gts2[i][idx])
+        ax.barh(y_pos, gts[i][idx] - gts2[i][idx], align='center', color='#F5a582' if idx != 2 else '#cae0ab', height=bar_height, left=len(results) - gts[i][idx])
+        ax.barh(y_pos, gts2[i][idx], align='center', color='#d6604d' if idx != 2 else '#4eb265', height=bar_height, left=len(results) - gts2[i][idx])
 
 
         #plt.text(max(gts[i][idx] + 0.1, 3), y_pos - 0.01, f"{gts[i][idx]} ({gts2[i][idx]})", ha='left', va='center',

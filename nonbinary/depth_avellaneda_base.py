@@ -1,7 +1,7 @@
 import math
 
 import psutil
-import limits
+import nonbinary.limits as limits
 from threading import Timer
 from sys import maxsize, stdout
 from pysat.card import ITotalizer, CardEnc, EncType

@@ -1,14 +1,13 @@
-import nonbinary.improver as improver
-import time
+import math
 import sys
-import decision_tree
 import time
+
 import nonbinary.depth_avellaneda_base as bs
+import nonbinary.depth_avellaneda_base_benchmark as bbs
 import nonbinary.depth_avellaneda_sat as s1
 import nonbinary.depth_avellaneda_sat2 as s2
 import nonbinary.depth_avellaneda_sat3 as s3
-import nonbinary.depth_avellaneda_base_benchmark as bbs
-import math
+import nonbinary.improver as improver
 from nonbinary.nonbinary_instance import Example
 
 sample_limit_short = [175,

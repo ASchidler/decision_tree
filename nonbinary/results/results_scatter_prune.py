@@ -11,7 +11,8 @@ use_binoct = True
 #experiments = [("k", "SZ,EX"), ("m", "SZ"), ("n", "M"), ("q", "None")]
 #experiments = [("k", "DP-SL-SZ"), ("m", "DP-SZ")]
 experiments = [("m", "DP-SZ"), ("k", "DP-SL-SZ"), ("n", "MT-DP"), ("x", "DT Budget"),
-               ("q", "DP"), ("f", "SZ-DP"), ("g", "DT Encoding"), ("r", "Reduce Categoric")]
+               ("q", "DP"), ("f", "SZ-DP"), ("g", "DT Encoding"), ("r", "Reduce Categoric"),
+               ("h", "2"), ("i", "3")]
 
 all_experiments = ["k", "m"]
 
@@ -80,9 +81,9 @@ for cl in results.values():
             if use_virtual_all:
                 for idx in bar_idx:
                     if idx == 2 or idx == 4:
-                        max_entry = max((x for x in cl[1:] if x[idx] != "-1"), key=lambda x: (float(x[idx]), -float(x[0])))
+                        max_entry = max((x for x in cl[1:] if x[idx] != "-1"), key=lambda x: (round(float(x[idx]),2), -round(float(x[0]), 2)))
                     else:
-                        max_entry = min((x for x in cl[1:] if x[idx] != "-1"), key=lambda x: (float(x[idx]), -float(x[2])))
+                        max_entry = min((x for x in cl[1:] if x[idx] != "-1"), key=lambda x: (round(float(x[idx]),2), -round(float(x[2]),2)))
                     cl.append(max_entry)
             else:
                 max_entry = max((x for x in cl[1:] if x[2] != "-1"), key=lambda x: float(x[2]))
@@ -117,7 +118,7 @@ if use_virtual_best:
 
     _, best_idx = max((v, k) for k, v in best_counts.items())
     if use_virtual_all:
-        legend = [legend[best_idx], *legend[-1 * len(bar_idx):]]
+        legend = ["Single Best", *legend[-1 * len(bar_idx):]]
         X = [X[best_idx], *X[-1 * len(bar_idx):]]
         lts = [lts[best_idx], *lts[-1 * len(bar_idx):]]
         lts2 = [lts2[best_idx], *lts2[-1 * len(bar_idx):]]
@@ -188,29 +189,29 @@ ylabels = []
 #
 
 #lts = [lts[0]]
-fig, ax = plt.subplots(figsize=(4, 1.5 * len(lts)))
-bar_height = 0.06
-y_scale = len(lts) * bar_height + 0.1
+fig, ax = plt.subplots(figsize=(1.8, 0.75 * len(lts)))
+bar_height = 0.025
+y_scale = len(lts) * bar_height + 0.04
 for idx_idx, idx in enumerate(bar_idx):
-    plt.text(len(results)/2, -idx_idx * y_scale, fields[idx][1], fontsize=10, ha='center', color='black')
+    plt.text(len(results)/2, -idx_idx * y_scale - 0.003, fields[idx][1], fontsize=10, ha='center', color='black')
 
     for i in range(0, len(lts)):
         #plt.plot([0, 0], [-i*y_scale - 0.045, -i*y_scale - 0.045 - len(bar_idx) * (bar_height + 0.02) + 0.027], color='black', lw=0.5)
-        y_pos = -1 * (idx_idx * y_scale + i * (bar_height + 0.01) + 0.04)
+        y_pos = -1 * (idx_idx * y_scale + i * (bar_height + 0.005) + 0.02)
 
         plt.text(0+0.2, y_pos, f"{legend[i]}", ha='left', va='center', size=8, color="black", fontweight=600)
         # plt.text(0.2, y_pos - bar_height, f"{legend[i]} <", ha='left', va='center', size=8)
-        ax.barh(y_pos, lts2[i][idx], align='center', color='#1B7837' if idx != 2 else '#B2182B', height=bar_height,
+        ax.barh(y_pos, lts2[i][idx], align='center', color='#4eb265' if idx != 2 else '#d6604d', height=bar_height,
                 label=lts2[i][idx])
-        ax.barh(y_pos, lts[i][idx] - lts2[i][idx], align='center', color='#5AAE61' if idx != 2 else '#F5a582',
+        ax.barh(y_pos, lts[i][idx] - lts2[i][idx], align='center', color='#cae0ab' if idx != 2 else '#F5a582',
                 height=bar_height, left=lts2[i][idx])
 
         ax.barh(y_pos, len(results) - gts[i][idx] - lts[i][idx], left=lts[i][idx], align='center', color='#FFEE99',
                 height=bar_height)
 
-        ax.barh(y_pos, gts[i][idx] - gts2[i][idx], align='center', color='#F5a582' if idx != 2 else '#5AAE61',
+        ax.barh(y_pos, gts[i][idx] - gts2[i][idx], align='center', color='#F5a582' if idx != 2 else '#cae0ab',
                 height=bar_height, left=len(results) - gts[i][idx])
-        ax.barh(y_pos, gts2[i][idx], align='center', color='#B2182B' if idx != 2 else '#1B7837', height=bar_height,
+        ax.barh(y_pos, gts2[i][idx], align='center', color='#d6604d' if idx != 2 else '#4eb265', height=bar_height,
                 left=len(results) - gts2[i][idx])
 
 
@@ -237,7 +238,7 @@ ax.spines['right'].set_color('none')
 ax.spines['top'].set_color('none')
 
 #ax.invert_yaxis()  # labels read top-to-bottom
-ax.set_xlabel('Instances')
+#ax.set_xlabel('Instances')
 plt.rcParams['savefig.pad_inches'] = 0
 plt.autoscale(tight=True)
 
@@ -257,7 +258,7 @@ for x in X:
 
 ax.set_axisbelow(True)
 names = []
-
+exit(1)
 ax.set_xlabel('DT-SLIM')
 ax.set_ylabel('C4.5' if cmp_heur else experiments[0][1])
 # ax.set_title('scatter plot')

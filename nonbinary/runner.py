@@ -3,31 +3,24 @@ import os
 import resource
 import sys
 import time
-import improve_strategy
-import tree_parsers
-import nonbinary.decision_tree as decision_tree
+from threading import Timer
 
 from pysat.solvers import Glucose3
-import nonbinary_instance
-import incremental.entropy_strategy as es
-import incremental.maintain_strategy as ms
-import incremental.random_strategy as rs
+
+import nonbinary.improve_strategy as improve_strategy
+import nonbinary.depth_avellaneda_base as base
 import nonbinary.depth_avellaneda_sat as nbs
 import nonbinary.depth_avellaneda_sat2 as nbs2
 import nonbinary.depth_avellaneda_sat3 as nbs3
 import nonbinary.depth_avellaneda_smt as nbt
-import nonbinary.depth_avellaneda_base as base
-from threading import Timer
-import pruning
+import nonbinary_instance
+import tree_parsers
 
 instance_path = "nonbinary/instances"
 instance_validation_path = "datasets/validate"
 
 # This is used for debugging, for experiments use proper memory limiting
 resource.setrlimit(resource.RLIMIT_AS, (23 * 1024 * 1024 * 1024 // 2, 12 * 1024 * 1024 * 1024))
-
-strategies = [es.EntropyStrategy2, rs.RandomStrategy, ms.MaintainingStrategy]
-
 
 ap = argp.ArgumentParser(description="Python implementation for computing and improving decision trees.")
 ap.add_argument("instance", type=str)
