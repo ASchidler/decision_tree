@@ -147,7 +147,7 @@ else:
 if args.incremental:
     from nonbinary.incremental.strategy import SupportSetStrategy
 
-    tree = base.run_incremental(enc, Glucose3, SupportSetStrategy(instance))
+    tree = base.run_incremental(enc, Glucose3, SupportSetStrategy(instance), timeout=args.time_limit)
 elif args.recursive:
     from nonbinary.incremental.strategy import SupportSetStrategy
     leaf_sets = [(list(instance.examples), None)]
@@ -164,7 +164,7 @@ elif args.recursive:
             if len(instance.classes) == 1:
                 continue
 
-            new_partial_tree = base.run_incremental(enc, Glucose3, SupportSetStrategy(new_instance), timeout=10)
+            new_partial_tree = base.run_incremental(enc, Glucose3, SupportSetStrategy(new_instance), timeout=args.time_limit)
             if tree is None:
                 tree = new_partial_tree
                 new_root = tree.root
