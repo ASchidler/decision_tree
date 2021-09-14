@@ -14,8 +14,8 @@ import resource
 
 resource.setrlimit(resource.RLIMIT_AS, (23 * 1024 * 1024 * 1024 // 2, 12 * 1024 * 1024 * 1024))
 use_validation = False
-pruning = 0  # 0 is no pruning
-categorical = True
+pruning = 1  # 0 is no pruning
+categorical = False
 sys.setrecursionlimit(5000)
 
 pth = "nonbinary/instances"
@@ -197,12 +197,12 @@ for fl in fls:
                 for c_f, c_entry in enumerate(f_map):
                     for c_v, c_idx in c_entry.items():
                         r_f_map[c_f][c_idx] = c_v
-            def fix_c_node(c_node):
-                if not c_node.is_leaf:
-                    c_node.threshold = r_f_map[c_node.feature][c_node.threshold]
-                    fix_c_node(c_node.left)
-                    fix_c_node(c_node.right)
-            fix_c_node(tree.root)
+                def fix_c_node(c_node):
+                    if not c_node.is_leaf:
+                        c_node.threshold = r_f_map[c_node.feature][c_node.threshold]
+                        fix_c_node(c_node.left)
+                        fix_c_node(c_node.right)
+                fix_c_node(tree.root)
 
             print(f"{tree.get_accuracy(instance.examples)}")
             with open(output_path, "w") as outp:
