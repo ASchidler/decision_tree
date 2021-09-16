@@ -114,10 +114,10 @@ class SupportSetStrategy2:
         else:
             self.current_instance.domains = [set(x) for x in self.current_instance.domains]
 
-        c_idx = 0
-        while c_count < count and c_idx < len(self.possible_examples):
+        while c_count < count and self.possible_examples:
             found_nondiffering = False
-            e = self.possible_examples[c_idx]
+            e = self.possible_examples.pop()
+
             for c_c, c_elements in self.by_class.items():
                 if c_c != e.cls:
                     for e2 in c_elements:
@@ -143,24 +143,10 @@ class SupportSetStrategy2:
                                         self.support_set.append((c_f, min(e.features[c_f], e2.features[c_f]), False))
                                     break
 
+            self.current_instance.add_example(e.copy(self.current_instance))
+            self.by_class[self.current_instance.examples[-1].cls].append(self.current_instance.examples[-1])
             if found_nondiffering:
-                self.current_instance.add_example(e.copy(self.current_instance))
-                self.possible_examples[-1], self.possible_examples[c_idx] = self.possible_examples[c_idx], self.possible_examples[-1]
-                self.possible_examples.pop()
-                self.by_class[self.current_instance.examples[-1].cls].append(self.current_instance.examples[-1])
                 c_count += 1
-            else:
-                c_idx += 1
-
-            # None found? Add random sample and start again
-            if not found_nondiffering and c_idx >= len(self.possible_examples):
-                self.current_instance.add_example(self.possible_examples[-1].copy(self.current_instance))
-                self.possible_examples.pop()
-                self.by_class[self.current_instance.examples[-1].cls].append(self.current_instance.examples[-1])
-                c_count += 1
-                c_idx = 0
-
-        self.current_instance.finish()
 
     def get_instance(self):
         if not self.changed:
@@ -215,7 +201,7 @@ class SupportSetStrategy2:
 
         self.last_cat_defaults = {}
         for c_f, c_counts in dummy_counts.items():
-            self.last_cat_defaults[c_f] = max((v, k) for k, v in c_counts)[1]
+            self.last_cat_defaults[c_f] = max((v, k) for k, v in c_counts.items())[1]
 
         return self.last_instance
 

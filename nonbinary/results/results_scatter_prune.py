@@ -4,15 +4,17 @@ from collections import defaultdict
 import math
 
 cmp_heur = True
-use_virtual_best = True
-use_virtual_all = True
+use_virtual_best = False
+use_virtual_all = False
 use_cart = False
-use_binoct = True
+use_binoct = False
 #experiments = [("k", "SZ,EX"), ("m", "SZ"), ("n", "M"), ("q", "None")]
 #experiments = [("k", "DP-SL-SZ"), ("m", "DP-SZ")]
-experiments = [("m", "DP-SZ"), ("k", "DP-SL-SZ"), ("n", "MT-DP"), ("x", "DT Budget"),
-               ("q", "DP"), ("f", "SZ-DP"), ("g", "DT Encoding"), ("r", "Reduce Categoric"),
-               ("h", "2"), ("i", "3")]
+# experiments = [("m", "DP-SZ"), ("k", "DP-SL-SZ"), ("n", "MT-DP"), ("x", "DT Budget"),
+#                ("q", "DP"), ("f", "SZ-DP"), ("g", "DT Encoding"), ("r", "Reduce Categoric"),
+#                ("h", "2"), ("i", "3")]
+
+experiments = [("j", "Incremental"), ("w", "Recursive")]
 
 all_experiments = ["k", "m"]
 
@@ -258,7 +260,7 @@ for x in X:
 
 ax.set_axisbelow(True)
 names = []
-exit(1)
+
 ax.set_xlabel('DT-SLIM')
 ax.set_ylabel('C4.5' if cmp_heur else experiments[0][1])
 # ax.set_title('scatter plot')

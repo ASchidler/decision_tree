@@ -259,13 +259,13 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
     return best_model
 
 
-def run_incremental(enc, solver, strategy, increment=1, timeout=300):
+def run_incremental(enc, solver, strategy, increment=1, timeout=300, opt_size=False):
     c_bound = 1
     best_model = None
     done = []
 
     start_time = time.time()
-    strategy.find_next(5)
+    strategy.find_next(1+increment)
 
     while len(done) == 0:
         # Compute decision tree
@@ -286,13 +286,13 @@ def run_incremental(enc, solver, strategy, increment=1, timeout=300):
                     timer.start()
                     solved = slv.solve_limited(expect_interrupt=True)
                 except MemoryError:
-                    return best_model
+                    break
                 finally:
                     if timer is not None:
                         timer.cancel()
 
                 if done:
-                    return best_model
+                    break
                 elif solved:
                     model = {abs(x): x > 0 for x in slv.get_model()}
                     best_model = enc._decode(model, strategy.get_instance(), c_bound, vs)
@@ -303,6 +303,50 @@ def run_incremental(enc, solver, strategy, increment=1, timeout=300):
             strategy.find_next(increment)
 
             if strategy.done():
+                break
+
+    if opt_size and best_model:
+        done = []
+        with solver() as slv:
+            check_memory(slv, done)
+            c_size_bound = best_model.root.get_leaves() - 1
+            if c_size_bound < 2:
                 return best_model
+            print(f"Running {len(strategy.get_instance().examples)} / {c_size_bound}")
+            c_depth = best_model.get_depth()
+            solved = True
+
+            try:
+                vs = enc.encode(strategy.get_instance(), c_depth, slv, opt_size)
+                card = enc.encode_size(vs, strategy.get_instance(), slv, c_depth)
+                tot = ITotalizer(card, c_size_bound+1, top_id=vs["pool"].top + 1)
+                slv.append_formula(tot.cnf)
+                slv.add_clause([-tot.rhs[c_size_bound]])
+            except MemoryError:
+                return best_model
+
+            timer = None
+
+            if timeout > 0:
+                timer = Timer(timeout, interrupt, [slv, done])
+                timer.start()
+
+            while solved and c_size_bound >= 2:
+                try:
+                    print(f"Running size {c_size_bound}")
+                    solved = slv.solve_limited(expect_interrupt=True)
+                except MemoryError:
+                    break
+
+                if solved:
+                    model = {abs(x): x > 0 for x in slv.get_model()}
+                    best_model = enc._decode(model, strategy.get_instance(), c_depth, vs)
+                    c_size_bound = best_model.root.get_leaves() - 1
+                    slv.add_clause([-tot.rhs[c_size_bound]])
+                else:
+                    break
+
+        if timer is not None:
+            timer.cancel()
 
     return best_model

@@ -148,6 +148,7 @@ if args.incremental:
     from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2
 
     tree = base.run_incremental(enc, Glucose3, SupportSetStrategy2(instance), timeout=args.time_limit)
+    tree.root.reclassify(instance.examples)
 elif args.recursive:
     from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2
     leaf_sets = [(list(instance.examples), None)]
@@ -164,7 +165,7 @@ elif args.recursive:
             if len(instance.classes) == 1:
                 continue
 
-            new_partial_tree = base.run_incremental(enc, Glucose3, SupportSetStrategy2(new_instance), timeout=args.time_limit)
+            new_partial_tree = base.run_incremental(enc, Glucose3, SupportSetStrategy2(new_instance), timeout=args.time_limit, opt_size=args.size)
             if tree is None:
                 tree = new_partial_tree
                 new_root = tree.root
@@ -203,7 +204,7 @@ elif args.recursive:
                       f"Nodes {tree.get_nodes()}\t"
                       f"Avg. Length {tree.get_avg_length(instance.examples)}\t")
         leaf_sets = new_leaf_sets
-
+    tree.root.reclassify(instance.examples)
 elif args.slim:
     algo = "w" if args.weka else "c"
     dirs = "validation" if args.validation else "unpruned"
