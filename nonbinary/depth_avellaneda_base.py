@@ -350,3 +350,4 @@ def run_incremental(enc, solver, strategy, increment=1, timeout=300, opt_size=Fa
             timer.cancel()
 
     return best_model
+

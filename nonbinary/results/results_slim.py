@@ -5,7 +5,7 @@ from collections import defaultdict
 import nonbinary.nonbinary_instance as nbi
 import pruning
 
-experiment = "i"
+experiment = "w"
 flags = set()
 
 ignore = set()
@@ -47,6 +47,7 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
 
         if tree is not None:
             tree.train(instance)
+            tree.root.reclassify(instance.examples)
             files[file_name][file_fields[3]][file_fields[1]].nodes = tree.get_nodes()
             files[file_name][file_fields[3]][file_fields[1]].depth = tree.get_depth()
             files[file_name][file_fields[3]][file_fields[1]].training = tree.get_accuracy(instance.examples)

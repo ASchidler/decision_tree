@@ -190,6 +190,7 @@ elif args.recursive:
                             new_n = tree.add_node(c_node.feature, c_node.threshold, c_parent, c_left, c_node.is_categorical)
                             c_n.extend([(c_node.left, new_n.id, True), (c_node.right, new_n.id, False)])
                 new_root = tree.nodes[c_root]
+                new_root.reclassify(instance.examples)
 
             if not new_partial_tree.root.is_leaf:
                 new_leaves = defaultdict(list)
@@ -204,7 +205,6 @@ elif args.recursive:
                       f"Nodes {tree.get_nodes()}\t"
                       f"Avg. Length {tree.get_avg_length(instance.examples)}\t")
         leaf_sets = new_leaf_sets
-    tree.root.reclassify(instance.examples)
 elif args.slim:
     algo = "w" if args.weka else "c"
     dirs = "validation" if args.validation else "unpruned"

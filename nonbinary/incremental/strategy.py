@@ -114,10 +114,10 @@ class SupportSetStrategy2:
         else:
             self.current_instance.domains = [set(x) for x in self.current_instance.domains]
 
-        while c_count < count and self.possible_examples:
+        c_idx = 0
+        while c_count < count and c_idx < len(self.possible_examples):
             found_nondiffering = False
-            e = self.possible_examples.pop()
-
+            e = self.possible_examples[c_idx]
             for c_c, c_elements in self.by_class.items():
                 if c_c != e.cls:
                     for e2 in c_elements:
@@ -128,7 +128,8 @@ class SupportSetStrategy2:
                                     all_nondiffering = False
                                     break
                             else:
-                                if e.features[c_f] <= c_v < e2.features[c_f] or e.features[c_f] > c_v >= e2.features[c_f]:
+                                if e.features[c_f] <= c_v < e2.features[c_f] or e.features[c_f] > c_v >= e2.features[
+                                    c_f]:
                                     all_nondiffering = False
                                     break
 
@@ -143,10 +144,22 @@ class SupportSetStrategy2:
                                         self.support_set.append((c_f, min(e.features[c_f], e2.features[c_f]), False))
                                     break
 
-            self.current_instance.add_example(e.copy(self.current_instance))
-            self.by_class[self.current_instance.examples[-1].cls].append(self.current_instance.examples[-1])
             if found_nondiffering:
+                self.current_instance.add_example(e.copy(self.current_instance))
+                self.possible_examples[-1], self.possible_examples[c_idx] = self.possible_examples[c_idx], \
+                                                                            self.possible_examples[-1]
+                self.possible_examples.pop()
+                self.by_class[self.current_instance.examples[-1].cls].append(self.current_instance.examples[-1])
                 c_count += 1
+            else:
+                c_idx += 1
+
+            # None found? Add random sample and start again
+            if not found_nondiffering and c_idx >= len(self.possible_examples):
+                self.current_instance.add_example(self.possible_examples[-1].copy(self.current_instance))
+                self.possible_examples.pop()
+                self.by_class[self.current_instance.examples[-1].cls].append(self.current_instance.examples[-1])
+                c_idx = 0
 
     def get_instance(self):
         if not self.changed:
@@ -196,7 +209,19 @@ class SupportSetStrategy2:
             if len(c_classes) > 1:
                 self.is_support_set = False
 
-            self.last_instance.add_example(Example(self.last_instance, list(c_features), max((v, k) for k, v in c_classes.items())[1]))
+            # Determine the distribution, do not mix different distributions
+            cls = None
+            if len(c_classes) == 1 and False:  # Pure
+                cls = "p_"+ next(iter(c_classes.keys()))
+            else:
+                cls = max((v, k) for k, v in c_classes.items())[1]
+                # sum_cls = sum(v for k, v in c_classes.items() if k != cls)
+                # if sum_cls > 0.3 * c_classes[cls]:  # Balanced
+                #     cls = "b_" + cls
+                # else:  # low density of different classes
+                #     cls = "l_"+ cls
+
+            self.last_instance.add_example(Example(self.last_instance, list(c_features), cls))
         self.last_instance.finish()
 
         self.last_cat_defaults = {}
