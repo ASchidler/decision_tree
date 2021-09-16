@@ -121,7 +121,7 @@ def exit_timeout():
 instance, test_instance, validation_instance = nonbinary_instance.parse(instance_path, target_instance, args.slice, use_validation=args.validation)
 
 timer = None
-if args.time_limit > 0:
+if args.time_limit > 0 and not args.incremental and not args.recursive:
     timer = Timer(args.time_limit * 1.1 - (time.time() - start_time), exit_timeout)
     timer.start()
 
@@ -145,11 +145,11 @@ else:
         enc = nbs
 
 if args.incremental:
-    from nonbinary.incremental.strategy import SupportSetStrategy
+    from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2
 
-    tree = base.run_incremental(enc, Glucose3, SupportSetStrategy(instance), timeout=args.time_limit)
+    tree = base.run_incremental(enc, Glucose3, SupportSetStrategy2(instance), timeout=args.time_limit)
 elif args.recursive:
-    from nonbinary.incremental.strategy import SupportSetStrategy
+    from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2
     leaf_sets = [(list(instance.examples), None)]
     tree = None
 
@@ -164,7 +164,7 @@ elif args.recursive:
             if len(instance.classes) == 1:
                 continue
 
-            new_partial_tree = base.run_incremental(enc, Glucose3, SupportSetStrategy(new_instance), timeout=args.time_limit)
+            new_partial_tree = base.run_incremental(enc, Glucose3, SupportSetStrategy2(new_instance), timeout=args.time_limit)
             if tree is None:
                 tree = new_partial_tree
                 new_root = tree.root

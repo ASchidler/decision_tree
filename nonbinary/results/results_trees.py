@@ -62,6 +62,10 @@ def parse_file(fl, experiment):
                     flags += "g"
                 elif cfs[0] == "size_first" and cfs[1] == "True":
                     flags += "f"
+                elif cfs[0] == "recursive" and cfs[1] == "True":
+                    flags += "v"
+                elif cfs[0] == "incremental" and cfs[1] == "True":
+                    flags += "j"
 
             if c_encoding == "":
                 c_encoding = "0"

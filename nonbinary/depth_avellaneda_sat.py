@@ -218,7 +218,7 @@ def _decode(model, instance, limit, vs):
     rev_lookup = {v: k for k, v in class_map.items()}
     for i in range(0, num_leafs):
         c_c = None
-        if len(class_map) == 2:
+        if len(class_map) <= 2:
             if not bool(model[cs[i]]):
                 c_c = rev_lookup[0]
             elif len(class_map) > 1:

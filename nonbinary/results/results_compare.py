@@ -5,10 +5,10 @@ from collections import defaultdict
 import nonbinary.nonbinary_instance as nbi
 import pruning
 
-experiment = "h"
+experiment = "w"
 flags = set()
 ignore = set()
-target_algorithm = "c"
+target_algorithm = "w"
 
 with open("ignore.txt") as ip:
     for _, cl in enumerate(ip):

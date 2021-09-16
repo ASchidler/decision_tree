@@ -259,28 +259,28 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
     return best_model
 
 
-def run_incremental(enc, solver, strategy, increment=5, timeout=300):
+def run_incremental(enc, solver, strategy, increment=1, timeout=300):
     c_bound = 1
     best_model = None
     done = []
 
     start_time = time.time()
-    strategy.find_next(increment)
-    strategy.current_instance.reduce(strategy.support_set)
+    strategy.find_next(5)
+
     while len(done) == 0:
         # Compute decision tree
         # Edge cases
-        if len(strategy.current_instance.classes) == 1:
+        if len(strategy.get_instance().classes) == 1:
             best_model = DecisionTree()
-            best_model.set_root_leaf(next(iter(strategy.current_instance.classes)))
+            best_model.set_root_leaf(next(iter(strategy.get_instance().classes)))
             solved = True
         else:
             with solver() as slv:
                 check_memory(slv, done)
-                print(f"Running {len(strategy.current_instance.examples)} / {c_bound}")
+                print(f"Running {len(strategy.get_instance().examples)} / {c_bound}")
 
                 try:
-                    vs = enc.encode(strategy.current_instance, c_bound, slv, False)
+                    vs = enc.encode(strategy.get_instance(), c_bound, slv, False)
 
                     timer = Timer(timeout - (time.time() - start_time), interrupt, [slv, done])
                     timer.start()
@@ -295,15 +295,14 @@ def run_incremental(enc, solver, strategy, increment=5, timeout=300):
                     return best_model
                 elif solved:
                     model = {abs(x): x > 0 for x in slv.get_model()}
-                    best_model = enc._decode(model, strategy.current_instance, c_bound, vs)
+                    best_model = enc._decode(model, strategy.get_instance(), c_bound, vs)
                 else:
                     c_bound += enc.increment()
         if solved:
-            strategy.current_instance.unreduce(best_model)
+            strategy.unreduce(best_model)
             strategy.find_next(increment)
 
-            if len(strategy.current_instance.examples) == len(strategy.original_instance.examples):
+            if strategy.done():
                 return best_model
-            strategy.current_instance.reduce(strategy.support_set)
 
     return best_model
