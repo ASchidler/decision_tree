@@ -14,7 +14,7 @@ use_binoct = False
 #                ("q", "DP"), ("f", "SZ-DP"), ("g", "DT Encoding"), ("r", "Reduce Categoric"),
 #                ("h", "2"), ("i", "3")]
 
-experiments = [("j", "Incremental"), ("w", "Recursive")]
+experiments = [("w", "Recursive")]
 
 all_experiments = ["k", "m"]
 

@@ -9,7 +9,7 @@ trees = ["w"]
 #flags = ["0", "a", "y"]
 flags = ["v0"]
 #flags = ["uzy"]
-use_ccp = False
+use_ccp = True
 
 for c_file in sorted(os.listdir("../instances")):
     if c_file.endswith(".data"):
@@ -38,7 +38,9 @@ for c_file in sorted(os.listdir("../instances")):
                         continue
 
                     tree = tp.parse_internal_tree(tree_path)
+                    tree.root.reclassify(full_instance.examples)
                     v_tree = tp.parse_internal_tree(v_tree_path)
+                    v_tree.root.reclassify(validation_instance.examples)
 
                     print(f"{tree_path}: {tree.get_nodes()} {tree.get_depth()} {tree.get_accuracy(test_instance.examples)}")
                     if use_ccp:

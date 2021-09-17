@@ -12,6 +12,7 @@ class Example:
         self.id = None
         self.surrogate_cls = surrogate_cls
         self.original_values = None
+        self.impurities = None
 
     def copy(self, instance):
         return Example(instance, self.features[1:], self.cls, self.surrogate_cls)

@@ -1,3 +1,4 @@
+import math
 from collections import defaultdict
 
 from nonbinary.nonbinary_instance import ClassificationInstance, Example
@@ -101,6 +102,7 @@ class SupportSetStrategy2:
         self.feature_thresholds = None
         self.last_cat_defaults = None
         self.feature_map = None
+        self.is_support_set = False
 
     def find_next(self, count):
         self.changed = True
@@ -205,16 +207,31 @@ class SupportSetStrategy2:
             counts[tuple(representative)][c_e.cls] += 1
 
         self.is_support_set = True
+
+        maxes = {}
+        for c_c in self.original_instance.classes:
+            entries = [(v, f) for f, cls in counts.items() for k, v in cls.items() if f not in maxes and k == c_c]
+            if len(entries) > 0:
+                _, max_cc = max(entries)
+                maxes[max_cc] = c_c
+
         for c_features, c_classes in counts.items():
             if len(c_classes) > 1:
                 self.is_support_set = False
 
             # Determine the distribution, do not mix different distributions
-            cls = None
-            if len(c_classes) == 1 and False:  # Pure
-                cls = "p_"+ next(iter(c_classes.keys()))
+            if c_features in maxes:
+                cls = maxes[c_features]
             else:
-                cls = max((v, k) for k, v in c_classes.items())[1]
+                c_max = None
+                for k, v in c_classes.items():
+                    if c_max is None or v > c_max[1] or (v == c_max[1] and k not in self.last_instance.classes):
+                        c_max = (k, v)
+                cls = c_max[0]
+            # if len(c_classes) == 1 and False:  # Pure
+            #     cls = "p_"+ next(iter(c_classes.keys()))
+            # else:
+            #     cls = max((v, k) for k, v in c_classes.items())[1]
                 # sum_cls = sum(v for k, v in c_classes.items() if k != cls)
                 # if sum_cls > 0.3 * c_classes[cls]:  # Balanced
                 #     cls = "b_" + cls
@@ -222,6 +239,7 @@ class SupportSetStrategy2:
                 #     cls = "l_"+ cls
 
             self.last_instance.add_example(Example(self.last_instance, list(c_features), cls))
+            self.last_instance.examples[-1].impurities = c_classes
         self.last_instance.finish()
 
         self.last_cat_defaults = {}
@@ -240,8 +258,8 @@ class SupportSetStrategy2:
                     if c_n.threshold == "DummyValue":
                         c_n.threshold = self.last_cat_defaults[n_f]
                 else:
-                    c_n.threshold = self.feature_thresholds[n_f][c_n.threshold]
+                    c_n.threshold = self.feature_thresholds[n_f][int(math.ceil(c_n.threshold))]
                 c_n.feature = n_f
 
     def done(self):
-        return self.is_support_set
+        return self.is_support_set or len(self.original_instance.examples) == len(self.current_instance.examples)

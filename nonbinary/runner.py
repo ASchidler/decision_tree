@@ -1,5 +1,6 @@
 import argparse as argp
 import os
+import random
 import resource
 import sys
 import time
@@ -12,12 +13,14 @@ import nonbinary.depth_avellaneda_base as base
 import nonbinary.depth_avellaneda_sat as nbs
 import nonbinary.depth_avellaneda_sat2 as nbs2
 import nonbinary.depth_avellaneda_sat3 as nbs3
-import nonbinary.depth_avellaneda_smt as nbt
+import nonbinary.depth_avellaneda_smt2 as nbt
 import nonbinary.improve_strategy as improve_strategy
 import nonbinary_instance
 import tree_parsers
 from nonbinary.decision_tree import DecisionTreeNode, DecisionTreeLeaf
 from nonbinary.nonbinary_instance import ClassificationInstance
+
+random.seed = 1
 
 instance_path = "nonbinary/instances"
 instance_validation_path = "datasets/validate"
@@ -162,23 +165,36 @@ elif args.recursive:
             for c_e in c_set:
                 new_instance.add_example(c_e.copy(new_instance))
             new_instance.finish()
-            if len(instance.classes) == 1:
+
+            if len(new_instance.classes) == 1:
+                tree.nodes[c_root].reclassify(c_set)
+                if tree.get_accuracy(c_set) < 1:
+                    print(f"Error: {tree.get_accuracy(c_set)}")
                 continue
 
-            new_partial_tree = base.run_incremental(enc, Glucose3, SupportSetStrategy2(new_instance), timeout=args.time_limit, opt_size=args.size)
+            if not args.use_smt:
+                new_partial_tree = base.run_incremental(enc, Glucose3, SupportSetStrategy2(new_instance),
+                                                        timeout=args.time_limit, opt_size=args.size)
+            else:
+                new_partial_tree = nbt.run_incremental(SupportSetStrategy2(new_instance), timeout=args.time_limit,
+                                                       opt_size=args.size)
+
             if tree is None:
                 tree = new_partial_tree
                 new_root = tree.root
             else:
                 new_root = new_partial_tree.root
+                new_root.reclassify(c_set)
+
                 if not new_root.is_leaf:
                     n_n = DecisionTreeNode(new_root.feature, new_root.threshold, c_root, tree,
                                            is_categorical=new_root.is_categorical)
                     n_n.parent = tree.nodes[c_root].parent
-                    if tree.nodes[c_root].parent.left.id == c_root:
-                        tree.nodes[c_root].parent.left = n_n
-                    else:
-                        tree.nodes[c_root].parent.right = n_n
+                    if n_n.parent is not None:
+                        if tree.nodes[c_root].parent.left.id == c_root:
+                            tree.nodes[c_root].parent.left = n_n
+                        else:
+                            tree.nodes[c_root].parent.right = n_n
                     tree.nodes[c_root] = n_n
 
                     c_n = [(new_root.left, c_root, True), (new_root.right, c_root, False)]
@@ -189,21 +205,22 @@ elif args.recursive:
                         else:
                             new_n = tree.add_node(c_node.feature, c_node.threshold, c_parent, c_left, c_node.is_categorical)
                             c_n.extend([(c_node.left, new_n.id, True), (c_node.right, new_n.id, False)])
-                new_root = tree.nodes[c_root]
-                new_root.reclassify(instance.examples)
+                else:
+                    tree.nodes[c_root].cls = new_root.cls
 
-            if not new_partial_tree.root.is_leaf:
-                new_leaves = defaultdict(list)
-                for c_e in c_set:
-                    _, lf = new_root.decide(c_e)
-                    new_leaves[lf.id].append(c_e)
-                new_leaf_sets.extend([(x, i) for i, x in new_leaves.items()])
-                print(f"Time {time.time() - start_time:.4f}\t"
-                      f"Training {tree.get_accuracy(instance.examples):.4f}\t"
-                      f"Test {tree.get_accuracy(test_instance.examples):.4f}\t"
-                      f"Depth {tree.get_depth():03}\t"
-                      f"Nodes {tree.get_nodes()}\t"
-                      f"Avg. Length {tree.get_avg_length(instance.examples)}\t")
+                new_root = tree.nodes[c_root]
+
+            new_leaves = defaultdict(list)
+            for c_e in c_set:
+                _, lf = new_root.decide(c_e)
+                new_leaves[lf.id].append(c_e)
+            new_leaf_sets.extend([(x, i) for i, x in new_leaves.items()])
+            print(f"Time {time.time() - start_time:.4f}\t"
+                  f"Training {tree.get_accuracy(instance.examples):.4f}\t"
+                  f"Test {tree.get_accuracy(test_instance.examples):.4f}\t"
+                  f"Depth {tree.get_depth():03}\t"
+                  f"Nodes {tree.get_nodes()}\t"
+                  f"Avg. Length {tree.get_avg_length(instance.examples)}\t")
         leaf_sets = new_leaf_sets
 elif args.slim:
     algo = "w" if args.weka else "c"

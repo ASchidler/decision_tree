@@ -45,8 +45,8 @@ def encode(instance, limit, slv, opt_size=False):
 
     if opt_size:
         classes.insert(0, "EmptyLeaf")
-    if len(classes) == 2 or opt_size:
 
+    if len(classes) == 2 or opt_size:
         class_map = {cc: i for i, cc in enumerate(classes)}
     else:
         class_map = {cc: i + 1 for i, cc in enumerate(classes)}
@@ -310,7 +310,7 @@ def _decode(model, instance, limit, vs):
     rev_lookup = {v: k for k, v in class_map.items()}
     for i in range(0, num_leafs):
         c_c = None
-        if len(class_map) == 2:
+        if len(class_map) <= 2:
             if not bool(model[cs[i]]):
                 c_c = rev_lookup[0]
             elif len(class_map) > 1:
@@ -367,3 +367,56 @@ def estimate_size(instance, depth):
 
 def is_sat():
     return False
+
+
+def run_incremental(strategy, increment=1, timeout=300, opt_size=False):
+    c_bound = 1
+    best_model = None
+
+    strategy.find_next(1+increment)
+
+    c_start = time.time()
+
+    while (time.time() - c_start) < timeout:
+        solved = False
+        # Edge cases
+        if len(strategy.get_instance().classes) == 1 and not solved:
+            best_model = DecisionTree()
+            best_model.set_root_leaf(next(iter(strategy.get_instance().classes)))
+            solved = True
+
+        if all(len(x) == 0 for x in strategy.get_instance().domains) and not solved:
+            counts = defaultdict(int)
+            for e in strategy.get_instance().examples:
+                counts[e.cls] += 1
+            _, cls = max((v, k) for k, v in counts.items())
+            best_model = DecisionTree()
+            best_model.set_root_leaf(cls)
+            solved = True
+
+        if not solved:
+            print(f"Running {len(strategy.get_instance().examples)} / {c_bound}")
+            stdout.flush()
+
+            slv = z3.Solver()
+            slv.set("max_memory", 10000)
+
+            vs = encode(strategy.get_instance(), c_bound, slv)
+            slv.set("timeout", int(timeout - (time.time() - c_start)) * 1000)
+            res = slv.check()
+
+            if res == z3.sat:
+                model = slv.model()
+                best_model = _decode(model, strategy.get_instance(), c_bound, vs)
+                strategy.unreduce(best_model)
+                solved = True
+            else:
+                c_bound += 1
+
+        if strategy.done():
+            break
+
+        if solved:
+            strategy.find_next(increment)
+
+    return best_model

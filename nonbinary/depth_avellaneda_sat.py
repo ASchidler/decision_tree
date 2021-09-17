@@ -41,6 +41,7 @@ def _init_var(instance, limit, class_map):
 
 def encode(instance, limit, solver, opt_size=False):
     classes = list(instance.classes)  # Give classes an order
+
     if opt_size:
         classes.insert(0, "EmptyLeaf")
 
@@ -54,7 +55,6 @@ def encode(instance, limit, solver, opt_size=False):
     # each node has a feature
     for i in range(1, 2**limit):
         clause = []
-
         for f1, f1v in f[i].items():
             clause.append(f1v)
             for f2, f2v in f[i].items():
