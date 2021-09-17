@@ -208,26 +208,17 @@ class SupportSetStrategy2:
 
         self.is_support_set = True
 
-        maxes = {}
-        for c_c in self.original_instance.classes:
-            entries = [(v, f) for f, cls in counts.items() for k, v in cls.items() if f not in maxes and k == c_c]
-            if len(entries) > 0:
-                _, max_cc = max(entries)
-                maxes[max_cc] = c_c
-
-        for c_features, c_classes in counts.items():
+        count_items = list(counts.items())
+        for c_features, c_classes in count_items:
             if len(c_classes) > 1:
                 self.is_support_set = False
 
             # Determine the distribution, do not mix different distributions
-            if c_features in maxes:
-                cls = maxes[c_features]
-            else:
-                c_max = None
-                for k, v in c_classes.items():
-                    if c_max is None or v > c_max[1] or (v == c_max[1] and k not in self.last_instance.classes):
-                        c_max = (k, v)
-                cls = c_max[0]
+            c_max = None
+            for k, v in c_classes.items():
+                if c_max is None or v > c_max[1] or (v == c_max[1] and k not in self.last_instance.classes):
+                    c_max = (k, v)
+            cls = c_max[0]
             # if len(c_classes) == 1 and False:  # Pure
             #     cls = "p_"+ next(iter(c_classes.keys()))
             # else:
@@ -240,6 +231,18 @@ class SupportSetStrategy2:
 
             self.last_instance.add_example(Example(self.last_instance, list(c_features), cls))
             self.last_instance.examples[-1].impurities = c_classes
+
+        # Avoid a deadlock if only a few items are left and one class dominates every example
+        for c_c in self.original_instance.classes:
+            if len(self.last_instance.classes) >= len(self.last_instance.examples):
+                break
+
+            if c_c not in self.last_instance.classes:
+                entries = [(v, fi) for fi, (f, cls) in enumerate(count_items) for k, v in cls.items() if k == c_c]
+                if len(entries) > 0:
+                    _, max_cc = max(entries)
+                    self.last_instance.examples[max_cc].cls = c_c
+                    self.last_instance.classes.add(c_c)
         self.last_instance.finish()
 
         self.last_cat_defaults = {}

@@ -172,11 +172,12 @@ elif args.recursive:
                     print(f"Error: {tree.get_accuracy(c_set)}")
                 continue
 
+            strat = SupportSetStrategy2(new_instance)
             if not args.use_smt:
-                new_partial_tree = base.run_incremental(enc, Glucose3, SupportSetStrategy2(new_instance),
+                new_partial_tree = base.run_incremental(enc, Glucose3, strat,
                                                         timeout=args.time_limit, opt_size=args.size)
             else:
-                new_partial_tree = nbt.run_incremental(SupportSetStrategy2(new_instance), timeout=args.time_limit,
+                new_partial_tree = nbt.run_incremental(strat, timeout=args.time_limit,
                                                        opt_size=args.size)
 
             if tree is None:
@@ -210,11 +211,13 @@ elif args.recursive:
 
                 new_root = tree.nodes[c_root]
 
-            new_leaves = defaultdict(list)
-            for c_e in c_set:
-                _, lf = new_root.decide(c_e)
-                new_leaves[lf.id].append(c_e)
-            new_leaf_sets.extend([(x, i) for i, x in new_leaves.items()])
+            if len(strat.support_set) > 0:  # == 0 means inconsistent data
+                new_leaves = defaultdict(list)
+                for c_e in c_set:
+                    _, lf = new_root.decide(c_e)
+                    new_leaves[lf.id].append(c_e)
+                new_leaf_sets.extend([(x, i) for i, x in new_leaves.items()])
+
             print(f"Time {time.time() - start_time:.4f}\t"
                   f"Training {tree.get_accuracy(instance.examples):.4f}\t"
                   f"Test {tree.get_accuracy(test_instance.examples):.4f}\t"
