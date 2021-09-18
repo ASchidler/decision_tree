@@ -30,6 +30,9 @@ resource.setrlimit(resource.RLIMIT_AS, (23 * 1024 * 1024 * 1024 // 2, 12 * 1024 
 
 ap = argp.ArgumentParser(description="Python implementation for computing and improving decision trees.")
 ap.add_argument("instance", type=str)
+ap.add_argument("-e", dest="encoding", action="store", type=int, default=0, choices=[0, 1, 2, 3],
+                help="Which encoding to use.")
+
 ap.add_argument("-r", dest="reduce", action="store_true", default=False,
                 help="Use support set based reduction. Decreases instance size, but tree may be sub-optimal.")
 ap.add_argument("-b", dest="benchmark", action="store_true", default=False,
@@ -40,23 +43,20 @@ ap.add_argument("-t", dest="time_limit", action="store", default=0, type=int,
                 help="The timelimit in seconds.")
 ap.add_argument("-z", dest="size", action="store_true", default=False,
                 help="Decrease the size as well as the depth.")
-ap.add_argument("-e", dest="slim_opt", action="store_true", default=False,
+ap.add_argument("-s", dest="slim_opt", action="store_true", default=False,
                 help="Optimize away extension leaves.")
 ap.add_argument("-f", dest="size_first", action="store_true", default=False,
                 help="Optimize size before depth.")
 ap.add_argument("-d", dest="validation", action="store_true", default=False,
                 help="Use data with validation set.")
-ap.add_argument("-s", dest="use_smt", action="store_true", default=False)
+
 ap.add_argument("-l", dest="slice", action="store", default=1, type=int,
                 help="Which slice to use from the five cross validation sets.")
-ap.add_argument("-a", dest="alt_sat", action="store_true", default=False,
-                help="Use alternative SAT encoding.")
-ap.add_argument("-y", dest="hybrid", action="store_true", default=False,
-                help="Use hybrid mode, allowing for <= and =.")
+
 ap.add_argument("-w", dest="weka", action="store_false", default=True,
                 help="Use CART instead of WEKA trees.")
-ap.add_argument("-m", dest="slim", action="store_true", default=False,
-                help="Use local improvement instead of exact results.")
+ap.add_argument("-m", dest="mode", action="store", default=0, choices=[0, 1, 2, 3], type=int,
+                help="Solving mode.")
 ap.add_argument("-u", dest="maintain", action="store_true", default=False,
                 help="Force maintaining of sizes for SLIM.")
 ap.add_argument("-o", dest="reduce_categoric", action="store_true", default=False,
@@ -65,12 +65,11 @@ ap.add_argument("-n", dest="reduce_numeric", action="store_true", default=False,
                 help="In SLIM use full numeric features instead of just single thresholds.")
 ap.add_argument("-i", dest="limit_idx", action="store", default=1, type=int,
                 help="Set of limits.")
-ap.add_argument("-x", dest="use_dt", action="store_true", default=False,
-                help="Use a decision tree to decide if an instance should be solved.")
-ap.add_argument("-g", dest="use_encoding_dt", action="store_true", default=False,
+
+ap.add_argument("-g", dest="use_dt", action="store", default=0, type=int, choices=[0,1,2],
                 help="Use a decision tree to decide which encoding to use.")
-ap.add_argument("-j", dest="incremental", action="store_true", default=False)
-ap.add_argument("-v", dest="recursive", action="store_true", default=False)
+
+ap.add_argument("-x", dest="use_dense", action="store_true", default=False)
 
 args = ap.parse_args()
 
@@ -124,7 +123,7 @@ def exit_timeout():
 instance, test_instance, validation_instance = nonbinary_instance.parse(instance_path, target_instance, args.slice, use_validation=args.validation)
 
 timer = None
-if args.time_limit > 0 and not args.incremental and not args.recursive:
+if args.time_limit > 0 and args.mode < 2:
     timer = Timer(args.time_limit * 1.1 - (time.time() - start_time), exit_timeout)
     timer.start()
 
@@ -137,22 +136,22 @@ if args.categorical:
     instance.is_categorical = {x for x in range(1, instance.num_features+1)}
 
 tree = None
-if args.use_smt:
+if args.encoding == 3:
     enc = nbt
 else:
-    if args.hybrid:
-        enc = nbs3
-    elif args.alt_sat:
+    if args.encoding == 0:
+        enc = nbs
+    elif args.encoding == 1:
         enc = nbs2
     else:
-        enc = nbs
+        enc = nbs3
 
-if args.incremental:
+if args.mode == 2:
     from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2
 
     tree = base.run_incremental(enc, Glucose3, SupportSetStrategy2(instance), timeout=args.time_limit)
     tree.root.reclassify(instance.examples)
-elif args.recursive:
+elif args.mode == 3:
     from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2
     leaf_sets = [(list(instance.examples), None)]
     tree = None
@@ -173,9 +172,9 @@ elif args.recursive:
                 continue
 
             strat = SupportSetStrategy2(new_instance)
-            if not args.use_smt:
+            if not args.encoding < 3:
                 new_partial_tree = base.run_incremental(enc, Glucose3, strat,
-                                                        timeout=args.time_limit, opt_size=args.size)
+                                                        timeout=args.time_limit, opt_size=args.size, use_dense=args.use_dense)
             else:
                 new_partial_tree = nbt.run_incremental(strat, timeout=args.time_limit,
                                                        opt_size=args.size)
@@ -225,7 +224,7 @@ elif args.recursive:
                   f"Nodes {tree.get_nodes()}\t"
                   f"Avg. Length {tree.get_avg_length(instance.examples)}\t")
         leaf_sets = new_leaf_sets
-elif args.slim:
+elif args.mode == 1:
     algo = "w" if args.weka else "c"
     dirs = "validation" if args.validation else "unpruned"
     # if args.categorical:
@@ -234,11 +233,11 @@ elif args.slim:
 
     parameters = improve_strategy.SlimParameters(tree, instance, enc, Glucose3, args.size, args.slim_opt,
                                                  args.maintain, args.reduce_numeric, args.reduce_categoric,
-                                                 args.time_limit, args.use_dt, args.benchmark, args.size_first,
-                                                 args.use_encoding_dt)
-    if args.use_dt:
+                                                 args.time_limit, args.use_dt == 1, args.benchmark, args.size_first,
+                                                 args.use_dt == 2)
+    if args.use_dt == 1:
         parameters.example_decision_tree = tree_parsers.parse_internal_tree("nonbinary/benchmark_tree.dt")
-    elif args.use_encoding_dt:
+    elif args.use_dt == 2:
         parameters.enc_decision_tree = tree_parsers.parse_internal_tree("nonbinary/benchmark_tree_encodings.dt")
 
     print(f"START Tree Depth: {tree.get_depth()}, Nodes: {tree.get_nodes()}, "
@@ -248,7 +247,7 @@ elif args.slim:
 
     improve_strategy.run(parameters, test_instance, limit_idx=args.limit_idx)
 else:
-    if not args.use_smt:
+    if not args.encoding == 3:
         tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size)
     else:
         tree = nbt.run(instance, opt_size=args.size)

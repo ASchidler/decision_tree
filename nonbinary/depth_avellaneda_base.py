@@ -259,9 +259,10 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
     return best_model
 
 
-def run_incremental(enc, solver, strategy, increment=1, timeout=300, opt_size=False):
+def run_incremental(enc, solver, strategy, increment=1, timeout=300, opt_size=False, use_dense=False):
     c_bound = 1
     best_model = None
+    best_last = None
     done = []
 
     start_time = time.time()
@@ -297,6 +298,7 @@ def run_incremental(enc, solver, strategy, increment=1, timeout=300, opt_size=Fa
                     model = {abs(x): x > 0 for x in slv.get_model()}
                     best_model = enc._decode(model, strategy.get_instance(), c_bound, vs)
                 else:
+                    best_last = best_model
                     c_bound += enc.increment()
         if solved:
             strategy.unreduce(best_model)
@@ -349,5 +351,7 @@ def run_incremental(enc, solver, strategy, increment=1, timeout=300, opt_size=Fa
         if timer is not None:
             timer.cancel()
 
+    if best_last and not opt_size and use_dense:
+        return best_last
     return best_model
 
