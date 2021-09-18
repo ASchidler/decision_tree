@@ -265,10 +265,11 @@ def run_incremental(enc, solver, strategy, increment=1, timeout=300, opt_size=Fa
     best_last = None
     done = []
 
+    strategy.find_next(1 + increment)
+    strategy.get_instance()
     start_time = time.time()
-    strategy.find_next(1+increment)
 
-    while len(done) == 0:
+    while len(done) == 0 or best_model is None:
         # Compute decision tree
         # Edge cases
         if len(strategy.get_instance().classes) == 1:
@@ -353,5 +354,6 @@ def run_incremental(enc, solver, strategy, increment=1, timeout=300, opt_size=Fa
 
     if best_last and not opt_size and use_dense:
         return best_last
+    print(f"{best_model}")
     return best_model
 

@@ -80,6 +80,7 @@ class SupportSetStrategy:
             self.changed = False
             self.current_instance.unreduce()
             self.current_instance.reduce(self.support_set)
+
         return self.current_instance
 
     def unreduce(self, tree):

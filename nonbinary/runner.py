@@ -66,16 +66,18 @@ ap.add_argument("-n", dest="reduce_numeric", action="store_true", default=False,
 ap.add_argument("-i", dest="limit_idx", action="store", default=1, type=int,
                 help="Set of limits.")
 
-ap.add_argument("-g", dest="use_dt", action="store", default=0, type=int, choices=[0,1,2],
+ap.add_argument("-g", dest="use_dt", action="store", default=0, type=int, choices=[0, 1, 2],
                 help="Use a decision tree to decide which encoding to use.")
 
 ap.add_argument("-x", dest="use_dense", action="store_true", default=False)
+ap.add_argument("-a", dest="incremental_strategy", action="store", default=0, type=int, choices=[0, 1])
 
 args = ap.parse_args()
 
 fls = list(x for x in os.listdir(instance_path) if x.endswith(".data"))
 
 fls.sort()
+
 
 # if args.choices:
 #     for i, cf in enumerate(fls):
@@ -148,11 +150,16 @@ else:
 
 if args.mode == 2:
     from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2
+    chosen_strat = [SupportSetStrategy, SupportSetStrategy2][args.incremental_strategy]
+    increment = 5 if args.incremental_strategy == 0 else 1
 
-    tree = base.run_incremental(enc, Glucose3, SupportSetStrategy2(instance), timeout=args.time_limit)
+    tree = base.run_incremental(enc, Glucose3, chosen_strat(instance), timeout=args.time_limit, increment=increment)
     tree.root.reclassify(instance.examples)
 elif args.mode == 3:
     from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2
+    increment = 5 if args.incremental_strategy == 0 else 1
+
+    chosen_strat = [SupportSetStrategy, SupportSetStrategy2][args.incremental_strategy]
     leaf_sets = [(list(instance.examples), None)]
     tree = None
 
@@ -171,13 +178,14 @@ elif args.mode == 3:
                     print(f"Error: {tree.get_accuracy(c_set)}")
                 continue
 
-            strat = SupportSetStrategy2(new_instance)
-            if not args.encoding < 3:
+            strat = chosen_strat(new_instance)
+            if args.encoding < 3:
                 new_partial_tree = base.run_incremental(enc, Glucose3, strat,
-                                                        timeout=args.time_limit, opt_size=args.size, use_dense=args.use_dense)
+                                                        timeout=args.time_limit, opt_size=args.size, use_dense=args.use_dense,
+                                                        increment=increment)
             else:
                 new_partial_tree = nbt.run_incremental(strat, timeout=args.time_limit,
-                                                       opt_size=args.size)
+                                                       opt_size=args.size, increment=increment)
 
             if tree is None:
                 tree = new_partial_tree

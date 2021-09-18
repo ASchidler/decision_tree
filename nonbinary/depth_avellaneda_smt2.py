@@ -371,10 +371,13 @@ def run_incremental(strategy, increment=1, timeout=300, opt_size=False):
     best_model = None
 
     strategy.find_next(1+increment)
-
+    strategy.get_instance()
     c_start = time.time()
 
-    while (time.time() - c_start) < timeout:
+    while (time.time() - c_start) < timeout or best_model is None:
+        if best_model is None and (time.time() - c_start) > timeout:
+            c_start = time.time()
+
         solved = False
         # Edge cases
         if len(strategy.get_instance().classes) == 1 and not solved:
