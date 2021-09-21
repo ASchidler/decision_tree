@@ -1,0 +1,61 @@
+a(13) <= 0
+-a(2) <= 0
+--a(3) <= 0
+---a(9) <= 0
+----a(10) <= 0
+-----c(republican)
+-----c(democrat)
+----a(5) <= 0
+-----c(democrat)
+-----c(republican)
+---a(5) <= 0
+----c(democrat)
+----a(16) <= 0
+-----a(11) <= 0
+------c(republican)
+------a(12) <= 0
+-------c(republican)
+-------c(democrat)
+-----c(democrat)
+--a(9) <= 0
+---a(1) <= 0
+----a(15) <= 0
+-----c(republican)
+-----c(democrat)
+----a(5) <= 0
+-----c(democrat)
+-----c(republican)
+---a(4) <= 0
+----a(16) <= 0
+-----c(republican)
+-----c(democrat)
+----a(5) <= 0
+-----c(democrat)
+-----c(republican)
+-a(3) <= 0
+--a(1) <= 0
+---a(4) <= 0
+----a(12) <= 0
+-----c(republican)
+-----c(democrat)
+----c(democrat)
+---a(5) <= 0
+----c(democrat)
+----c(republican)
+--a(4) <= 0
+---a(14) <= 0
+----a(12) <= 0
+-----c(republican)
+-----c(democrat)
+----a(5) <= 0
+-----c(democrat)
+-----c(republican)
+---a(2) <= 0
+----a(10) <= 0
+-----c(democrat)
+-----a(8) <= 0
+------c(democrat)
+------c(republican)
+----a(12) <= 0
+-----c(republican)
+-----c(democrat)
