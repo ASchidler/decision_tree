@@ -14,9 +14,7 @@ use_binoct = False
 #                ("q", "DP"), ("f", "SZ-DP"), ("g", "DT Encoding"), ("r", "Reduce Categoric"),
 #                ("h", "2"), ("i", "3")]
 
-experiments = [("w", "Recursive")]
-
-all_experiments = ["k", "m"]
+experiment = "w"
 
 fields = [(10, "Depth"), (9, "Size"), (12, "Accuracy"), (13, "Avg. Decision Length"),
           (11, "Training Accuracy")
@@ -24,6 +22,7 @@ fields = [(10, "Depth"), (9, "Size"), (12, "Accuracy"), (13, "Avg. Decision Leng
 field_idx = 2
 bar_idx = [0, 1, 2]
 offset = 66
+offsets = [(12, "av"), (30, "avx"), (48, "v"), (66, "vx")]
 #offset = 48
 
 colors = ['#228833', 'black', '#eecc66', '#bb5566', '#004488']
@@ -40,13 +39,14 @@ legend = []
 
 target_idx = fields[field_idx][0]
 
-for c_experiment, c_ex_name in experiments:
-    if cmp_heur or c_ex_name != experiments[0][1]:
-        legend.append(c_ex_name)
-
-    with open(f"results_{c_experiment}_comp{('' if c_experiment != 'm' or not use_binoct else '_binoct') if not use_cart else '_c'}.csv") as inp:
-        for i, cl in enumerate(inp):
-            if i > 0:
+with open(f"results_{experiment}_comp.csv") as inp:
+    for i, cl in enumerate(inp):
+        if i == 0:
+            for c_offset, c_name in offsets:
+                if cmp_heur or c_name != offsets[0][1]:
+                    legend.append(c_name)
+        else:
+            for c_offset, c_name in offsets:
                 cf = cl.split(";")
                 if cmp_heur:
                     if len(results[cf[0]]) == 0:
@@ -54,8 +54,8 @@ for c_experiment, c_ex_name in experiments:
                     # else:
                     #     if results[cf[0]][0] != cf[target_idx]:
                     #         raise RuntimeError("Base mismatch")
-                result1 = [cf[x[0] + offset].strip() for x in fields]
-                result2 = [cf[x[0] + offset + 6].strip() for x in fields]
+                result1 = [cf[x[0] + c_offset].strip() for x in fields]
+                result2 = [cf[x[0] + c_offset + 6].strip() for x in fields]
                 results[cf[0]].append(result1)
                 # if float(result2[2]) > float(result1[2]):
                 #     results[cf[0]].append(result2)
@@ -77,7 +77,7 @@ gts = [[0 for _ in range(0, len(fields))] for _ in range(0 if cmp_heur else 1, l
 gts2 = [[0 for _ in range(0, len(fields))] for _ in range(0 if cmp_heur else 1, len(legend))]
 
 for cl in results.values():
-    if len(cl) < len(experiments) + (1 if cmp_heur else 0) or any(x == -1 for x in cl):
+    if len(cl) < len(offsets) + (1 if cmp_heur else 0) or any(x == -1 for x in cl):
         continue
 
     if not any(y == "-1" or y.strip() == "" for x in cl for y in x):
@@ -264,7 +264,7 @@ ax.set_axisbelow(True)
 names = []
 
 ax.set_xlabel('DT-SLIM')
-ax.set_ylabel('C4.5' if cmp_heur else experiments[0][1])
+ax.set_ylabel('C4.5' if cmp_heur else offsets[0][1])
 # ax.set_title('scatter plot')
 plt.rcParams["legend.loc"] = 'upper left'
 plt.rcParams['savefig.pad_inches'] = 0

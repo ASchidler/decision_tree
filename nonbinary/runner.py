@@ -53,7 +53,7 @@ ap.add_argument("-d", dest="validation", action="store_true", default=False,
 ap.add_argument("-l", dest="slice", action="store", default=1, type=int,
                 help="Which slice to use from the five cross validation sets.")
 
-ap.add_argument("-w", dest="weka", action="store_false", default=True,
+ap.add_argument("-w", dest="heuristic", action="store", default=0, type=int, choices=[0, 1, 2],
                 help="Use CART instead of WEKA trees.")
 ap.add_argument("-m", dest="mode", action="store", default=0, choices=[0, 1, 2, 3], type=int,
                 help="Solving mode.")
@@ -68,7 +68,7 @@ ap.add_argument("-i", dest="limit_idx", action="store", default=1, type=int,
 
 ap.add_argument("-g", dest="use_dt", action="store", default=0, type=int, choices=[0, 1, 2],
                 help="Use a decision tree to decide which encoding to use.")
-
+ap.add_argument("-j", dest="reduce_first", action="store_true", default=False)
 ap.add_argument("-x", dest="use_dense", action="store_true", default=False)
 ap.add_argument("-a", dest="incremental_strategy", action="store", default=0, type=int, choices=[0, 1])
 
@@ -233,7 +233,8 @@ elif args.mode == 3:
                   f"Avg. Length {tree.get_avg_length(instance.examples)}\t")
         leaf_sets = new_leaf_sets
 elif args.mode == 1:
-    algo = "w" if args.weka else "c"
+    algo = ["w", "c", "r"][args.heuristic]
+
     dirs = "validation" if args.validation else "unpruned"
     # if args.categorical:
     #     dirs = "categorical"
@@ -242,7 +243,7 @@ elif args.mode == 1:
     parameters = improve_strategy.SlimParameters(tree, instance, enc, Glucose3, args.size, args.slim_opt,
                                                  args.maintain, args.reduce_numeric, args.reduce_categoric,
                                                  args.time_limit, args.use_dt == 1, args.benchmark, args.size_first,
-                                                 args.use_dt == 2)
+                                                 args.use_dt == 2, args.reduce_first)
     if args.use_dt == 1:
         parameters.example_decision_tree = tree_parsers.parse_internal_tree("nonbinary/benchmark_tree.dt")
     elif args.use_dt == 2:
