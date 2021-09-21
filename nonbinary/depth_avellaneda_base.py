@@ -281,9 +281,6 @@ def run_incremental(enc, solver, strategy, increment=1, timeout=300, opt_size=Fa
             with solver() as slv:
                 check_memory(slv, done)
                 print(f"Running {len(strategy.get_instance().examples)} / {c_bound}")
-                for c_e in strategy.get_instance().examples:
-                    print(f"{','.join(str(c_e.features[c_f]) for c_f in range(1, strategy.get_instance().num_features+1))}:{c_e.cls}")
-                print("")
 
                 try:
                     vs = enc.encode(strategy.get_instance(), c_bound, slv, False)

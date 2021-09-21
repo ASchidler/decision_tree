@@ -41,7 +41,7 @@ def _init_var(instance, limit, class_map):
     return x, f, c
 
 
-def encode(instance, limit, slv, opt_size=False):
+def encode(instance, limit, slv, opt_size=False, impurity=False):
     classes = list(instance.classes)  # Give classes an order
 
     if opt_size:
@@ -80,7 +80,7 @@ def encode(instance, limit, slv, opt_size=False):
 
     for i in range(0, len(instance.examples)):
         _alg1(instance, i, limit, 0, 1, list(), f, x, slv)
-        _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, slv)
+        _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, slv, impurity)
 
     return {"f": f, "x": x, "c": c, "class_map": class_map}
 
@@ -112,7 +112,7 @@ def _alg1(instance, e_idx, limit, lvl, q, clause, fs, x, slv):
     clause.pop()
 
 
-def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, slv):
+def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, slv, impurity):
     if lvl == limit:
         c_vars = class_map[instance.examples[e_idx].cls]
 
@@ -123,13 +123,21 @@ def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, slv):
                 slv.add(z3.Or([*clause, c[q - 2 ** limit]]))
         else:
             slv.add(z3.Or([*clause, c[q - 2 ** limit][c_vars]]))
+
+        if impurity:
+            e_cls = instance.examples[e_idx].cls
+            correct = instance.examples[e_idx].impurities[e_cls]
+            incorrect = sum(x for k, x in instance.examples[e_idx].impurities.items() if k != e_cls)
+            slv.add(z3.Or([*clause, z3.Int(f"c_{e_idx}_{q - 2 ** limit}") == correct - incorrect]))
+            for c_var in clause:
+                slv.add(z3.Or([z3.Not(c_var), z3.Int(f"c_{e_idx}_{q - 2 ** limit}") == 0]))
     else:
         clause.append(x[e_idx][lvl])
-        _alg2(instance, e_idx, limit, lvl + 1, 2 * q, clause, class_map, x, c, slv)
+        _alg2(instance, e_idx, limit, lvl + 1, 2 * q, clause, class_map, x, c, slv, impurity)
         clause.pop()
 
         clause.append(z3.Not(x[e_idx][lvl]))
-        _alg2(instance, e_idx, limit, lvl+1, 2*q+1, clause, class_map, x, c, slv)
+        _alg2(instance, e_idx, limit, lvl+1, 2*q+1, clause, class_map, x, c, slv, impurity)
         clause.pop()
 
 
@@ -418,6 +426,29 @@ def run_incremental(strategy, increment=1, timeout=300, opt_size=False):
 
         if solved:
             strategy.find_next(increment)
+
+    if best_model is not None and False:
+        if best_model.get_nodes() <= 3:
+            return best_model
+
+        opt = z3.Optimize()
+
+        # Not supported by optimize
+        # opt.set("max_memory", 10000)
+        vs = encode(strategy.get_instance(), best_model.get_depth(), opt, impurity=True)
+        opt.set("timeout", int(timeout) * 1000)
+        cards = []
+        for c_e in range(0, len(strategy.get_instance().examples)):
+            for i in range(0, 2**best_model.get_depth()):
+                cards.append(z3.Int(f"c_{c_e}_{i}"))
+        c_opt = z3.Int("c_opt")
+        opt.add(z3.Sum(cards) >= c_opt)
+        opt.maximize(c_opt)
+        opt.check()
+
+        model = opt.model()
+        if len(model) > 0:
+            best_model = _decode(model, strategy.get_instance(), best_model.get_depth(), vs)
 
     return best_model
 
