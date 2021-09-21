@@ -4,6 +4,7 @@ audiology
 backache
 balance-scale
 banknote
+breast-cancer-wisconsin
 cancer
 car
 cleve
@@ -17,6 +18,7 @@ house-votes-84
 hungarian
 iris
 irish
+kr-vs-kp
 lymphography
 meteo
 monks-1

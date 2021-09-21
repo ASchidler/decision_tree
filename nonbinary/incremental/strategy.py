@@ -47,14 +47,18 @@ class SupportSetStrategy:
 
                         if all_nondiffering:
                             found_nondiffering = True
+                            found = False
                             shuffle(self.features)
                             for c_f in self.features:
                                 if e.features[c_f] != e2.features[c_f]:
+                                    found = True
                                     if c_f in self.original_instance.is_categorical:
                                         self.support_set.append((c_f, e.features[c_f], False))
                                     else:
                                         self.support_set.append((c_f, min(e.features[c_f], e2.features[c_f]), False))
                                     break
+                            if not found:  # Inconsistent
+                                found_nondiffering = False
 
             if found_nondiffering:
                 self.current_instance.add_example(e.copy(self.current_instance))
@@ -67,11 +71,49 @@ class SupportSetStrategy:
 
             # None found? Add random sample and start again
             if not found_nondiffering and c_idx >= len(self.possible_examples):
-                self.current_instance.add_example(self.possible_examples[-1].copy(self.current_instance))
-                self.possible_examples.pop()
-                self.by_class[self.current_instance.examples[-1].cls].append(self.current_instance.examples[-1])
-                c_count += 1
-                c_idx = 0
+                feature_thresholds = defaultdict(list)
+
+                # First ensure consistency
+                for f, t, _ in self.support_set:
+                    feature_thresholds[f].append(t)
+                for f, v in feature_thresholds.items():
+                    if f in self.original_instance.is_categorical:
+                        feature_thresholds[f] = set(v)
+                    else:
+                        v.sort()
+                        if v[-1] != self.original_instance.domains[f][-1]:
+                            v.append(self.original_instance.domains[f][-1])
+
+                features = list(feature_thresholds.keys())
+                cls_map = {}
+                for c_e in self.current_instance.examples:
+                    vals = []
+                    for c_f in features:
+                        for c_idx, c_t in enumerate(feature_thresholds[c_f]):
+                            if c_e.features[c_f] <= c_t:
+                                vals.append(c_idx)
+                                break
+                        cls_map[tuple(vals)] = c_e.cls
+
+                while self.possible_examples:
+                    vals = []
+                    for c_f in features:
+                        for c_idx, c_t in enumerate(feature_thresholds[c_f]):
+                            if self.possible_examples[-1].features[c_f] <= c_t:
+                                vals.append(c_idx)
+                                break
+                    if tuple(vals) in cls_map and cls_map[tuple(vals)] != self.possible_examples[-1].cls:
+                        self.possible_examples.pop()
+                    else:
+                        break
+
+                # Add random sample
+                if self.possible_examples:
+                    self.current_instance.add_example(self.possible_examples[-1].copy(self.current_instance))
+                    self.possible_examples.pop()
+                    self.by_class[self.current_instance.examples[-1].cls].append(self.current_instance.examples[-1])
+                    c_count += 1
+                    c_idx = 0
 
         self.current_instance.finish()
 

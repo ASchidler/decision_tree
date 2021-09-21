@@ -30,11 +30,17 @@ def parse_file(fl, experiment):
             for cf in c_flags:
                 cfs = cf.strip().split("=")
 
-                if cfs[0] == "alt_sat" and cfs[1] == "True":
+                if cfs[0] == "mode" and cfs[1] == "3":
+                    flags += "v"
+                elif cfs[0] == "use_dense" and cfs[1] == "True":
+                    flags += "x"
+                elif cfs[0] == "incremental_strategy" and cfs[1] == "1":
+                    flags += "a"
+                if cfs[0] == "encoding" and cfs[1] == "1":
                     c_encoding = "a"
                 elif cfs[0] == "categorical" and cfs[1] == "True":
                     c_encoding = "c"
-                elif cfs[0] == "hybrid" and cfs[1] == "True":
+                if cfs[0] == "encoding" and cfs[1] == "2":
                     c_encoding = "y"
                 elif cfs[0] == "size" and cfs[1] == "True":
                     flags += "z"
@@ -42,7 +48,7 @@ def parse_file(fl, experiment):
                     flags += "u"
                 elif cfs[0] == "slice":
                     c_slice = int(cfs[1])
-                elif cfs[0] == "use_smt" and cfs[1] == "True":
+                if cfs[0] == "encoding" and cfs[1] == "3":
                     c_encoding = "s"
                 elif cfs[0] == "validation" and cfs[1] == "True":
                     c_val = "v"
@@ -54,8 +60,8 @@ def parse_file(fl, experiment):
                     flags += "n"
                 elif cfs[0] == "reduce_categoric" and cfs[1] == "True":
                     flags += "o"
-                elif cfs[0] == "slim_opt" and cfs[1] == "True":
-                    flags += "e"
+                # elif cfs[0] == "slim_opt" and cfs[1] == "True":
+                #     flags += "e"
                 elif cfs[0] == "use_dt" and cfs[1] == "True":
                     flags += "x"
                 elif cfs[0] == "use_encoding_dt" and cfs[1] == "True":
@@ -66,6 +72,9 @@ def parse_file(fl, experiment):
                     flags += "v"
                 elif cfs[0] == "incremental" and cfs[1] == "True":
                     flags += "j"
+
+                # ap.add_argument("-x", dest="use_dense", action="store_true", default=False)
+                # ap.add_argument("-a", dest="incremental_strategy", action="store", default=0, type=int, choices=[0, 1])
 
             if c_encoding == "":
                 c_encoding = "0"
