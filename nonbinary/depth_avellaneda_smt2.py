@@ -128,9 +128,11 @@ def _alg2(instance, e_idx, limit, lvl, q, clause, class_map, x, c, slv, impurity
             e_cls = instance.examples[e_idx].cls
             correct = instance.examples[e_idx].impurities[e_cls]
             incorrect = sum(x for k, x in instance.examples[e_idx].impurities.items() if k != e_cls)
-            slv.add(z3.Or([*clause, z3.Int(f"c_{e_idx}_{q - 2 ** limit}") == correct - incorrect]))
+            slv.add(z3.Or([*clause, z3.Real(f"c_{e_idx}_{q - 2 ** limit}") == correct]))
+            slv.add(z3.Or([*clause, z3.Real(f"c2_{e_idx}_{q - 2 ** limit}") == correct + incorrect]))
             for c_var in clause:
-                slv.add(z3.Or([z3.Not(c_var), z3.Int(f"c_{e_idx}_{q - 2 ** limit}") == 0]))
+                slv.add(z3.Or([z3.Not(c_var), z3.Real(f"c_{e_idx}_{q - 2 ** limit}") == 0]))
+                slv.add(z3.Or([z3.Not(c_var), z3.Real(f"c2_{e_idx}_{q - 2 ** limit}") == 0]))
     else:
         clause.append(x[e_idx][lvl])
         _alg2(instance, e_idx, limit, lvl + 1, 2 * q, clause, class_map, x, c, slv, impurity)
@@ -427,7 +429,7 @@ def run_incremental(strategy, increment=1, timeout=300, opt_size=False):
         if solved:
             strategy.find_next(increment)
 
-    if best_model is not None and False:
+    if best_model is not None:
         if best_model.get_nodes() <= 3:
             return best_model
 
@@ -437,12 +439,17 @@ def run_incremental(strategy, increment=1, timeout=300, opt_size=False):
         # opt.set("max_memory", 10000)
         vs = encode(strategy.get_instance(), best_model.get_depth(), opt, impurity=True)
         opt.set("timeout", int(timeout) * 1000)
-        cards = []
-        for c_e in range(0, len(strategy.get_instance().examples)):
-            for i in range(0, 2**best_model.get_depth()):
+        c_opt = z3.Real("c_opt")
+
+        for i in range(0, 2 ** best_model.get_depth()):
+            cards = []
+            cards2 = []
+            for c_e in range(0, len(strategy.get_instance().examples)):
                 cards.append(z3.Int(f"c_{c_e}_{i}"))
-        c_opt = z3.Int("c_opt")
-        opt.add(z3.Sum(cards) >= c_opt)
+                cards2.append(z3.Int(f"c2_{c_e}_{i}"))
+
+            opt.add(z3.Sum(cards) / z3.Sum(cards2) >= c_opt)
+
         opt.maximize(c_opt)
         opt.check()
 
