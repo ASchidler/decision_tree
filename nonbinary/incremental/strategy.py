@@ -1,4 +1,5 @@
 import math
+from bisect import bisect_right
 from collections import defaultdict
 
 from nonbinary.nonbinary_instance import ClassificationInstance, Example
@@ -12,6 +13,7 @@ class SupportSetStrategy:
         self.current_instance = None
         self.by_class = {x: [] for x in instance.classes}
         self.possible_examples = list(instance.examples[1:])
+        shuffle(self.possible_examples)
         self.features = list(range(1, instance.num_features + 1))
         self.changed = True
 
@@ -139,6 +141,7 @@ class SupportSetStrategy2:
         self.current_instance = None
         self.by_class = {x: [] for x in instance.classes}
         self.possible_examples = list(instance.examples[1:])
+        shuffle(self.possible_examples)
         self.features = list(range(1, instance.num_features + 1))
         self.changed = True
         self.last_instance = None
@@ -186,7 +189,20 @@ class SupportSetStrategy2:
                                     if c_f in self.original_instance.is_categorical:
                                         self.support_set.append((c_f, e.features[c_f], False))
                                     else:
-                                        self.support_set.append((c_f, min(e.features[c_f], e2.features[c_f]), False))
+                                        target_v = min(e.features[c_f], e2.features[c_f])
+                                        right_idx = bisect_right(self.original_instance.domains[c_f], target_v)
+                                        if target_v != self.original_instance.domains[c_f][right_idx]:
+                                            if right_idx > 0 and target_v == self.original_instance.domains[c_f][right_idx - 1]:
+                                                target_v = self.original_instance.domains[c_f][right_idx - 1]
+                                            else:
+                                                rv = self.original_instance.domains[c_f][right_idx]
+                                                lv = self.original_instance.domains[c_f][right_idx - 1]
+                                                if e.features[c_f] <= rv < e2.features[c_f] or e.features[c_f] > rv >= e2.features[c_f]:
+                                                    target_v = rv
+                                                else:
+                                                    target_v = lv
+
+                                        self.support_set.append((c_f, target_v, False))
                                     break
 
             if found_nondiffering:

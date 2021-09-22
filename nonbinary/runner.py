@@ -13,6 +13,8 @@ import nonbinary.depth_avellaneda_base as base
 import nonbinary.depth_avellaneda_sat as nbs
 import nonbinary.depth_avellaneda_sat2 as nbs2
 import nonbinary.depth_avellaneda_sat3 as nbs3
+import nonbinary.depth_partition as nbp
+import nonbinary.size_narodytska as nbn
 import nonbinary.depth_avellaneda_smt2 as nbt
 import nonbinary.improve_strategy as improve_strategy
 import nonbinary_instance
@@ -20,7 +22,7 @@ import tree_parsers
 from nonbinary.decision_tree import DecisionTreeNode, DecisionTreeLeaf
 from nonbinary.nonbinary_instance import ClassificationInstance
 
-random.seed = 1
+random.seed(1)
 
 instance_path = "nonbinary/instances"
 instance_validation_path = "datasets/validate"
@@ -30,7 +32,7 @@ resource.setrlimit(resource.RLIMIT_AS, (23 * 1024 * 1024 * 1024 // 2, 12 * 1024 
 
 ap = argp.ArgumentParser(description="Python implementation for computing and improving decision trees.")
 ap.add_argument("instance", type=str)
-ap.add_argument("-e", dest="encoding", action="store", type=int, default=0, choices=[0, 1, 2, 3],
+ap.add_argument("-e", dest="encoding", action="store", type=int, default=0, choices=[0, 1, 2, 3, 4, 5],
                 help="Which encoding to use.")
 
 ap.add_argument("-r", dest="reduce", action="store_true", default=False,
@@ -145,8 +147,12 @@ else:
         enc = nbs
     elif args.encoding == 1:
         enc = nbs2
-    else:
+    elif args.encoding == 2:
         enc = nbs3
+    elif args.encoding == 4:
+        enc = nbp
+    else:
+        enc = nbn
 
 if args.mode == 2:
     from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2
@@ -179,12 +185,12 @@ elif args.mode == 3:
                 continue
 
             strat = chosen_strat(new_instance)
-            if args.encoding < 3:
+            if enc.is_sat():
                 new_partial_tree = base.run_incremental(enc, Glucose3, strat,
                                                         timeout=args.time_limit, opt_size=args.size, use_dense=args.use_dense,
                                                         increment=increment)
             else:
-                new_partial_tree = nbt.run_incremental(strat, timeout=args.time_limit,
+                new_partial_tree = enc.run_incremental(strat, timeout=args.time_limit,
                                                        opt_size=args.size, increment=increment)
 
             if tree is None:

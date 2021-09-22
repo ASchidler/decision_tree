@@ -44,20 +44,14 @@ class ClassificationInstance:
         self.class_sizes = None
         self.layer_reduced = False
 
-    def finish(self, base_instance=None):
+    def finish(self, base_instance=None, clean_domains=True):
         c_idx = 1
         self.domains_max = [0 for _ in range(0, self.num_features + 1)]
 
         for i in range(1, self.num_features+1):
             if any(isinstance(x, str) and x != "?" for x in self.domains[i]):
                 self.is_categorical.add(i)
-            self.feature_idx[i] = c_idx
-            c_idx += len(self.domains[i])
-            if base_instance is not None:
-                for c_v, c_c in self.domain_counts[i].items():
-                    self.domain_counts[i][c_v] += c_c
 
-            self.domains[i] = sorted(list(self.domains[i]))
             if len(self.domains[i]) > 0:
                 if i in self.is_categorical:
                     _, self.domains_max[i] = max((v, k) for k, v in self.domain_counts[i].items())
@@ -71,6 +65,47 @@ class ClassificationInstance:
                         is_int = is_int and isinstance(k, int)
                     #self.domains_max[i] = c_sum // c_cnt if is_int else c_sum / c_cnt
                     self.domains_max[i] = c_sum / c_cnt
+
+            if clean_domains and i not in self.is_categorical:
+                new_domain = []
+                values = [(e.features[i], e.cls) for e in self.examples]
+                values.sort()
+
+                c_cls = None
+                last_val = None
+                last_last_val = None
+
+                for c_v, c_c in values:
+                    if c_cls is None:
+                        c_cls = c_c
+                    else:
+                        if c_cls != c_c:
+                            c_cls = c_c
+                            if last_val == c_v:  # Both classes with the same value
+                                if last_last_val is not None and (not new_domain or new_domain[-1] != last_last_val):
+                                    new_domain.append(last_last_val)
+
+                            if last_val is not None and (not new_domain or new_domain[-1] != last_val):
+                                new_domain.append(last_val)
+
+                    if c_v != last_val:
+                        last_last_val = last_val
+                        last_val = c_v
+
+                # Add last value so the max is in the domain, will be ignored by the encodings
+                if self.domains[i]:
+                    maximum = max(self.domains[i])
+                    if not new_domain or new_domain[-1] != maximum:
+                        new_domain.append(maximum)
+                self.domains[i] = new_domain
+            else:
+                self.domains[i] = sorted(list(self.domains[i]))
+
+            self.feature_idx[i] = c_idx
+            c_idx += len(self.domains[i])
+            if base_instance is not None:
+                for c_v, c_c in self.domain_counts[i].items():
+                    self.domain_counts[i][c_v] += c_c
 
         if self.has_missing:
             for c_e in self.examples:

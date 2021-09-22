@@ -354,6 +354,6 @@ def run_incremental(enc, solver, strategy, increment=1, timeout=300, opt_size=Fa
 
     if best_last and not opt_size and use_dense:
         return best_last
-    print(f"{best_model}")
+
     return best_model
 
