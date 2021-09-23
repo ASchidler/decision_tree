@@ -12,7 +12,7 @@ experiments = [("m", "DP-SZ"), ("g", "Dynamic Runtime Prediction"), ("x", "Stati
 #experiments = [("o", "DP-SZ"), ("c", "DT Budget")]
 
 fields = [(5, "Depth"), (4, "Size"), (7, "Accuracy"), (8, "Avg. Decision Length")]
-field_idx = 0
+field_idx = 2
 bar_idx = [0, 1]
 
 colors = ['#228833', 'black', '#eecc66', '#bb5566', '#004488']

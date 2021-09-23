@@ -52,9 +52,16 @@ class ClassificationInstance:
             if any(isinstance(x, str) and x != "?" for x in self.domains[i]):
                 self.is_categorical.add(i)
 
+            self.feature_idx[i] = c_idx
+            c_idx += len(self.domains[i])
+            if base_instance is not None:
+                for c_v, c_c in self.domain_counts[i].items():
+                    self.domain_counts[i][c_v] += c_c
+
             if len(self.domains[i]) > 0:
                 if i in self.is_categorical:
-                    _, self.domains_max[i] = max((v, k) for k, v in self.domain_counts[i].items())
+                    if len(self.domain_counts[i]) > 0:
+                        _, self.domains_max[i] = max((v, k) for k, v in self.domain_counts[i].items())
                 else:
                     c_sum = 0
                     c_cnt = 0
@@ -64,12 +71,19 @@ class ClassificationInstance:
                         c_cnt += v
                         is_int = is_int and isinstance(k, int)
                     #self.domains_max[i] = c_sum // c_cnt if is_int else c_sum / c_cnt
-                    self.domains_max[i] = c_sum / c_cnt
+                    if len(self.domain_counts[i]) > 0:
+                        self.domains_max[i] = c_sum / c_cnt
+
+            if self.has_missing:
+                for c_e in self.examples:
+                    if c_e.features[i] == "?" and len(self.domain_counts[i]) > 0:
+                        c_e.features[i] = self.domains_max[i]
 
             if clean_domains and i not in self.is_categorical:
                 new_domain = []
                 values = [(e.features[i], e.cls) for e in self.examples]
                 values.sort()
+                self.domains[i] = sorted(list(self.domains[i]))
 
                 c_cls = None
                 last_val = None
@@ -84,9 +98,11 @@ class ClassificationInstance:
                             if last_val == c_v:  # Both classes with the same value
                                 if last_last_val is not None and (not new_domain or new_domain[-1] != last_last_val):
                                     new_domain.append(last_last_val)
+                                    last_last_val = None
 
                             if last_val is not None and (not new_domain or new_domain[-1] != last_val):
                                 new_domain.append(last_val)
+                                last_val = None
 
                     if c_v != last_val:
                         last_last_val = last_val
@@ -100,18 +116,6 @@ class ClassificationInstance:
                 self.domains[i] = new_domain
             else:
                 self.domains[i] = sorted(list(self.domains[i]))
-
-            self.feature_idx[i] = c_idx
-            c_idx += len(self.domains[i])
-            if base_instance is not None:
-                for c_v, c_c in self.domain_counts[i].items():
-                    self.domain_counts[i][c_v] += c_c
-
-        if self.has_missing:
-            for c_e in self.examples:
-                for i in range(1, self.num_features + 1):
-                    if c_e.features[i] == "?":
-                        c_e.features[i] = self.domains_max[i]
 
     def add_example(self, e):
         if self.num_features == -1:

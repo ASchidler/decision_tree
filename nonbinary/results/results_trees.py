@@ -42,6 +42,10 @@ def parse_file(fl, experiment):
                     c_encoding = "c"
                 if cfs[0] == "encoding" and cfs[1] == "2":
                     c_encoding = "y"
+                if cfs[0] == "encoding" and cfs[1] == "4":
+                    c_encoding = "p"
+                if cfs[0] == "encoding" and cfs[1] == "5":
+                    c_encoding = "z"
                 elif cfs[0] == "size" and cfs[1] == "True":
                     flags += "z"
                 elif cfs[0] == "multiclass" and cfs[1] == "True":

@@ -43,13 +43,14 @@ class SupportSetStrategy:
                                     all_nondiffering = False
                                     break
                             else:
-                                if e.features[c_f] <= c_v < e2.features[c_f] or e.features[c_f] > c_v >= e2.features[c_f]:
+                                if e.features[c_f] <= c_v < e2.features[c_f] or e.features[c_f] > c_v >= e2.features[
+                                    c_f]:
                                     all_nondiffering = False
                                     break
 
                         if all_nondiffering:
-                            found_nondiffering = True
                             found = False
+                            found_nondiffering = True
                             shuffle(self.features)
                             for c_f in self.features:
                                 if e.features[c_f] != e2.features[c_f]:
@@ -57,14 +58,35 @@ class SupportSetStrategy:
                                     if c_f in self.original_instance.is_categorical:
                                         self.support_set.append((c_f, e.features[c_f], False))
                                     else:
-                                        self.support_set.append((c_f, min(e.features[c_f], e2.features[c_f]), False))
+                                        target_v = min(e.features[c_f], e2.features[c_f])
+                                        right_idx = bisect_right(self.original_instance.domains[c_f], target_v)
+                                        if target_v != self.original_instance.domains[c_f][right_idx]:
+                                            if right_idx > 0 and target_v == self.original_instance.domains[c_f][
+                                                right_idx - 1]:
+                                                target_v = self.original_instance.domains[c_f][right_idx - 1]
+                                            else:
+                                                rv = self.original_instance.domains[c_f][right_idx]
+                                                lv = self.original_instance.domains[c_f][right_idx - 1]
+                                                if e.features[c_f] <= rv < e2.features[c_f] or e.features[c_f] > rv >= \
+                                                        e2.features[c_f]:
+                                                    target_v = rv
+                                                else:
+                                                    target_v = lv
+
+                                        self.support_set.append((c_f, target_v, False))
                                     break
+
                             if not found:  # Inconsistent
+                                self.possible_examples[-1], self.possible_examples[c_idx] = self.possible_examples[
+                                                                                                c_idx], \
+                                                                                            self.possible_examples[-1]
+                                self.possible_examples.pop()
                                 found_nondiffering = False
 
             if found_nondiffering:
                 self.current_instance.add_example(e.copy(self.current_instance))
-                self.possible_examples[-1], self.possible_examples[c_idx] = self.possible_examples[c_idx], self.possible_examples[-1]
+                self.possible_examples[-1], self.possible_examples[c_idx] = self.possible_examples[c_idx], \
+                                                                            self.possible_examples[-1]
                 self.possible_examples.pop()
                 self.by_class[self.current_instance.examples[-1].cls].append(self.current_instance.examples[-1])
                 c_count += 1
@@ -72,50 +94,11 @@ class SupportSetStrategy:
                 c_idx += 1
 
             # None found? Add random sample and start again
-            if not found_nondiffering and c_idx >= len(self.possible_examples):
-                feature_thresholds = defaultdict(list)
-
-                # First ensure consistency
-                for f, t, _ in self.support_set:
-                    feature_thresholds[f].append(t)
-                for f, v in feature_thresholds.items():
-                    if f in self.original_instance.is_categorical:
-                        feature_thresholds[f] = set(v)
-                    else:
-                        v.sort()
-                        if v[-1] != self.original_instance.domains[f][-1]:
-                            v.append(self.original_instance.domains[f][-1])
-
-                features = list(feature_thresholds.keys())
-                cls_map = {}
-                for c_e in self.current_instance.examples:
-                    vals = []
-                    for c_f in features:
-                        for c_idx, c_t in enumerate(feature_thresholds[c_f]):
-                            if c_e.features[c_f] <= c_t:
-                                vals.append(c_idx)
-                                break
-                        cls_map[tuple(vals)] = c_e.cls
-
-                while self.possible_examples:
-                    vals = []
-                    for c_f in features:
-                        for c_idx, c_t in enumerate(feature_thresholds[c_f]):
-                            if self.possible_examples[-1].features[c_f] <= c_t:
-                                vals.append(c_idx)
-                                break
-                    if tuple(vals) in cls_map and cls_map[tuple(vals)] != self.possible_examples[-1].cls:
-                        self.possible_examples.pop()
-                    else:
-                        break
-
-                # Add random sample
-                if self.possible_examples:
-                    self.current_instance.add_example(self.possible_examples[-1].copy(self.current_instance))
-                    self.possible_examples.pop()
-                    self.by_class[self.current_instance.examples[-1].cls].append(self.current_instance.examples[-1])
-                    c_count += 1
-                    c_idx = 0
+            if not found_nondiffering and c_idx >= len(self.possible_examples) and self.possible_examples:
+                self.current_instance.add_example(self.possible_examples[-1].copy(self.current_instance))
+                self.possible_examples.pop()
+                self.by_class[self.current_instance.examples[-1].cls].append(self.current_instance.examples[-1])
+                c_idx = 0
 
         self.current_instance.finish()
 
@@ -131,7 +114,7 @@ class SupportSetStrategy:
         self.current_instance.unreduce(tree)
 
     def done(self):
-        return len(self.current_instance.examples) == len(self.original_instance.examples)
+        return len(self.current_instance.examples) == len(self.original_instance.examples) or len(self.possible_examples) == 0
 
 
 class SupportSetStrategy2:
@@ -182,10 +165,12 @@ class SupportSetStrategy2:
                                     break
 
                         if all_nondiffering:
+                            found = False
                             found_nondiffering = True
                             shuffle(self.features)
                             for c_f in self.features:
                                 if e.features[c_f] != e2.features[c_f]:
+                                    found = True
                                     if c_f in self.original_instance.is_categorical:
                                         self.support_set.append((c_f, e.features[c_f], False))
                                     else:
@@ -205,6 +190,13 @@ class SupportSetStrategy2:
                                         self.support_set.append((c_f, target_v, False))
                                     break
 
+                            if not found:  # Inconsistent
+                                self.possible_examples[-1], self.possible_examples[c_idx] = self.possible_examples[
+                                                                                                c_idx], \
+                                                                                            self.possible_examples[-1]
+                                self.possible_examples.pop()
+                                found_nondiffering = False
+
             if found_nondiffering:
                 self.current_instance.add_example(e.copy(self.current_instance))
                 self.possible_examples[-1], self.possible_examples[c_idx] = self.possible_examples[c_idx], \
@@ -216,7 +208,7 @@ class SupportSetStrategy2:
                 c_idx += 1
 
             # None found? Add random sample and start again
-            if not found_nondiffering and c_idx >= len(self.possible_examples):
+            if not found_nondiffering and c_idx >= len(self.possible_examples) and self.possible_examples:
                 self.current_instance.add_example(self.possible_examples[-1].copy(self.current_instance))
                 self.possible_examples.pop()
                 self.by_class[self.current_instance.examples[-1].cls].append(self.current_instance.examples[-1])
@@ -324,4 +316,5 @@ class SupportSetStrategy2:
                 c_n.feature = n_f
 
     def done(self):
-        return self.is_support_set or len(self.original_instance.examples) == len(self.current_instance.examples)
+        return self.is_support_set or len(self.original_instance.examples) == len(self.current_instance.examples) \
+            or not self.possible_examples

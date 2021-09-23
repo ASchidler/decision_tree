@@ -23,6 +23,7 @@ from nonbinary.decision_tree import DecisionTreeNode, DecisionTreeLeaf
 from nonbinary.nonbinary_instance import ClassificationInstance
 
 random.seed(1)
+sys.setrecursionlimit(5000)
 
 instance_path = "nonbinary/instances"
 instance_validation_path = "datasets/validate"
