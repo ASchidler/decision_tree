@@ -56,8 +56,12 @@ def encode(instance, depth, solver, opt_size, start=0, vs=None):
 
                     # We don't need an entry for the last variable, as <= maxval is redundant
                     for k in range(0, len(instance.domains[cf]) - (0 if cf in instance.is_categorical else 1)):
-                        if (instance.examples[i].features[cf] <= instance.domains[cf][k]) == (instance.examples[j].features[cf] <= instance.domains[cf][k]):
-                            solver.add_clause([-g[i][j][dl], -d[i][dl][instance.feature_idx[cf] + k], g[i][j][dl+1]])
+                        if cf in instance.is_categorical and \
+                                (instance.examples[i].features[cf] == instance.domains[cf][k]) == (instance.examples[j].features[cf] == instance.domains[cf][k]):
+                            solver.add_clause([-g[i][j][dl], -d[i][dl][instance.feature_idx[cf] + k], g[i][j][dl + 1]])
+                        elif cf not in instance.is_categorical and \
+                            (instance.examples[i].features[cf] <= instance.domains[cf][k]) == (instance.examples[j].features[cf] <= instance.domains[cf][k]):
+                            solver.add_clause([-g[i][j][dl], -d[i][dl][instance.feature_idx[cf] + k], g[i][j][dl + 1]])
                         else:
                             solver.add_clause([-d[i][dl][instance.feature_idx[cf] + k], -g[i][j][dl + 1]])
 
@@ -142,6 +146,7 @@ def _decode(model, instance, depth, vs):
             for _, e in grp:
                 if e.cls != cls:
                     print(f"Error, double cls in leaf group {cls}, {e.cls}")
+                    exit(1)
 
             # This is the edge case, where all samples have the same class, we reached the leaf without splitting
             if parent is None:
