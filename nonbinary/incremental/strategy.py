@@ -260,40 +260,81 @@ class SupportSetStrategy2:
         self.is_support_set = True
 
         count_items = list(counts.items())
-        for c_features, c_classes in count_items:
+
+        # Avoid a deadlock if only a few items are left and one class dominates every example
+        # i.e. try to have at least one sample for a class
+        max_entries = {}
+        for c_c in self.original_instance.classes:
+            # Is there a sample where this class is dominant anyway
+            c_entries = sorted(((distr[c_c], 0 if len(distr) == 0 else max(v for k,v in distr if k != c_c), fi)
+                                for fi, distr in enumerate(count_items) if c_c in distr), reverse=True)
+            if len(c_entries) > 0:
+                max_entries[c_c] = c_entries
+
+        # Make sure non-dominant entries are represented, if possible
+        reserved = []
+        non_dominant = set()
+        for k in max_entries:
+            if all(x[0] <= x[1] for x in max_entries[k]):
+                non_dominant.add(k)
+                reserved.append((k, {x[2] for x in max_entries[k]}))
+
+        # Reserve dominant entries, try to avoid entries for non-dominant where possible
+        for k in max_entries:
+            if k not in non_dominant:
+                last_id = None
+                for c_cnt, c_oth, c_id in max_entries:
+                    if c_cnt <= c_oth:
+                        break
+
+                    if all(len(x) > 1 or c_id not in x for _, x in reserved):
+                        last_id = c_id
+                        break
+
+                if last_id is None:
+                    last_id = max_entries[0][2]
+
+                for _, cs in reserved:
+                    cs.discard(last_id)
+
+        # Reserve the entries for non-dominant classes
+        reserved_entries = {}
+        for c_idx in range(0, len(reserved)):
+            c_c, entries = reserved[c_idx]
+
+            if len(entries) > 0:
+                reserved_id = next(c_id for _, _, c_id in max_entries[c_c] if c_id in entries)
+                reserved_entries[reserved_id] = c_c
+                for c_idx2 in range(c_idx+1, len(reserved)):
+                    reserved[c_idx2][1].discard(reserved_id)
+
+        # Create the actual samples
+        for c_idx, (c_features, c_classes) in enumerate(count_items):
             if len(c_classes) > 1:
                 self.is_support_set = False
 
             # Determine the distribution, do not mix different distributions
-            c_max = None
-            for k, v in c_classes.items():
-                if c_max is None or v > c_max[1] or (v == c_max[1] and k not in self.last_instance.classes):
-                    c_max = (k, v)
-            cls = c_max[0]
+            if c_idx in reserved_entries:
+                cls = reserved_entries[c_idx]
+            else:
+                c_max = None
+                for k, v in c_classes.items():
+                    if c_max is None or v > c_max[1] or (v == c_max[1] and k not in self.last_instance.classes):
+                        c_max = (k, v)
+                cls = c_max[0]
             # if len(c_classes) == 1 and False:  # Pure
             #     cls = "p_"+ next(iter(c_classes.keys()))
             # else:
             #     cls = max((v, k) for k, v in c_classes.items())[1]
-                # sum_cls = sum(v for k, v in c_classes.items() if k != cls)
-                # if sum_cls > 0.3 * c_classes[cls]:  # Balanced
-                #     cls = "b_" + cls
-                # else:  # low density of different classes
-                #     cls = "l_"+ cls
+            # sum_cls = sum(v for k, v in c_classes.items() if k != cls)
+            # if sum_cls > 0.3 * c_classes[cls]:  # Balanced
+            #     cls = "b_" + cls
+            # else:  # low density of different classes
+            #     cls = "l_"+ cls
 
             self.last_instance.add_example(Example(self.last_instance, list(c_features), cls))
             self.last_instance.examples[-1].impurities = c_classes
 
-        # Avoid a deadlock if only a few items are left and one class dominates every example
-        for c_c in self.original_instance.classes:
-            if len(self.last_instance.classes) >= len(self.last_instance.examples):
-                break
-
-            if c_c not in self.last_instance.classes:
-                entries = [(v, fi) for fi, (f, cls) in enumerate(count_items) for k, v in cls.items() if k == c_c]
-                if len(entries) > 0:
-                    _, max_cc = max(entries)
-                    self.last_instance.examples[max_cc].cls = c_c
-                    self.last_instance.classes.add(c_c)
         self.last_instance.finish()
 
         self.last_cat_defaults = {}

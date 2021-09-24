@@ -27,56 +27,67 @@ def parse_file(fl, experiment):
                 return
             data_file = cl.split(",")[0].split(":")[1].strip()
             c_flags = cl[cl.find("(")+1:cl.find(")")].split(",")
-            for cf in c_flags:
-                cfs = cf.strip().split("=")
+            cfs = {x[0]: x[1] for x in (y.strip("=") for y in c_flags)}
 
-                if cfs[0] == "mode" and cfs[1] == "3":
-                    flags += "v"
-                elif cfs[0] == "use_dense" and cfs[1] == "True":
-                    flags += "x"
-                elif cfs[0] == "incremental_strategy" and cfs[1] == "1":
-                    flags += "a"
-                if cfs[0] == "encoding" and cfs[1] == "1":
-                    c_encoding = "a"
-                elif cfs[0] == "categorical" and cfs[1] == "True":
-                    c_encoding = "c"
-                if cfs[0] == "encoding" and cfs[1] == "2":
-                    c_encoding = "y"
-                if cfs[0] == "encoding" and cfs[1] == "4":
-                    c_encoding = "p"
-                if cfs[0] == "encoding" and cfs[1] == "5":
-                    c_encoding = "z"
-                elif cfs[0] == "size" and cfs[1] == "True":
-                    flags += "z"
-                elif cfs[0] == "multiclass" and cfs[1] == "True":
-                    flags += "u"
-                elif cfs[0] == "slice":
-                    c_slice = int(cfs[1])
-                if cfs[0] == "encoding" and cfs[1] == "3":
-                    c_encoding = "s"
-                elif cfs[0] == "validation" and cfs[1] == "True":
-                    c_val = "v"
-                elif cfs[0] == "weka" and cfs[1] == "True":
+            if cfs["mode"] == "3":
+                flags += "v"
+            if cfs["use_dense"] == "True":
+                flags += "x"
+            if cfs["incremental_strategy"] == "1":
+                flags += "a"
+            if cfs["encoding"] == "1":
+                c_encoding = "a"
+            if cfs["categorical"] == "True":
+                c_encoding = "c"
+            if cfs["encoding"] == "2":
+                c_encoding = "y"
+            if cfs["encoding"] == "4":
+                c_encoding = "p"
+            if cfs["encoding"] == "5":
+                c_encoding = "z"
+            if cfs["size"] == "True":
+                flags += "z"
+            if cfs["multiclass"] == "True":
+                flags += "u"
+
+            c_slice = int(cfs["slice"])
+
+            if cfs["encoding"] == "3":
+                c_encoding = "s"
+            if cfs["validation"] == "True":
+                c_val = "v"
+            if cfs["maintain"] == "True":
+                flags += "u"
+            if cfs["reduce_numeric"] == "True":
+                flags += "n"
+            if cfs["reduce_categoric"] == "True":
+                flags += "o"
+            if cfs["slim_opt"] == "True":
+                flags += "e"
+            if cfs["use_dt"] == "True":
+                flags += "x"
+            if cfs["use_encoding_dt"] == "True":
+                flags += "g"
+            if cfs["size_first"] == "True":
+                flags += "f"
+            if cfs["recursive"] == "True":
+                flags += "v"
+            if cfs["incremental"] == "True":
+                flags += "j"
+
+            if cfs["mode"] == "0":
+                c_algo = "e"
+            elif cfs["mode"] == "2":
+                c_algo = "j"
+            elif cfs["mode"] == "3":
+                c_algo = "r"
+            else:
+                if cfs["heuristic"] == "0":
                     c_algo = "w"
-                elif cfs[0] == "maintain" and cfs[1] == "True":
-                    flags += "u"
-                elif cfs[0] == "reduce_numeric" and cfs[1] == "True":
-                    flags += "n"
-                elif cfs[0] == "reduce_categoric" and cfs[1] == "True":
-                    flags += "o"
-                # elif cfs[0] == "slim_opt" and cfs[1] == "True":
-                #     flags += "e"
-                elif cfs[0] == "use_dt" and cfs[1] == "True":
-                    flags += "x"
-                elif cfs[0] == "use_encoding_dt" and cfs[1] == "True":
-                    flags += "g"
-                elif cfs[0] == "size_first" and cfs[1] == "True":
-                    flags += "f"
-                elif cfs[0] == "recursive" and cfs[1] == "True":
-                    flags += "v"
-                elif cfs[0] == "incremental" and cfs[1] == "True":
-                    flags += "j"
-
+                elif cfs["heuristic"] == "1":
+                    c_algo = "c"
+                elif cfs["heuristic"] == "2":
+                    c_algo = "r"
                 # ap.add_argument("-x", dest="use_dense", action="store_true", default=False)
                 # ap.add_argument("-a", dest="incremental_strategy", action="store", default=0, type=int, choices=[0, 1])
 
