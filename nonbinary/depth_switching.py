@@ -1,5 +1,5 @@
-import nonbinary.depth_partition as enc1
-import nonbinary.depth_avellaneda_sat as enc2
+import nonbinary.depth_avellaneda_sat as enc1
+import nonbinary.depth_partition as enc2
 
 _switch_threshold = 10
 
