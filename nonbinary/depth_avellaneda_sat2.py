@@ -298,3 +298,7 @@ def estimate_size(instance, depth):
 
 def is_sat():
     return True
+
+
+def get_tree_size(tree):
+    return tree.root.get_leaves()

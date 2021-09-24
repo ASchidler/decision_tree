@@ -469,3 +469,7 @@ def encode_impurity_limit(vs, solver, dl):
             for c_n in range(0, 2 ** dl):
                 for c_n2 in range(c_n + 1, 2 ** dl):
                     solver.add([z3.Not(c[c_n][vals]), z3.Not(c[c_n2][vals])])
+
+
+def get_tree_size(tree):
+    return tree.root.get_leaves()

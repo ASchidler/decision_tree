@@ -274,3 +274,7 @@ def estimate_size(instance, depth):
     alg1_lits = s * sum(2**i * f * (i+2) for i in range(0, depth))
 
     return d2 * f * (f-1) // 2 + d2 * f + alg1_lits + s * d2 * (depth+1) * c
+
+
+def get_tree_size(tree):
+    return tree.root.get_leaves()

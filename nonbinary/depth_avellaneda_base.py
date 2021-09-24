@@ -213,7 +213,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
             if check_mem:
                 check_memory(slv, interrupted)
             print('{:,}'.format(enc.estimate_size(instance, best_depth) + enc.estimate_size_add(instance, best_depth)))
-            c_size_bound = best_model.root.get_leaves() - 1
+            c_size_bound = enc.get_tree_size(best_model) - 1
             solved = True
 
             try:
@@ -249,7 +249,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                 if solved:
                     model = {abs(x): x > 0 for x in slv.get_model()}
                     best_model = enc._decode(model, instance, best_depth, vs)
-                    c_size_bound = best_model.root.get_leaves() - 1
+                    c_size_bound = enc.get_tree_size(best_model) - 1
                     slv.add_clause([-tot.rhs[c_size_bound]])
                 else:
                     break

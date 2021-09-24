@@ -420,3 +420,7 @@ def run_incremental(strategy, increment=1, timeout=300, opt_size=False):
             strategy.find_next(increment)
 
     return best_model
+
+
+def get_tree_size(tree):
+    return tree.root.get_leaves()

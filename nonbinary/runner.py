@@ -16,6 +16,7 @@ import nonbinary.depth_avellaneda_sat3 as nbs3
 import nonbinary.depth_partition as nbp
 import nonbinary.size_narodytska as nbn
 import nonbinary.depth_avellaneda_smt2 as nbt
+import nonbinary.depth_switching as nbw
 import nonbinary.improve_strategy as improve_strategy
 import nonbinary_instance
 import tree_parsers
@@ -33,7 +34,7 @@ resource.setrlimit(resource.RLIMIT_AS, (23 * 1024 * 1024 * 1024 // 2, 12 * 1024 
 
 ap = argp.ArgumentParser(description="Python implementation for computing and improving decision trees.")
 ap.add_argument("instance", type=str)
-ap.add_argument("-e", dest="encoding", action="store", type=int, default=0, choices=[0, 1, 2, 3, 4, 5],
+ap.add_argument("-e", dest="encoding", action="store", type=int, default=0, choices=[0, 1, 2, 3, 4, 5, 6],
                 help="Which encoding to use.")
 
 ap.add_argument("-r", dest="reduce", action="store_true", default=False,
@@ -141,26 +142,21 @@ if args.categorical:
     instance.is_categorical = {x for x in range(1, instance.num_features+1)}
 
 tree = None
-if args.encoding == 3:
-    enc = nbt
-else:
-    if args.encoding == 0:
-        enc = nbs
-    elif args.encoding == 1:
-        enc = nbs2
-    elif args.encoding == 2:
-        enc = nbs3
-    elif args.encoding == 4:
-        enc = nbp
-    else:
-        enc = nbn
+enc = [nbs, nbs2, nbs3, nbt, nbp, nbn, nbw][args.encoding]
 
 if args.mode == 2:
     from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2
     chosen_strat = [SupportSetStrategy, SupportSetStrategy2][args.incremental_strategy]
     increment = 5 if args.incremental_strategy == 0 else 1
 
-    tree = base.run_incremental(enc, Glucose3, chosen_strat(instance), timeout=args.time_limit, increment=increment)
+    if enc.is_sat():
+        tree = base.run_incremental(enc, Glucose3, chosen_strat(instance),
+                                                timeout=args.time_limit, opt_size=args.size, use_dense=args.use_dense,
+                                                increment=increment)
+    else:
+        tree = enc.run_incremental(chosen_strat(instance), timeout=args.time_limit,
+                                               opt_size=args.size, increment=increment)
+
     tree.root.reclassify(instance.examples)
 elif args.mode == 3:
     from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2

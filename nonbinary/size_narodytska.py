@@ -384,8 +384,7 @@ def extend(slv, instance, vs, c_bound, increment, size_limit):
 
 
 def encode_size(vs, instance, solver, dl):
-    solver.add_clause([-1])
-    solver.add_clause([1])
+    pass
 
 
 def _decode(model, instance, num_nodes, data):

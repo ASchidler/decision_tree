@@ -95,8 +95,9 @@ def encode(instance, depth, solver, opt_size, start=0, vs=None):
 
 def encode_size(vs, instance, solver, dl):
     pool = vs["pool"]
-    card_vars = []
+    card_vars = [pool.id("s0")]
 
+    solver.add_clause([pool.id(f"s0")])
     for i in range(1, len(instance.examples)):
         clause = [vs["g"][j][i][dl] for j in range(0, i)]
         clause.append(pool.id(f"s{i}"))
@@ -222,7 +223,7 @@ def _decode(model, instance, depth, vs):
             df_tree(new_grps[0], parent, d+1)
 
     df_tree(list(enumerate(instance.examples)), None, 0)
-
+    tree.clean(instance)
     return tree
 
 
@@ -259,5 +260,10 @@ def lb():
 def increment():
     return 1
 
+
 def is_sat():
     return True
+
+
+def get_tree_size(tree):
+    return tree.root.get_leaves()
