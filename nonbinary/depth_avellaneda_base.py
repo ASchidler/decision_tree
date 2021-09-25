@@ -306,6 +306,7 @@ def run_incremental(enc, solver, strategy, increment=1, timeout=300, opt_size=Fa
             strategy.find_next(increment)
 
             if strategy.done():
+                best_last = best_model
                 break
 
     if opt_size and best_model:
@@ -352,7 +353,7 @@ def run_incremental(enc, solver, strategy, increment=1, timeout=300, opt_size=Fa
         if timer is not None:
             timer.cancel()
 
-    if best_last and not opt_size and use_dense:
+    if best_last and not opt_size and use_dense and best_last.get_depth() > 1:
         return best_last
 
     return best_model
