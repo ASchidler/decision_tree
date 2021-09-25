@@ -266,8 +266,8 @@ class SupportSetStrategy2:
         max_entries = {}
         for c_c in self.original_instance.classes:
             # Is there a sample where this class is dominant anyway
-            c_entries = sorted(((distr[c_c], 0 if len(distr) == 0 else max(v for k,v in distr if k != c_c), fi)
-                                for fi, distr in enumerate(count_items) if c_c in distr), reverse=True)
+            c_entries = sorted(((distr[c_c], 0 if all(x == c_c for x in distr.keys()) else -1 * max(v for k, v in distr.items() if k != c_c), fi)
+                                for fi, (_, distr) in enumerate(count_items) if c_c in distr), reverse=True)
             if len(c_entries) > 0:
                 max_entries[c_c] = c_entries
 
@@ -275,7 +275,7 @@ class SupportSetStrategy2:
         reserved = []
         non_dominant = set()
         for k in max_entries:
-            if all(x[0] <= x[1] for x in max_entries[k]):
+            if all(x[0] <= -x[1] for x in max_entries[k]):
                 non_dominant.add(k)
                 reserved.append((k, {x[2] for x in max_entries[k]}))
 
@@ -283,8 +283,9 @@ class SupportSetStrategy2:
         for k in max_entries:
             if k not in non_dominant:
                 last_id = None
-                for c_cnt, c_oth, c_id in max_entries:
-                    if c_cnt <= c_oth:
+                for c_cnt, c_oth, c_id in max_entries[k]:
+                    c_oth *= -1
+                    if c_cnt < c_oth:
                         break
 
                     if all(len(x) > 1 or c_id not in x for _, x in reserved):
@@ -292,7 +293,7 @@ class SupportSetStrategy2:
                         break
 
                 if last_id is None:
-                    last_id = max_entries[0][2]
+                    last_id = max_entries[k][0][2]
 
                 for _, cs in reserved:
                     cs.discard(last_id)
