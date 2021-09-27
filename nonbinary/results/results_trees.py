@@ -27,7 +27,7 @@ def parse_file(fl, experiment):
                 return
             data_file = cl.split(",")[0].split(":")[1].strip()
             c_flags = cl[cl.find("(")+1:cl.find(")")].split(",")
-            cfs = {x[0]: x[1] for x in (y.strip("=") for y in c_flags)}
+            cfs = {x[0]: x[1] for x in (y.strip().split("=") for y in c_flags)}
 
             if cfs["mode"] == "3":
                 flags += "v"
@@ -47,8 +47,8 @@ def parse_file(fl, experiment):
                 c_encoding = "z"
             if cfs["size"] == "True":
                 flags += "z"
-            if cfs["multiclass"] == "True":
-                flags += "u"
+            # if cfs["multiclass"] == "True":
+            #     flags += "u"
 
             c_slice = int(cfs["slice"])
 
@@ -64,15 +64,15 @@ def parse_file(fl, experiment):
                 flags += "o"
             if cfs["slim_opt"] == "True":
                 flags += "e"
-            if cfs["use_dt"] == "True":
+            if cfs["use_dt"] == "1":
                 flags += "x"
-            if cfs["use_encoding_dt"] == "True":
+            if cfs["use_dt"] == "2":
                 flags += "g"
             if cfs["size_first"] == "True":
                 flags += "f"
-            if cfs["recursive"] == "True":
+            if cfs["mode"] == "3":
                 flags += "v"
-            if cfs["incremental"] == "True":
+            if cfs["mode"] == "2":
                 flags += "j"
 
             if cfs["mode"] == "0":

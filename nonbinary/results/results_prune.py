@@ -4,10 +4,10 @@ from collections import defaultdict
 import nonbinary.nonbinary_instance as nbi
 import nonbinary.pruning as p
 
-algos = ["w"]
+algos = ["r"]
 trees = ["w"]
 #flags = ["0", "a", "y"]
-flags = ["avx0"]
+flags = ["vxv0"]
 #flags = ["uzy"]
 use_ccp = False
 

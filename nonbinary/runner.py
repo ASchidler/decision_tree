@@ -266,6 +266,8 @@ else:
 
 if tree is None:
     print("No tree found.")
+    if timer is not None:
+        timer.cancel()
     exit(1)
 
 instance.unreduce(tree)
