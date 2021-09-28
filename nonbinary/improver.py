@@ -33,8 +33,10 @@ def build_unique_set(parameters, root, samples, reduce, limit=maxsize):
     new_instance.finish()
 
     if reduce:
+        print(f"{len(new_instance.examples)}")
         new_instance.reduce_with_key(numeric_full=parameters.reduce_numeric_full or parameters.use_smt,
                                      cat_full=parameters.reduce_categoric_full or parameters.use_smt)
+        print(f"{len(new_instance.examples)}")
     else:
         if not (parameters.use_smt or parameters.reduce_numeric_full or parameters.reduce_categoric_full):
             feature_key = c_features
@@ -51,6 +53,7 @@ def build_unique_set(parameters, root, samples, reduce, limit=maxsize):
                         feature_key.add((c_f, None, None))
                     else:
                         feature_key.add((c_f, c_v, c_c))
+
         new_instance.reduce(feature_key)
 
     return new_instance, len(c_leafs), depth
@@ -135,8 +138,10 @@ def build_reduced_set(parameters, root, assigned, reduce):
                 new_instance.finish()
 
                 if reduce:
+                    print(f"{len(new_instance.examples)}")
                     new_instance.reduce_with_key(numeric_full=parameters.reduce_numeric_full or parameters.use_smt,
                                                  cat_full=parameters.reduce_categoric_full or parameters.use_smt)
+                    print(f"{len(new_instance.examples)}")
                 else:
                     if not (parameters.use_smt or parameters.reduce_numeric_full or parameters.reduce_categoric_full):
                         feature_key = set(features)

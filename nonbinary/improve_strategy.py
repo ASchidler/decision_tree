@@ -258,7 +258,7 @@ def run(parameters, test, limit_idx=1):
                     if result:
                         op = "ma"
             else:
-                if len(assigned[root]) <= 2 * parameters.maximum_examples:
+                if len(assigned[root.id]) <= 5 * parameters.maximum_examples:
                     result = improver.leaf_reduced(parameters, root, assigned, True)
                     if result:
                         op = "lr"
