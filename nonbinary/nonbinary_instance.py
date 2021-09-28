@@ -467,24 +467,6 @@ class ClassificationInstance:
                                     break
 
                         if not found:
-                            for c_f, c_t in differences.keys():
-                                if c_e1.features[c_f] == "?" or c_e2.features[c_f] == "?":
-                                    continue
-
-                                if c_t is None:
-                                    if c_e1.features[c_f] != c_e2.features[c_f]:
-                                        differences[(c_f, c_t)].add(c_e2i)
-                                        found = True
-                                elif c_f in self.is_categorical:
-                                    if (c_e1.features[c_f] == c_t) ^ (c_e2.features[c_f] == c_t):
-                                        differences[(c_f, c_t)].add(c_e2i)
-                                        found = True
-                                else:
-                                    if (c_e1.features[c_f] <= c_t < c_e2.features[c_f]) \
-                                            or (c_e1.features[c_f] > c_t >= c_e2.features[c_f]):
-                                        differences[(c_f, c_t)].add(c_e2i)
-                                        found = True
-                        if not found:
                             for c_f in features:
                                 if c_e1.features[c_f] == "?" or c_e2.features[c_f] == "?":
                                     continue
@@ -516,102 +498,6 @@ class ClassificationInstance:
                             supset.append((k[0], None, None))
                         differing_samples -= v
                         differences.pop(k)
-        return supset
-
-    def min_key_greedy2(self, cat_full=False, numeric_full=True):
-        supset = []
-        features = list(range(1, self.num_features + 1))
-
-        # Group examples by classes, if the partitions are non-trivially small, this significantly improves runtime
-        classes = defaultdict(list)
-        for c_e in self.examples:
-            classes[c_e.cls].append(c_e)
-
-        classes = list(classes.values())
-
-        # Check for each pair of examples
-        for c_i, c_es in enumerate(classes):
-            differences = defaultdict(set)
-            for c_j in range(c_i+1, len(classes)):
-                c_es2 = classes[c_j]
-
-                for c_e1i, c_e1 in enumerate(c_es):
-                    for c_e2i, c_e2 in enumerate(c_es2):
-                        found = False
-
-                        # Check if there is a disagreement for any feature in the set
-                        for c_f, c_v, _ in supset:
-                            if c_e1.features[c_f] == "?" or c_e2.features[c_f] == "?":
-                                continue
-
-                            if c_f in self.is_categorical:
-                                if c_v is None:
-                                    if c_e1.features[c_f] != c_e2.features[c_f]:
-                                        found = True
-                                        break
-                                elif (c_e1.features[c_f] == c_v) ^ (c_e2.features[c_f] == c_v):
-                                    found = True
-                                    break
-                            else:
-                                if c_v is None:
-                                    if c_e1.features[c_f] != c_e2.features[c_f]:
-                                        found = True
-                                        break
-                                elif (c_e1.features[c_f] <= c_v < c_e2.features[c_f])\
-                                        or (c_e1.features[c_f] > c_v >= c_e2.features[c_f]):
-                                    found = True
-                                    break
-
-                        if not found:
-                            for c_f, c_t in differences.keys():
-                                if c_e1.features[c_f] == "?" or c_e2.features[c_f] == "?":
-                                    continue
-
-                                if c_t is None:
-                                    if c_e1.features[c_f] != c_e2.features[c_f]:
-                                        differences[(c_f, c_t)].add((c_e1i, c_e2i))
-                                        found = True
-                                elif c_f in self.is_categorical:
-                                    if (c_e1.features[c_f] == c_t) ^ (c_e2.features[c_f] == c_t):
-                                        differences[(c_f, c_t)].add((c_e1i, c_e2i))
-                                        found = True
-                                else:
-                                    if (c_e1.features[c_f] <= c_t < c_e2.features[c_f]) \
-                                            or (c_e1.features[c_f] > c_t >= c_e2.features[c_f]):
-                                        differences[(c_f, c_t)].add(c_e2i)
-                                        found = True
-                        if not found:
-                            for c_f in features:
-                                if c_e1.features[c_f] == "?" or c_e2.features[c_f] == "?":
-                                    continue
-
-                                if c_e1.features[c_f] != c_e2.features[c_f]:
-                                    if cat_full and c_f in self.is_categorical:
-                                        differences[(c_f, None)].add((c_e1i, c_e2i))
-                                    elif numeric_full and c_f not in self.is_categorical:
-                                        differences[(c_f, None)].add((c_e1i, c_e2i))
-                                    elif c_f in self.is_categorical:
-                                        differences[(c_f, c_e1.features[c_f])].add((c_e1i, c_e2i))
-                                        differences[(c_f, c_e2.features[c_f])].add((c_e1i, c_e2i))
-                                    else:
-                                        tv = min(c_e1.features[c_f], c_e2.features[c_f])
-                                        tv2 = max(c_e1.features[c_f], c_e2.features[c_f])
-                                        for c_t in self.domains[c_f]:
-                                            if c_t >= tv2:
-                                                break
-                                            if tv <= c_t < tv2:
-                                                differences[(c_f, c_t)].add(c_e2i)
-
-            differing_samples = set(x for t in differences.values() for x in t)
-
-            while len(differing_samples) > 0:
-                k, v = max(differences.items(), key=lambda x: len(x[1] & differing_samples))
-                if k[1] is not None:
-                    supset.append((k[0], k[1], False))
-                else:
-                    supset.append((k[0], None, None))
-                differing_samples -= v
-                differences.pop(k)
         return supset
 
 

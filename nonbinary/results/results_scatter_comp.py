@@ -10,6 +10,7 @@ cmp_heur = False
 experiments = [("m", "DP-SZ"), ("g", "Dynamic Runtime Prediction"), ("x", "Static Runtime Prediction")]
 #experiments = [("m", "DP-SZ"), ("g", "Encoding")]
 #experiments = [("o", "DP-SZ"), ("c", "DT Budget")]
+experiments = [("m", "DP-SZ"), ("a", "Dynamic Runtime Prediction"), ("b", "Static Runtime Prediction")]
 
 fields = [(5, "Depth"), (4, "Size"), (7, "Accuracy"), (8, "Avg. Decision Length")]
 field_idx = 2
