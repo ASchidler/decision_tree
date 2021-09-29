@@ -571,7 +571,22 @@ class ClassificationInstance:
                     for k2, v2 in enumerate(v):
                         requirements[k2] |= v2
 
-                while requirements:
+                while requirements and differences:
+                    rms = []
+                    for k2, v2 in enumerate(requirements):
+                        if v2 == 0:
+                            rms.append(k2)
+
+                    for crm in reversed(rms):
+                        requirements[crm], requirements[-1] = requirements[-1], requirements[crm]
+                        requirements.pop()
+                        for cv in differences.values():
+                            cv[crm], cv[-1] = cv[-1], cv[crm]
+                            cv.pop()
+
+                    if len(requirements) == 0:
+                        break
+
                     k, v = max(differences.items(), key=lambda x: sum(popcount(x[1][y1] & y2) for y1, y2 in enumerate(requirements)))
 
                     if k[1] is None:
@@ -583,8 +598,6 @@ class ClassificationInstance:
                     for k2 in range(0, len(requirements)):
                         requirements[k2] &= ~v[k2]
 
-                    while requirements and requirements[-1] == 0:
-                        requirements.pop()
         return supset
 
 
