@@ -216,12 +216,11 @@ class ClassificationInstance:
 
         return supset
 
-    def reduce_with_key(self, randomized_runs=1, cat_full=False, numeric_full=False):
-        keys = []
-        for _ in range(0, randomized_runs):
-            keys.append(self.min_key_greedy2(cat_full, numeric_full))
-
-        key = min(keys, key=lambda x: len(x))
+    def reduce_with_key(self, cat_full=False, numeric_full=False, reduce_alternate=False):
+        if reduce_alternate and len(self.examples) <= 2000:
+            key = self.min_key_greedy2(cat_full, numeric_full)
+        else:
+            key = self.min_key_greedy(cat_full, numeric_full)
 
         self.reduce(key)
 
@@ -439,7 +438,7 @@ class ClassificationInstance:
                 c_es2 = classes[c_j]
 
                 for c_e1 in c_es:
-                    differences = defaultdict(set)
+                    differences = defaultdict(int)
                     for c_e2i, c_e2 in enumerate(c_es2):
                         found = False
 
@@ -473,12 +472,12 @@ class ClassificationInstance:
 
                                 if c_e1.features[c_f] != c_e2.features[c_f]:
                                     if cat_full and c_f in self.is_categorical:
-                                        differences[(c_f, None)].add(c_e2i)
+                                        differences[(c_f, None)] |= (1 << c_e2i)
                                     elif numeric_full and c_f not in self.is_categorical:
-                                        differences[(c_f, None)].add(c_e2i)
+                                        differences[(c_f, None)] |= (1 << c_e2i)
                                     elif c_f in self.is_categorical:
-                                        differences[(c_f, c_e1.features[c_f])].add(c_e2i)
-                                        differences[(c_f, c_e2.features[c_f])].add(c_e2i)
+                                        differences[(c_f, c_e1.features[c_f])] |= (1 << c_e2i)
+                                        differences[(c_f, c_e2.features[c_f])] |= (1 << c_e2i)
                                     else:
                                         tv = min(c_e1.features[c_f], c_e2.features[c_f])
                                         tv2 = max(c_e1.features[c_f], c_e2.features[c_f])
@@ -486,17 +485,19 @@ class ClassificationInstance:
                                             if c_t >= tv2:
                                                 break
                                             if tv <= c_t < tv2:
-                                                differences[(c_f, c_t)].add(c_e2i)
+                                                differences[(c_f, c_t)] |= (1 << c_e2i)
 
-                    differing_samples = set(x for t in differences.values() for x in t)
+                    differing_samples = 0
+                    for x in differences.values():
+                        differing_samples |= x
 
-                    while len(differing_samples) > 0:
-                        k, v = max(differences.items(), key=lambda x: len(x[1] & differing_samples))
+                    while differing_samples != 0:
+                        k, v = max(differences.items(), key=lambda x: popcount(x[1] & differing_samples))
                         if k[1] is not None:
                             supset.append((k[0], k[1], False))
                         else:
                             supset.append((k[0], None, None))
-                        differing_samples -= v
+                        differing_samples &= ~v
                         differences.pop(k)
         return supset
 

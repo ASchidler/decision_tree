@@ -35,7 +35,8 @@ def build_unique_set(parameters, root, samples, reduce, limit=maxsize):
     if reduce:
         print(f"{len(new_instance.examples)}")
         new_instance.reduce_with_key(numeric_full=parameters.reduce_numeric_full or parameters.use_smt,
-                                     cat_full=parameters.reduce_categoric_full or parameters.use_smt)
+                                     cat_full=parameters.reduce_categoric_full or parameters.use_smt,
+                                     reduce_alternate=parameters.reduce_alternate)
         print(f"{len(new_instance.examples)}")
     else:
         if not (parameters.use_smt or parameters.reduce_numeric_full or parameters.reduce_categoric_full):
@@ -140,7 +141,8 @@ def build_reduced_set(parameters, root, assigned, reduce):
                 if reduce:
                     print(f"{len(new_instance.examples)}")
                     new_instance.reduce_with_key(numeric_full=parameters.reduce_numeric_full or parameters.use_smt,
-                                                 cat_full=parameters.reduce_categoric_full or parameters.use_smt)
+                                                 cat_full=parameters.reduce_categoric_full or parameters.use_smt,
+                                                 reduce_alternate=parameters.reduce_alternate)
                     print(f"{len(new_instance.examples)}")
                 else:
                     if not (parameters.use_smt or parameters.reduce_numeric_full or parameters.reduce_categoric_full):

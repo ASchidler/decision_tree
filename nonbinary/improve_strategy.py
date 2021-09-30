@@ -43,7 +43,7 @@ encodings = [None, s1, s2, s3]
 
 class SlimParameters:
     def __init__(self, tree, instance, encoding, slv, opt_size, opt_slim, maintain, reduce_numeric, reduce_categoric, timelimit, use_dt, benchmark,
-                 size_first, use_enc_dt, reduce_first):
+                 size_first, use_enc_dt, reduce_first, reduce_alternate):
         self.tree = tree
         self.instance = instance
         self.encoding = encoding
@@ -66,6 +66,7 @@ class SlimParameters:
         self.use_enc_dt = use_enc_dt
         self.enc_decision_tree = None
         self.reduce_first = reduce_first
+        self.reduce_alternate = reduce_alternate
 
     def call_solver(self, new_instance, new_ub, cd, leaves):
         if not self.benchmark:
@@ -258,7 +259,7 @@ def run(parameters, test, limit_idx=1):
                     if result:
                         op = "ma"
             else:
-                if len(assigned[root.id]) <= 5 * parameters.maximum_examples:
+                if len(assigned[root.id]) <= 5000:
                     result = improver.leaf_reduced(parameters, root, assigned, True)
                     if result:
                         op = "lr"
