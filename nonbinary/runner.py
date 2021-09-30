@@ -76,7 +76,7 @@ ap.add_argument("-g", dest="use_dt", action="store", default=0, type=int, choice
                 help="Use a decision tree to decide which encoding to use.")
 ap.add_argument("-j", dest="reduce_first", action="store_true", default=False)
 ap.add_argument("-x", dest="use_dense", action="store_true", default=False)
-ap.add_argument("-a", dest="incremental_strategy", action="store", default=0, type=int, choices=[0, 1])
+ap.add_argument("-a", dest="incremental_strategy", action="store", default=0, type=int, choices=[0, 1, 2])
 
 args = ap.parse_args()
 
@@ -164,7 +164,7 @@ elif args.mode == 3:
     from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2, SupportSetStrategy3
     increment = 5 if args.incremental_strategy == 0 else 1
 
-    chosen_strat = [SupportSetStrategy, SupportSetStrategy3][args.incremental_strategy]
+    chosen_strat = [SupportSetStrategy, SupportSetStrategy2, SupportSetStrategy3][args.incremental_strategy]
     leaf_sets = [(list(instance.examples), None)]
     tree = None
 
