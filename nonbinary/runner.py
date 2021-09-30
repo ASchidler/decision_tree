@@ -161,10 +161,10 @@ if args.mode == 2:
 
     tree.root.reclassify(instance.examples)
 elif args.mode == 3:
-    from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2
+    from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2, SupportSetStrategy3
     increment = 5 if args.incremental_strategy == 0 else 1
 
-    chosen_strat = [SupportSetStrategy, SupportSetStrategy2][args.incremental_strategy]
+    chosen_strat = [SupportSetStrategy, SupportSetStrategy3][args.incremental_strategy]
     leaf_sets = [(list(instance.examples), None)]
     tree = None
 

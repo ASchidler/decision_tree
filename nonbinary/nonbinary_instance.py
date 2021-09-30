@@ -1,5 +1,7 @@
+import bisect
 import os
 import random
+import time
 from decimal import Decimal, InvalidOperation, getcontext
 from collections import defaultdict
 from gmpy2 import popcount
@@ -423,14 +425,14 @@ class ClassificationInstance:
 
     def min_key_greedy(self, cat_full=False, numeric_full=True):
         supset = []
-        features = list(range(1, self.num_features + 1))
+        features = list((x, x in self.is_categorical) for x in range(1, self.num_features + 1))
 
         # Group examples by classes, if the partitions are non-trivially small, this significantly improves runtime
         classes = defaultdict(list)
         for c_e in self.examples:
             classes[c_e.cls].append(c_e)
 
-        classes = list(classes.values())
+        classes = sorted(list(classes.values()), key=lambda x: len(x))
 
         # Check for each pair of examples
         for c_i, c_es in enumerate(classes):
@@ -466,26 +468,34 @@ class ClassificationInstance:
                                     break
 
                         if not found:
-                            for c_f in features:
+                            for c_f, cat in features:
                                 if c_e1.features[c_f] == "?" or c_e2.features[c_f] == "?":
                                     continue
 
                                 if c_e1.features[c_f] != c_e2.features[c_f]:
-                                    if cat_full and c_f in self.is_categorical:
+                                    if cat_full and cat:
                                         differences[(c_f, None)] |= (1 << c_e2i)
-                                    elif numeric_full and c_f not in self.is_categorical:
+                                    elif numeric_full and not cat:
                                         differences[(c_f, None)] |= (1 << c_e2i)
-                                    elif c_f in self.is_categorical:
+                                    elif cat:
                                         differences[(c_f, c_e1.features[c_f])] |= (1 << c_e2i)
                                         differences[(c_f, c_e2.features[c_f])] |= (1 << c_e2i)
                                     else:
                                         tv = min(c_e1.features[c_f], c_e2.features[c_f])
                                         tv2 = max(c_e1.features[c_f], c_e2.features[c_f])
-                                        for c_t in self.domains[c_f]:
-                                            if c_t >= tv2:
-                                                break
-                                            if tv <= c_t < tv2:
-                                                differences[(c_f, c_t)] |= (1 << c_e2i)
+                                        idx = bisect.bisect_left(self.domains[c_f], tv)
+                                        idx2 = bisect.bisect_left(self.domains[c_f], tv2) - 1
+                                        differences[(c_f, self.domains[c_f][(idx + idx2) // 2])] |= (1 << c_e2i)
+
+                                        # tv = min(c_e1.features[c_f], c_e2.features[c_f])
+                                        # idx = bisect.bisect_left(self.domains[c_f], tv)
+                                        # differences[(c_f, self.domains[c_f][idx])] |= (1 << c_e2i)
+                                        # tv2 = max(c_e1.features[c_f], c_e2.features[c_f])
+                                        # for c_t in self.domains[c_f][bisect.bisect_left(self.domains[c_f], tv):]:
+                                        #     if c_t >= tv2:
+                                        #         break
+                                        #
+                                        #     differences[(c_f, c_t)] |= (1 << c_e2i)
 
                     differing_samples = 0
                     for x in differences.values():
@@ -501,10 +511,9 @@ class ClassificationInstance:
                         differences.pop(k)
         return supset
 
-
     def min_key_greedy2(self, cat_full=False, numeric_full=True):
         supset = []
-        features = list(range(1, self.num_features + 1))
+        features = list((x, x in self.is_categorical) for x in range(1, self.num_features + 1))
 
         # Group examples by classes, if the partitions are non-trivially small, this significantly improves runtime
         classes = defaultdict(list)
@@ -546,48 +555,56 @@ class ClassificationInstance:
                                     break
 
                         if not found:
-                            for c_f in features:
+                            for c_f, cat in features:
                                 if c_e1.features[c_f] == "?" or c_e2.features[c_f] == "?":
                                     continue
 
                                 if c_e1.features[c_f] != c_e2.features[c_f]:
-                                    if cat_full and c_f in self.is_categorical:
+                                    if cat_full and cat:
                                         differences[(c_f, None)][c_e1i] |= (1 << c_e2i)
-                                    elif numeric_full and c_f not in self.is_categorical:
+                                    elif numeric_full and not cat:
                                         differences[(c_f, None)][c_e1i] |= (1 << c_e2i)
-                                    elif c_f in self.is_categorical:
+                                    elif cat:
                                         differences[(c_f, c_e1.features[c_f])][c_e1i] |= (1 << c_e2i)
                                         differences[(c_f, c_e2.features[c_f])][c_e1i] |= (1 << c_e2i)
                                     else:
                                         tv = min(c_e1.features[c_f], c_e2.features[c_f])
                                         tv2 = max(c_e1.features[c_f], c_e2.features[c_f])
-                                        for c_t in self.domains[c_f]:
-                                            if c_t >= tv2:
-                                                break
-                                            if tv <= c_t < tv2:
-                                                differences[(c_f, c_t)][c_e1i] |= (1 << c_e2i)
+                                        idx = bisect.bisect_left(self.domains[c_f], tv)
+                                        idx2 = bisect.bisect_left(self.domains[c_f], tv2) - 1
+                                        differences[(c_f, self.domains[c_f][(idx+idx2)//2])][c_e1i] |= (1 << c_e2i)
+                                        #differences[(c_f, self.domains[c_f][idx2])][c_e1i] |= (1 << c_e2i)
+                                        # found = False
+                                        # for cx in range(idx, idx2):
+                                        #     if (c_f, self.domains[c_f][cx]) in differences:
+                                        #         found = True
+                                        #         differences[(c_f, self.domains[c_f][cx])][c_e1i] |= (1 << c_e2i)
+                                        # if not found:
+                                        #     differences[(c_f, self.domains[c_f][idx])][c_e1i] |= (1 << c_e2i)
+                                        # for c_t in self.domains[c_f][bisect.bisect_left(self.domains[c_f], tv):]:
+                                        #     if c_t >= tv2:
+                                        #         break
+                                        #
+                                        #     differences[(c_f, c_t)][c_e1i] |= (1 << c_e2i)
 
                 requirements = [0 for _ in range(0, len(c_es))]
                 for v in differences.values():
                     for k2, v2 in enumerate(v):
                         requirements[k2] |= v2
 
+                rms = []
+                for k2, v2 in enumerate(requirements):
+                    if v2 == 0:
+                        rms.append(k2)
+
+                for crm in reversed(rms):
+                    requirements[crm], requirements[-1] = requirements[-1], requirements[crm]
+                    requirements.pop()
+                    for cv in differences.values():
+                        cv[crm], cv[-1] = cv[-1], cv[crm]
+                        cv.pop()
+
                 while requirements and differences:
-                    rms = []
-                    for k2, v2 in enumerate(requirements):
-                        if v2 == 0:
-                            rms.append(k2)
-
-                    for crm in reversed(rms):
-                        requirements[crm], requirements[-1] = requirements[-1], requirements[crm]
-                        requirements.pop()
-                        for cv in differences.values():
-                            cv[crm], cv[-1] = cv[-1], cv[crm]
-                            cv.pop()
-
-                    if len(requirements) == 0:
-                        break
-
                     k, v = max(differences.items(), key=lambda x: sum(popcount(x[1][y1] & y2) for y1, y2 in enumerate(requirements)))
 
                     if k[1] is None:
@@ -596,8 +613,18 @@ class ClassificationInstance:
                         supset.append((k[0], k[1], False))
                     differences.pop(k)
 
+                    rms = []
                     for k2 in range(0, len(requirements)):
                         requirements[k2] &= ~v[k2]
+                        if requirements[k2] == 0:
+                            rms.append(k2)
+
+                    for crm in reversed(rms):
+                        requirements[crm], requirements[-1] = requirements[-1], requirements[crm]
+                        requirements.pop()
+                        for cv in differences.values():
+                            cv[crm], cv[-1] = cv[-1], cv[crm]
+                            cv.pop()
 
         return supset
 

@@ -266,7 +266,7 @@ def run_incremental(enc, solver, strategy, increment=1, timeout=300, opt_size=Fa
     best_last = None
     done = []
 
-    strategy.find_next(1 + increment)
+    strategy.seed(increment)
     strategy.get_instance()
     start_time = time.time()
 
