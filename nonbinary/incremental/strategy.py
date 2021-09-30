@@ -1,5 +1,6 @@
 import bisect
 import math
+import sys
 from bisect import bisect_right
 from collections import defaultdict
 
@@ -69,7 +70,7 @@ class SupportSetStrategy:
 
                             found = False
                             found_nondiffering = True
-                            shuffle(self.features)
+
                             for c_f in self.features:
                                 if e.features[c_f] != e2.features[c_f]:
                                     found = True
@@ -441,13 +442,12 @@ class SupportSetStrategy3:
             e = self.class_examples[self.class_idx][self.current_idx]
             found_nondiffering = False
             differences = defaultdict(int)
+            differences_dist = defaultdict(lambda: sys.maxsize)
+            #in_set = defaultdict(list)
             comparisons = 0
 
             for c_class in range(self.class_idx+1, len(self.class_examples)):
                 for e2 in self.class_examples[c_class]:
-                    if comparisons > 100:
-                        break
-
                     all_nondiffering = True
                     for c_f, c_v, cat in self.support_set:
                         if cat:
@@ -471,11 +471,38 @@ class SupportSetStrategy3:
                                     differences[(c_f, e.features[c_f])] |= (1 << e2.id)
                                     differences[(c_f, e2.features[c_f])] |= (1 << e2.id)
                                 else:
-                                    min_v = min(e.features[c_f], e2.features[c_f])
-                                    max_v = max(e.features[c_f], e2.features[c_f])
-                                    idx = bisect.bisect_left(self.original_instance.domains[c_f], min_v)
-                                    idx2 = bisect.bisect_left(self.original_instance.domains[c_f], max_v)
-                                    differences[(c_f, self.original_instance.domains[c_f][(idx + idx2) // 2])] |= (1 << e2.id)
+                                    if e.features[c_f] > e2.features[c_f]:
+                                        idx = bisect.bisect_left(self.original_instance.domains[c_f], e.features[c_f]) - 1
+                                        idx2 = bisect.bisect_left(self.original_instance.domains[c_f], e2.features[c_f])
+                                    else:
+                                        idx = bisect.bisect_left(self.original_instance.domains[c_f], e.features[c_f])
+                                        idx2 = bisect.bisect_left(self.original_instance.domains[c_f], e2.features[c_f]) - 1
+
+                                    differences[(c_f, self.original_instance.domains[c_f][idx])] |= (
+                                                1 << e2.id)
+                                    differences_dist[(c_f, self.original_instance.domains[c_f][idx])] = min(idx2-idx, differences_dist[self.original_instance.domains[c_f][idx]])
+
+                                    # min_v = min(e.features[c_f], e2.features[c_f])
+                                    # max_v = max(e.features[c_f], e2.features[c_f])
+                                    # idx = bisect.bisect_left(self.original_instance.domains[c_f], min_v)
+                                    # idx2 = bisect.bisect_left(self.original_instance.domains[c_f], max_v) - 1
+                                    # differences[(c_f, self.original_instance.domains[c_f][(idx + idx2) // 2])] |= (1 << e2.id)
+                                    #
+                                    # tv = self.original_instance.domains[c_f][idx]
+                                    # tv2 = self.original_instance.domains[c_f][idx2]
+                                    # diff_list = in_set[c_f]
+                                    # idx_a = bisect.bisect_left(diff_list, tv)
+                                    # if idx_a == len(diff_list):
+                                    #     differences[(c_f, self.original_instance.domains[c_f][(idx + idx2) // 2])] |= (
+                                    #                 1 << e2.id)
+                                    # else:
+                                    #     idx_b = bisect.bisect_right(diff_list, tv2)
+                                    #     if idx_a >= idx_b:
+                                    #         differences[(c_f, self.original_instance.domains[c_f][(idx + idx2) // 2])] |= (
+                                    #                 1 << e2.id)
+                                    #     else:
+                                    #         for cx in range(idx_a, idx_b):
+                                    #             differences[(c_f, diff_list[cx])] |= (1 << e2.id)
 
                         if not found:  # Inconsistent
                             found_nondiffering = False
@@ -487,7 +514,9 @@ class SupportSetStrategy3:
 
                 while differing_samples != 0:
                     k, v = max(differences.items(), key=lambda x: popcount(x[1] & differing_samples))
-                    self.support_set.append((k[0], k[1], k[0] in self.original_instance.is_categorical))
+                    val = bisect.bisect_left(self.original_instance.domains[k[0]], k[1])
+                    val = self.original_instance.domains[k[0]][val + (differences_dist[k]//2)]
+                    self.support_set.append((k[0], val, k[0] in self.original_instance.is_categorical))
 
                     differing_samples &= ~v
                     differences.pop(k)

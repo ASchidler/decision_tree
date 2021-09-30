@@ -487,16 +487,6 @@ class ClassificationInstance:
                                         idx2 = bisect.bisect_left(self.domains[c_f], tv2) - 1
                                         differences[(c_f, self.domains[c_f][(idx + idx2) // 2])] |= (1 << c_e2i)
 
-                                        # tv = min(c_e1.features[c_f], c_e2.features[c_f])
-                                        # idx = bisect.bisect_left(self.domains[c_f], tv)
-                                        # differences[(c_f, self.domains[c_f][idx])] |= (1 << c_e2i)
-                                        # tv2 = max(c_e1.features[c_f], c_e2.features[c_f])
-                                        # for c_t in self.domains[c_f][bisect.bisect_left(self.domains[c_f], tv):]:
-                                        #     if c_t >= tv2:
-                                        #         break
-                                        #
-                                        #     differences[(c_f, c_t)] |= (1 << c_e2i)
-
                     differing_samples = 0
                     for x in differences.values():
                         differing_samples |= x
@@ -527,6 +517,7 @@ class ClassificationInstance:
             for c_j in range(c_i+1, len(classes)):
                 c_es2 = classes[c_j]
                 differences = defaultdict(lambda: [0 for _ in range(0, len(c_es))])
+
                 for c_e1i, c_e1 in enumerate(c_es):
                     for c_e2i, c_e2 in enumerate(c_es2):
                         found = False
@@ -573,19 +564,6 @@ class ClassificationInstance:
                                         idx = bisect.bisect_left(self.domains[c_f], tv)
                                         idx2 = bisect.bisect_left(self.domains[c_f], tv2) - 1
                                         differences[(c_f, self.domains[c_f][(idx+idx2)//2])][c_e1i] |= (1 << c_e2i)
-                                        #differences[(c_f, self.domains[c_f][idx2])][c_e1i] |= (1 << c_e2i)
-                                        # found = False
-                                        # for cx in range(idx, idx2):
-                                        #     if (c_f, self.domains[c_f][cx]) in differences:
-                                        #         found = True
-                                        #         differences[(c_f, self.domains[c_f][cx])][c_e1i] |= (1 << c_e2i)
-                                        # if not found:
-                                        #     differences[(c_f, self.domains[c_f][idx])][c_e1i] |= (1 << c_e2i)
-                                        # for c_t in self.domains[c_f][bisect.bisect_left(self.domains[c_f], tv):]:
-                                        #     if c_t >= tv2:
-                                        #         break
-                                        #
-                                        #     differences[(c_f, c_t)][c_e1i] |= (1 << c_e2i)
 
                 requirements = [0 for _ in range(0, len(c_es))]
                 for v in differences.values():
