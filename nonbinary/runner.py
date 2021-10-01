@@ -38,6 +38,8 @@ ap.add_argument("-e", dest="encoding", action="store", type=int, default=0, choi
 
 ap.add_argument("-r", dest="reduce", action="store_true", default=False,
                 help="Use support set based reduction. Decreases instance size, but tree may be sub-optimal.")
+ap.add_argument("-k", dest="reduce_alternate", action="store_true", default=False,
+                help="Use extended greedy heuristic.")
 ap.add_argument("-b", dest="benchmark", action="store_true", default=False,
                 help="Benchmark all encodings together.")
 ap.add_argument("-c", dest="categorical", action="store_true", default=False,
@@ -73,7 +75,7 @@ ap.add_argument("-g", dest="use_dt", action="store", default=0, type=int, choice
                 help="Use a decision tree to decide which encoding to use.")
 ap.add_argument("-j", dest="reduce_first", action="store_true", default=False)
 ap.add_argument("-x", dest="use_dense", action="store_true", default=False)
-ap.add_argument("-a", dest="incremental_strategy", action="store", default=0, type=int, choices=[0, 1])
+ap.add_argument("-a", dest="incremental_strategy", action="store", default=0, type=int, choices=[0, 1, 2])
 
 args = ap.parse_args()
 
@@ -158,10 +160,10 @@ if args.mode == 2:
 
     tree.root.reclassify(instance.examples)
 elif args.mode == 3:
-    from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2
+    from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2, SupportSetStrategy3
     increment = 5 if args.incremental_strategy == 0 else 1
 
-    chosen_strat = [SupportSetStrategy, SupportSetStrategy2][args.incremental_strategy]
+    chosen_strat = [SupportSetStrategy, SupportSetStrategy2, SupportSetStrategy3][args.incremental_strategy]
     leaf_sets = [(list(instance.examples), None)]
     tree = None
 
@@ -245,7 +247,7 @@ elif args.mode == 1:
     parameters = improve_strategy.SlimParameters(tree, instance, enc, Glucose3, args.size, args.slim_opt,
                                                  args.maintain, args.reduce_numeric, args.reduce_categoric,
                                                  args.time_limit, args.use_dt == 1, args.benchmark, args.size_first,
-                                                 args.use_dt == 2, args.reduce_first)
+                                                 args.use_dt == 2, args.reduce_first, args.reduce_alternate)
     if args.use_dt == 1:
         parameters.example_decision_tree = tree_parsers.parse_internal_tree("nonbinary/benchmark_tree.dt")
     elif args.use_dt == 2:

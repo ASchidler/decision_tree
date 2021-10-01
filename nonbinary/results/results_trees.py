@@ -29,22 +29,24 @@ def parse_file(fl, experiment):
             c_flags = cl[cl.find("(")+1:cl.find(")")].split(",")
             cfs = {x[0]: x[1] for x in (y.strip().split("=") for y in c_flags)}
 
-            if cfs["mode"] == "3":
+            if "mode" in cfs and cfs["mode"] == "3":
                 flags += "v"
-            if cfs["use_dense"] == "True":
+            if "use_dense" in cfs and cfs["use_dense"] == "True":
                 flags += "x"
-            if cfs["incremental_strategy"] == "1":
+            if "incremental_strategy" in cfs and cfs["incremental_strategy"] == "1":
                 flags += "a"
-            if cfs["encoding"] == "1":
+            if "encoding" in cfs and cfs["encoding"] == "1":
                 c_encoding = "a"
             if cfs["categorical"] == "True":
                 c_encoding = "c"
-            if cfs["encoding"] == "2":
+            if "encoding" in cfs and cfs["encoding"] == "2":
                 c_encoding = "y"
-            if cfs["encoding"] == "4":
+            if "encoding" in cfs and cfs["encoding"] == "4":
                 c_encoding = "p"
-            if cfs["encoding"] == "5":
+            if "encoding" in cfs and cfs["encoding"] == "5":
                 c_encoding = "z"
+            if "encoding" in cfs and cfs["encoding"] == "6":
+                c_encoding = "h"
             if cfs["size"] == "True":
                 flags += "z"
             # if cfs["multiclass"] == "True":
@@ -52,41 +54,56 @@ def parse_file(fl, experiment):
 
             c_slice = int(cfs["slice"])
 
-            if cfs["encoding"] == "3":
+            if "encoding" in cfs and cfs["encoding"] == "3":
                 c_encoding = "s"
             if cfs["validation"] == "True":
                 c_val = "v"
-            if cfs["maintain"] == "True":
+            if "maintain" in cfs and cfs["maintain"] == "True":
                 flags += "u"
-            if cfs["reduce_numeric"] == "True":
+            if "reduce_numeric" in cfs and cfs["reduce_numeric"] == "True":
                 flags += "n"
-            if cfs["reduce_categoric"] == "True":
+            if "reduce_categoric" in cfs and cfs["reduce_categoric"] == "True":
                 flags += "o"
             if cfs["slim_opt"] == "True":
                 flags += "e"
-            if cfs["use_dt"] == "1":
+            if "use_dt" in cfs and cfs["use_dt"] == "1":
                 flags += "x"
-            if cfs["use_dt"] == "2":
+            if "use_dt" in cfs and cfs["use_dt"] == "2":
                 flags += "g"
-            if cfs["size_first"] == "True":
+            if "size_first" in cfs and cfs["size_first"] == "True":
                 flags += "f"
-            if cfs["mode"] == "3":
+            if "mode" in cfs and cfs["mode"] == "3":
                 flags += "v"
-            if cfs["mode"] == "2":
+            if "mode" in cfs and cfs["mode"] == "2":
                 flags += "j"
 
-            if cfs["mode"] == "0":
+            if "mode" in cfs and cfs["mode"] == "0":
                 c_algo = "e"
-            elif cfs["mode"] == "2":
+            elif "mode" not in cfs:
+                if "slim" in cfs:
+                    if cfs["slim"] == "True":
+                        if cfs["weka"] == "False":
+                            c_algo = "w"
+                        else:
+                            c_algo = "c"
+                    else:
+                        c_algo = "e"
+                if "alt_sat" in cfs and cfs["alt_sat"] == "True":
+                    c_encoding = "a"
+                elif "hybrid" in cfs and cfs["hybrid"] == "True":
+                    c_encoding = "y"
+                elif "use_smt" in cfs and cfs["use_smt"] == "True":
+                    c_encoding = "s"
+            elif "mode" in cfs and cfs["mode"] == "2":
                 c_algo = "j"
-            elif cfs["mode"] == "3":
+            elif "mode" in cfs and cfs["mode"] == "3":
                 c_algo = "r"
             else:
-                if cfs["heuristic"] == "0":
+                if "heuristic" in cfs and cfs["heuristic"] == "0":
                     c_algo = "w"
-                elif cfs["heuristic"] == "1":
+                elif "heuristic" in cfs and cfs["heuristic"] == "1":
                     c_algo = "c"
-                elif cfs["heuristic"] == "2":
+                elif "heuristic" in cfs and cfs["heuristic"] == "2":
                     c_algo = "r"
                 # ap.add_argument("-x", dest="use_dense", action="store_true", default=False)
                 # ap.add_argument("-a", dest="incremental_strategy", action="store", default=0, type=int, choices=[0, 1])
