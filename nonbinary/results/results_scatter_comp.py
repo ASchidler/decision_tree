@@ -3,15 +3,17 @@ import sys
 import matplotlib.pyplot as plt
 from collections import defaultdict
 
-cmp_heur = False
+cmp_heur = True
 #experiments = [("m", "DP-SZ"), ("k", "DP-SL-SZ"), ("n", "MT-DP"), ("q", "DP"), ("f", "SZ-DP")]
 #experiments = [("m", "DP-SZ"), ("o", "Old"), ("r", "Cat")]
 #experiments = [("m", "DP-SZ"), ("c", "Old")]
 experiments = [("m", "DP-SZ"), ("g", "Dynamic Runtime Prediction"), ("x", "Static Runtime Prediction")]
 #experiments = [("m", "DP-SZ"), ("g", "Encoding")]
 #experiments = [("o", "DP-SZ"), ("c", "DT Budget")]
+experiments = [("m", "DP-SZ"), ("w", "Dynamic Runtime Prediction")]
 
 fields = [(5, "Depth"), (4, "Size"), (7, "Accuracy"), (8, "Avg. Decision Length")]
+
 field_idx = 2
 bar_idx = [0, 1]
 
@@ -42,7 +44,9 @@ for c_experiment, c_ex_name in experiments:
                     # else:
                     #     if results[cf[0]][0] != cf[target_idx]:
                     #         raise RuntimeError("Base mismatch")
-                results[cf[0]].append([cf[x[0] + 6].strip() for x in fields])
+                #results[cf[0]].append([cf[x[0] + 6].strip() for x in fields])
+                if cf[fields[field_idx][0] + (6 if c_experiment != "w" else 12)].strip() != "":
+                    results[cf[0]].append([cf[x[0] + (6 if c_experiment != "w" else 12)].strip() for x in fields])
 
 
 y = []

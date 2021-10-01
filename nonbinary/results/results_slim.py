@@ -99,7 +99,7 @@ with open(f"results_{experiment}.csv", "w") as outf:
         print(c_file)
         for c_f in sorted(flags):
             if c_f not in files[c_file]:
-                outf.write(";;;;;")
+                outf.write(";;;;;;")
                 continue
 
             c_data = files[c_file][c_f].values()

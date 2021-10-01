@@ -24,7 +24,6 @@ from nonbinary.decision_tree import DecisionTreeNode, DecisionTreeLeaf
 from nonbinary.nonbinary_instance import ClassificationInstance
 
 random.seed(1)
-sys.setrecursionlimit(5000)
 
 instance_path = "nonbinary/instances"
 instance_validation_path = "datasets/validate"
@@ -259,6 +258,16 @@ elif args.mode == 1:
 
     improve_strategy.run(parameters, test_instance, limit_idx=args.limit_idx)
 else:
+    ignore = set()
+
+    with open("nonbinary/results/ignore.txt") as ip:
+        for _, cl in enumerate(ip):
+            if len(cl.strip()) > 0:
+                ignore.add(cl.strip())
+
+    if target_instance not in ignore:
+        exit(1)
+
     if not args.encoding == 3:
         tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size)
     else:

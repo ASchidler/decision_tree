@@ -7,9 +7,9 @@ import nonbinary.pruning as p
 algos = ["r"]
 trees = ["w"]
 #flags = ["0", "a", "y"]
-flags = ["vxv0"]
+flags = ["vxav0"]
 #flags = ["uzy"]
-use_ccp = False
+use_ccp = True
 
 for c_file in sorted(os.listdir("../instances")):
     if c_file.endswith(".data"):
