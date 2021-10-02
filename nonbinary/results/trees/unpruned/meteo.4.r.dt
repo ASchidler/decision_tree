@@ -1,7 +1,7 @@
 a(1) = sunny
--a(3) = normal
---c(+)
+-a(4) = false
 --c(-)
+--c(+)
 -a(4) = false
 --c(+)
 --a(1) = overcast

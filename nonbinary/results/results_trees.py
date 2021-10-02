@@ -35,6 +35,8 @@ def parse_file(fl, experiment):
                 flags += "x"
             if "incremental_strategy" in cfs and cfs["incremental_strategy"] == "1":
                 flags += "a"
+            if "incremental_strategy" in cfs and cfs["incremental_strategy"] == "2":
+                flags += "a2"
             if "encoding" in cfs and cfs["encoding"] == "1":
                 c_encoding = "a"
             if cfs["categorical"] == "True":

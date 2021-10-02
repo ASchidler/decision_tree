@@ -1,197 +1,177 @@
-a(2) = normal
--a(40) = f
---a(59) = absent
----a(64) = normal
-----a(6) = mild
------c(otitis_media)
------a(15) = f
-------a(47) = f
--------c(normal_ear)
--------c(cochlear_unknown)
-------c(mixed_cochlear_unk_discontinuity)
-----a(64) = very_good
------c(normal_ear)
------a(1) = t
-------c(mixed_cochlear_age_s_om)
-------c(poss_central)
----a(6) = mild
-----a(15) = f
------a(64) = normal
-------a(4) = elevated
--------c(normal_ear)
--------a(37) = f
---------a(10) = t
----------c(possible_brainstem_disorder)
----------a(36) = t
-----------c(cochlear_unknown)
-----------c(normal_ear)
---------c(possible_menieres)
-------a(1) = f
--------a(64) = very_good
---------c(normal_ear)
---------c(cochlear_unknown)
--------c(cochlear_age)
------a(64) = normal
-------c(cochlear_poss_noise)
-------a(64) = very_good
--------a(60) = elevated
---------c(cochlear_noise_and_heredity)
---------c(cochlear_poss_noise)
--------a(58) = f
---------a(13) = f
----------c(cochlear_poss_noise)
----------c(cochlear_noise_and_heredity)
---------c(cochlear_poss_noise)
-----a(6) = unmeasured
------a(58) = f
-------a(1) = f
--------a(8) = degraded
---------c(possible_brainstem_disorder)
---------c(cochlear_unknown)
--------a(64) = normal
---------c(cochlear_age)
---------c(cochlear_age_and_noise)
-------c(cochlear_poss_noise)
------a(64) = normal
-------a(1) = f
--------a(4) = elevated
---------c(cochlear_unknown)
---------c(normal_ear)
--------a(10) = t
---------c(normal_ear)
---------c(mixed_cochlear_age_otitis_media)
-------a(1) = f
--------a(59) = elevated
---------c(normal_ear)
---------c(cochlear_unknown)
--------a(64) = good
---------c(cochlear_age)
---------c(normal_ear)
---a(6) = normal
+a(6) = normal
+-a(4) = elevated
+--a(1) = t
 ---c(cochlear_age)
----a(6) = mild
-----a(1) = t
------c(cochlear_age)
------c(cochlear_unknown)
-----c(cochlear_unknown)
--a(59) = normal
---a(15) = f
----a(4) = normal
-----a(1) = t
------a(64) = normal
-------a(3) = f
--------c(cochlear_age)
--------a(66) = b
---------c(mixed_cochlear_age_otitis_media)
---------c(mixed_cochlear_age_fixation)
-------a(64) = very_poor
--------a(6) = mild
---------a(65) = t
----------c(cochlear_age_plus_poss_menieres)
----------c(cochlear_age)
---------c(possible_menieres)
--------c(cochlear_age)
------a(64) = normal
-------a(40) = f
--------a(37) = t
---------c(possible_menieres)
---------c(cochlear_unknown)
--------c(possible_menieres)
-------a(64) = very_poor
--------a(6) = mild
---------c(acoustic_neuroma)
---------c(cochlear_unknown)
--------c(cochlear_unknown)
-----a(6) = unmeasured
------c(cochlear_unknown)
------a(1) = t
-------c(cochlear_age)
-------a(58) = t
--------c(retrocochlear_unknown)
--------a(64) = good
---------c(possible_menieres)
---------a(5) = absent
----------c(retrocochlear_unknown)
----------c(cochlear_unknown)
----a(70) = p18
-----c(cochlear_poss_noise)
-----a(1) = t
------a(4) = normal
-------a(26) = t
--------c(cochlear_age_and_noise)
--------a(6) = mild
---------c(cochlear_age_and_noise)
---------c(cochlear_age)
-------a(6) = mild
--------c(cochlear_age_and_noise)
--------c(possible_menieres)
------a(64) = normal
-------a(7) = t
--------c(cochlear_poss_noise)
--------c(cochlear_unknown)
-------a(4) = normal
--------c(cochlear_poss_noise)
--------c(mixed_poss_noise_om)
---a(15) = t
----a(1) = f
-----a(64) = very_good
------a(6) = mild
-------c(mixed_poss_noise_om)
-------c(mixed_cochlear_unk_discontinuity)
------a(6) = mild
-------a(4) = normal
--------c(cochlear_poss_noise)
--------c(mixed_poss_noise_om)
-------c(otitis_media)
-----a(3) = f
------c(cochlear_age_and_noise)
------c(mixed_cochlear_age_s_om)
----a(1) = t
-----a(64) = good
------c(mixed_cochlear_age_otitis_media)
------a(37) = t
-------c(cochlear_age)
-------c(mixed_cochlear_age_otitis_media)
+---c(cochlear_unknown)
+--a(70) = p80
+---c(cochlear_unknown)
+---a(59) = absent
 ----a(64) = normal
------a(3) = f
-------a(4) = normal
--------a(37) = f
---------c(bells_palsy)
---------c(mixed_poss_central_om)
--------a(7) = t
---------c(cochlear_unknown)
---------a(60) = absent
----------a(20) = f
-----------c(possible_menieres)
-----------c(mixed_poss_central_om)
----------a(4) = elevated
-----------c(cochlear_unknown)
-----------c(bells_palsy)
-------a(6) = mild
--------a(66) = as
---------c(mixed_cochlear_unk_fixation)
---------c(otitis_media)
+-----a(17) = t
+------c(mixed_cochlear_unk_discontinuity)
+------a(66) = as
 -------c(conductive_fixation)
------a(6) = mild
-------a(64) = very_poor
--------a(2) = severe
+-------a(37) = t
+--------c(mixed_poss_central_om)
+--------c(normal_ear)
+-----a(53) = t
+------c(mixed_cochlear_age_s_om)
+------a(60) = elevated
+-------a(10) = f
 --------c(conductive_discontinuity)
---------c(acoustic_neuroma)
--------a(70) = p99
---------c(mixed_cochlear_unk_ser_om)
---------a(2) = moderate
----------a(66) = as
-----------c(mixed_cochlear_unk_fixation)
-----------c(mixed_cochlear_unk_ser_om)
----------a(59) = elevated
-----------c(cochlear_unknown)
-----------a(66) = b
------------c(mixed_cochlear_unk_ser_om)
+--------c(mixed_cochlear_unk_discontinuity)
+-------a(15) = t
+--------c(otitis_media)
+--------a(64) = very_good
+---------a(70) = p103
+----------c(otitis_media)
+----------c(normal_ear)
+---------a(20) = t
+----------c(poss_central)
+----------c(conductive_fixation)
+----a(54) = t
+-----a(66) = a
+------c(cochlear_unknown)
+------c(mixed_cochlear_age_otitis_media)
+-----a(5) = elevated
+------a(70) = p27
+-------c(cochlear_unknown)
+-------c(cochlear_age)
+------a(53) = t
+-------c(cochlear_age)
+-------c(normal_ear)
+-a(65) = f
+--a(64) = normal
+---a(37) = t
+----c(possible_menieres)
+----a(43) = f
+-----a(69) = t
+------c(possible_brainstem_disorder)
+------a(70) = p93
+-------c(cochlear_unknown)
+-------c(possible_brainstem_disorder)
+-----c(possible_menieres)
+---a(64) = good
+----c(possible_menieres)
+----c(cochlear_age)
+--a(64) = normal
+---a(15) = f
+----a(7) = t
+-----a(66) = as
+------c(mixed_cochlear_age_fixation)
+------c(cochlear_unknown)
+-----a(70) = p148
+------c(cochlear_unknown)
+------a(70) = p44
+-------c(cochlear_unknown)
+-------a(45) = f
+--------a(5) = elevated
+---------a(4) = absent
+----------a(66) = a
 -----------c(possible_menieres)
-------a(64) = very_good
--------c(otitis_media)
--------a(64) = good
---------a(3) = t
----------c(conductive_discontinuity)
+-----------c(otitis_media)
+----------c(cochlear_unknown)
+---------a(4) = absent
+----------a(66) = as
+-----------c(mixed_cochlear_unk_fixation)
+-----------a(67) = t
+------------c(bells_palsy)
+------------c(otitis_media)
+----------a(1) = t
+-----------a(5) = normal
+------------c(cochlear_age)
+------------c(mixed_cochlear_age_otitis_media)
+-----------a(6) = unmeasured
+------------c(cochlear_unknown)
+------------c(normal_ear)
+--------c(cochlear_unknown)
+----a(1) = t
+-----a(6) = unmeasured
+------c(cochlear_age)
+------c(cochlear_age_and_noise)
+-----a(58) = t
+------c(cochlear_poss_noise)
+------a(60) = normal
+-------a(59) = elevated
+--------c(cochlear_poss_noise)
+--------a(63) = f
 ---------c(cochlear_unknown)
---------c(conductive_fixation)
+---------c(cochlear_poss_noise)
+-------c(cochlear_poss_noise)
+---a(15) = f
+----a(1) = t
+-----a(64) = very_good
+------a(5) = normal
+-------c(cochlear_age)
+-------a(33) = t
+--------c(mixed_cochlear_age_otitis_media)
+--------c(cochlear_age)
+------a(64) = very_poor
+-------a(70) = p97
+--------c(possible_menieres)
+--------c(cochlear_age_plus_poss_menieres)
+-------a(59) = normal
+--------c(cochlear_age)
+--------c(mixed_cochlear_age_otitis_media)
+-----a(64) = very_good
+------a(3) = t
+-------a(7) = t
+--------c(mixed_cochlear_unk_ser_om)
+--------c(mixed_cochlear_unk_fixation)
+-------a(59) = absent
+--------c(possible_menieres)
+--------a(70) = p90
+---------c(normal_ear)
+---------c(cochlear_unknown)
+------a(3) = t
+-------a(64) = poor
+--------c(mixed_cochlear_unk_ser_om)
+--------c(conductive_discontinuity)
+-------a(4) = elevated
+--------a(28) = t
+---------c(cochlear_unknown)
+---------a(2) = mild
+----------a(70) = p109
+-----------c(retrocochlear_unknown)
+-----------c(cochlear_unknown)
+----------c(cochlear_unknown)
+--------a(59) = elevated
+---------a(70) = p66
+----------c(cochlear_unknown)
+----------a(5) = absent
+-----------c(acoustic_neuroma)
+-----------c(cochlear_unknown)
+---------a(4) = absent
+----------c(retrocochlear_unknown)
+----------c(cochlear_unknown)
+----a(5) = normal
+-----a(64) = good
+------a(2) = mild
+-------c(cochlear_age_and_noise)
+-------a(37) = t
+--------c(cochlear_age_and_noise)
+--------c(cochlear_poss_noise)
+------a(64) = very_good
+-------a(34) = f
+--------a(13) = f
+---------a(58) = f
+----------c(mixed_poss_noise_om)
+----------c(cochlear_poss_noise)
+---------c(cochlear_noise_and_heredity)
+--------c(cochlear_age)
+-------a(59) = normal
+--------a(18) = f
+---------c(cochlear_age_and_noise)
+---------c(possible_menieres)
+--------a(70) = p139
+---------c(cochlear_age_and_noise)
+---------a(18) = f
+----------c(mixed_poss_noise_om)
+----------c(cochlear_age_and_noise)
+-----a(62) = f
+------a(4) = normal
+-------a(3) = t
+--------c(mixed_cochlear_age_s_om)
+--------c(cochlear_poss_noise)
+-------c(cochlear_age_and_noise)
+------c(cochlear_noise_and_heredity)

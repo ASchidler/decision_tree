@@ -1,9 +1,9 @@
-a(1) = sunny
--a(3) = normal
+a(1) = rain
+-a(4) = false
 --c(+)
 --c(-)
--a(1) = rain
---a(4) = true
----c(-)
+-a(1) = sunny
+--a(3) = normal
 ---c(+)
+---c(-)
 --c(+)

@@ -97,12 +97,14 @@ class DecisionTree:
             print("Root already set")
         self.root = DecisionTreeNode(feature, 1)
         self.nodes[1] = self.root
+        return self.nodes[1]
 
     def set_root_leaf(self, cls):
         if self.root is not None:
             print("Root already set")
         self.root = DecisionTreeLeaf(cls, 1)
         self.nodes[1] = self.root
+        return self.nodes[1]
 
     def get_root(self):
         return self.root
