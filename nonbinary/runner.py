@@ -18,6 +18,7 @@ import nonbinary.size_narodytska as nbn
 import nonbinary.depth_avellaneda_smt2 as nbt
 import nonbinary.depth_switching as nbw
 import nonbinary.improve_strategy as improve_strategy
+import nonbinary.depth_cp_sat as cps
 import nonbinary_instance
 import tree_parsers
 from nonbinary.decision_tree import DecisionTreeNode, DecisionTreeLeaf
@@ -33,7 +34,7 @@ resource.setrlimit(resource.RLIMIT_AS, (23 * 1024 * 1024 * 1024 // 2, 12 * 1024 
 
 ap = argp.ArgumentParser(description="Python implementation for computing and improving decision trees.")
 ap.add_argument("instance", type=str)
-ap.add_argument("-e", dest="encoding", action="store", type=int, default=0, choices=[0, 1, 2, 3, 4, 5, 6],
+ap.add_argument("-e", dest="encoding", action="store", type=int, default=0, choices=[0, 1, 2, 3, 4, 5, 6, 7],
                 help="Which encoding to use.")
 
 ap.add_argument("-r", dest="reduce", action="store_true", default=False,
@@ -143,7 +144,7 @@ if args.categorical:
     instance.is_categorical = {x for x in range(1, instance.num_features+1)}
 
 tree = None
-enc = [nbs, nbs2, nbs3, nbt, nbp, nbn, nbw][args.encoding]
+enc = [nbs, nbs2, nbs3, nbt, nbp, nbn, nbw, cps][args.encoding]
 
 if args.mode == 2:
     from nonbinary.incremental.strategy import SupportSetStrategy, SupportSetStrategy2
@@ -267,8 +268,8 @@ else:
             if len(cl.strip()) > 0:
                 ignore.add(cl.strip())
 
-    if target_instance not in ignore:
-        exit(1)
+    # if target_instance not in ignore:
+    #     exit(1)
 
     if not args.encoding == 3:
         tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size)

@@ -4,17 +4,18 @@ from collections import defaultdict
 import math
 
 cmp_heur = True
-use_virtual_best = False
-use_virtual_all = False
+use_virtual_best = True
+use_virtual_all = True
 use_cart = False
 use_binoct = False
+use_best_select = True
 #experiments = [("k", "SZ,EX"), ("m", "SZ"), ("n", "M"), ("q", "None")]
 #experiments = [("k", "DP-SL-SZ"), ("m", "DP-SZ")]
-# experiments = [("m", "DP-SZ"), ("k", "DP-SL-SZ"), ("n", "MT-DP"), ("x", "DT Budget"),
-#                ("q", "DP"), ("f", "SZ-DP"), ("g", "DT Encoding"), ("r", "Reduce Categoric"),
-#                ("h", "2"), ("i", "3")]
+experiments = [("m", "DP-SZ"), ("k", "DP-SL-SZ"), ("n", "MT-DP"), ("x", "DT Budget"),
+               ("q", "DP"), ("f", "SZ-DP"), ("g", "DT Encoding"), ("r", "Reduce Categoric"),
+               ("h", "2"), ("i", "3")]
 
-experiments = [("w", "Recursive")]
+#experiments = [("w", "Recursive")]
 
 all_experiments = ["k", "m"]
 
@@ -23,7 +24,8 @@ fields = [(10, "Depth"), (9, "Size"), (12, "Accuracy"), (13, "Avg. Decision Leng
           ]
 field_idx = 2
 bar_idx = [0, 1, 2]
-offset = 66
+offset = 12
+#offset = 66
 #offset = 48
 
 colors = ['#228833', 'black', '#eecc66', '#bb5566', '#004488']
@@ -76,11 +78,11 @@ lts2 = [[0 for _ in range(0, len(fields))] for _ in range(0 if cmp_heur else 1, 
 gts = [[0 for _ in range(0, len(fields))] for _ in range(0 if cmp_heur else 1, len(legend))]
 gts2 = [[0 for _ in range(0, len(fields))] for _ in range(0 if cmp_heur else 1, len(legend))]
 
-for cl in results.values():
+for k, cl in results.items():
     if len(cl) < len(experiments) + (1 if cmp_heur else 0) or any(x == -1 for x in cl):
         continue
 
-    if not any(y == "-1" or y.strip() == "" for x in cl for y in x):
+    if not any(z == "-1" or z.strip() == "" for x in cl for z in x):
         if use_virtual_best:
             if use_virtual_all:
                 for idx in bar_idx:
@@ -89,6 +91,9 @@ for cl in results.values():
                     else:
                         max_entry = min((x for x in cl[1:] if x[idx] != "-1"), key=lambda x: (round(float(x[idx]),2), -round(float(x[2]),2)))
                     cl.append(max_entry)
+                    if idx == 2:
+                        best_idx = [experiments[x][0] for x in range(0, len(cl)-4) if cl[x+1][2] == max_entry[2]]
+                        print(f"{k} {best_idx}")
             else:
                 max_entry = max((x for x in cl[1:] if x[2] != "-1"), key=lambda x: float(x[2]))
                 cl.append(max_entry)
@@ -135,6 +140,34 @@ if use_virtual_best:
         lts2 = [lts2[best_idx], lts2[-1]]
         gts = [gts[best_idx], gts[-1]]
         gts2 = [gts2[best_idx], gts2[-1]]
+
+if use_best_select:
+    legend.append("Config Selection")
+    lts.append([0 for _ in range(0, len(fields))])
+    lts2.append([0 for _ in range(0, len(fields))])
+    gts.append([0 for _ in range(0, len(fields))])
+    gts2.append([0 for _ in range(0, len(fields))])
+
+    with open("vbest_config.csv") as ubs:
+        X.append([])
+        for cidx, cl in enumerate(ubs):
+            if cidx > 0:
+                cf = cl.split(";")
+                if cf[0] in results:
+                    baseline = results[cf[0]][0]
+                    c_result = [cf[2], cf[1], cf[3].strip(), "0", "0"]
+                    X[-1].append(float(c_result[field_idx]))
+                    for idx in range(0, len(fields)):
+                        if round(float(c_result[idx]), 2) < round(float(baseline[idx]), 2):
+                            lts[-1][idx] += 1
+                            if (idx != 2 and float(c_result[idx]) < float(baseline[idx]) * 0.9) or \
+                                    (idx == 2 and float(baseline[idx]) - float(c_result[idx]) > 0.01):
+                                lts2[-1][idx] += 1
+                        elif round(float(c_result[idx]), 2) > round(float(baseline[idx]), 2):
+                            gts[-1][idx] += 1
+                            if (idx != 2 and float(c_result[idx]) * 0.9 > float(baseline[idx])) or \
+                                    (idx == 2 and float(c_result[idx]) - float(baseline[idx]) > 0.01):
+                                gts2[-1][idx] += 1
 
 # Bar plot
 #fig, ax = plt.subplots(figsize=(4, 1 * len(lts)))
@@ -263,7 +296,7 @@ for x in X:
 ax.set_axisbelow(True)
 names = []
 
-ax.set_xlabel('DT-SLIM')
+ax.set_xlabel('DT-SLIMer')
 ax.set_ylabel('C4.5' if cmp_heur else experiments[0][1])
 # ax.set_title('scatter plot')
 plt.rcParams["legend.loc"] = 'upper left'
