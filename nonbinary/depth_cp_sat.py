@@ -41,13 +41,13 @@ def _init_var(instance, limit, class_map):
             for j in range(1, len(class_map)+1):
                 c[i][j] = pool.id(f"c{i}_{j}")
 
-    z = {}
-    for xl in range(0, len(instance.examples)):
-        z[xl] = {}
-        for i in range(0, 2**limit):
-            z[xl][i] = pool.id(f"z{xl}_{i}")
+    # z = {}
+    # for xl in range(0, len(instance.examples)):
+    #     z[xl] = {}
+    #     for i in range(0, 2**limit):
+    #         z[xl][i] = pool.id(f"z{xl}_{i}")
 
-    return s, f, c, z, t, pool
+    return s, f, c, t, pool
 
 
 def encode(instance, limit, solver, opt_size=False):
@@ -61,7 +61,7 @@ def encode(instance, limit, solver, opt_size=False):
     else:
         class_map = {cc: i + 1 for i, cc in enumerate(classes)}
 
-    s, f, c, z, t, p = _init_var(instance, limit, class_map)
+    s, f, c, t, p = _init_var(instance, limit, class_map)
 
     # each node has a feature
     for i in range(1, 2**limit):
@@ -127,23 +127,24 @@ def encode(instance, limit, solver, opt_size=False):
         if d == limit:
             cl = nid - 2**limit
             for i in range(0, len(instance.examples)):
-                for nn in left_nodes:
-                    solver.add_clause([-z[i][cl], s[i][nn]])
-                for nn in right_nodes:
-                    solver.add_clause([-z[i][cl], -s[i][nn]])
-                cls = [z[i][cl]]
+                # for nn in left_nodes:
+                #     solver.add_clause([-z[i][cl], s[i][nn]])
+                # for nn in right_nodes:
+                #     solver.add_clause([-z[i][cl], -s[i][nn]])
+                # cls = [z[i][cl]]
+                cls = []
                 cls.extend([-s[i][x] for x in left_nodes])
                 cls.extend([s[i][x] for x in right_nodes])
-                solver.add_clause(cls)
+                #solver.add_clause(cls)
 
                 c_vars = class_map[instance.examples[i].cls]
                 if len(class_map) <= 2:
                     if c_vars == 0:
-                        solver.add_clause([-z[i][cl], -c[cl]])
+                        solver.add_clause([*cls, -c[cl]])
                     else:
-                        solver.add_clause([-z[i][cl], c[cl]])
+                        solver.add_clause([*cls, c[cl]])
                 else:
-                    solver.add_clause([-z[i][cl], c[cl][c_vars]])
+                    solver.add_clause([*cls, c[cl][c_vars]])
         else:
             left_nodes.append(nid)
             find_leaf(left_nodes, right_nodes, d+1, 2 * nid + 1)
@@ -154,7 +155,7 @@ def encode(instance, limit, solver, opt_size=False):
 
     find_leaf([], [], 0, 1)
 
-    return {"f": f, "s": s, "c": c, "z": z, "class_map": class_map, "pool": p}
+    return {"f": f, "s": s, "c": c, "class_map": class_map, "pool": p}
 
 
 def encode_size(vs, instance, solver, dl):
@@ -206,7 +207,6 @@ def _decode(model, instance, limit, vs):
     fs = vs["f"]
     cs = vs["c"]
     ss = vs["s"]
-    zs = vs["z"]
 
     num_leafs = 2**limit
     tree = DecisionTree()
@@ -214,17 +214,6 @@ def _decode(model, instance, limit, vs):
 
     idx = list(range(0, len(instance.examples)))
     is_sorted = False
-
-    paths = [set() for _ in range(0, len(instance.examples))]
-    for i in range(0, len(instance.examples)):
-        for n in range(0, 2**limit):
-            if model[zs[i][n]]:
-                c_id = 2**limit + n
-                while c_id > 0:
-                    assert c_id == 1 or (model[ss[i][c_id // 2]] == (False if c_id % 2 == 0 else True))
-                    paths[i].add(c_id)
-                    c_id //= 2
-                break
 
     # Find features
     for f in range(1, instance.num_features + 1):
@@ -258,7 +247,10 @@ def _decode(model, instance, limit, vs):
     for i in range(1, num_leafs):
         a_f, a_v = assigned_fs[i]
         if a_v is None:
-            a_v = next(iter(instance.domains[a_f]))
+            if a_f in instance.is_categorical:
+                a_v = None
+            else:
+                a_v = next(iter(instance.domains[a_f]))
             print(f"No path through node {i}")
 
         if i == 1:
@@ -322,12 +314,11 @@ def estimate_size(instance, depth):
     d2 = 2**depth
     c = len(instance.classes)
     s = len(instance.examples)
-    f = instance.num_features
-    md = 0
-    if len(instance.is_categorical) > 0:
-        md = max(len(instance.domains[cf]) for cf in instance.is_categorical)
+    f = sum(len(instance.domains[x]) for x in range(1, instance.num_features+1))
 
-    return d2 * f * (f-1) // 2 + 2*c*c*d2 + f * d2 * md * 2 + f * d2 * s*6
+    alg1_lits = s * sum(2**i * f * (i+2) for i in range(0, depth))
+
+    return d2 * f * (f-1) // 2 + d2 * f + alg1_lits + s * d2 * (depth+1) * c
 
 
 def get_tree_size(tree):

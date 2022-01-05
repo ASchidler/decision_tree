@@ -9,7 +9,7 @@ import time
 from collections import defaultdict
 from decision_tree import DecisionTree
 
-from nonbinary import depth_avellaneda_sat, depth_avellaneda_sat2, depth_avellaneda_sat3
+from nonbinary import depth_avellaneda_sat, depth_avellaneda_sat2, depth_avellaneda_sat3, depth_cp_sat, depth_partition
 
 
 def check_memory(s, done):
@@ -38,7 +38,8 @@ def mini_interrupt(s):
 
 def run(instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=False, check_mem=True, slim=True, maintain=False, limit_size=0, log=True):
     trees = []
-    encodings = [depth_avellaneda_sat, depth_avellaneda_sat2]
+
+    encodings = [depth_avellaneda_sat, depth_avellaneda_sat2, depth_cp_sat, depth_partition]
     if instance.reduced_key is None or all(x[1] is None for x in instance.reduced_key):
         encodings.append(depth_avellaneda_sat3)
 

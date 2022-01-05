@@ -33,7 +33,7 @@ sample_limit_long = [500,
 
 literal_limit = 200 * 1000 * 1000
 
-time_limits = [60, 300, 800]
+time_limits = [60, 300, 300]
 depth_limits = [12, 12, 12]
 
 reduce_runs = 1
@@ -204,7 +204,7 @@ def clear_ignore(ignore, root):
 def run(parameters, test, limit_idx=1):
     parameters.sample_limits = [sample_limit_short, sample_limit_mid, sample_limit_long][limit_idx]
     parameters.maximum_depth = depth_limits[limit_idx]
-    parameters.maximum_examples = 500 if parameters.example_decision_tree is not None else parameters.sample_limits[1]
+    parameters.maximum_examples = 500 if parameters.example_decision_tree is not None else parameters.sample_limits[2]
     parameters.solver_time_limit = time_limits[limit_idx]
     # Select nodes based on the depth
     c_ignore = set()

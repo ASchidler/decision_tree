@@ -120,10 +120,13 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                     enc.encode_extended_leaf_limit(vs, slv, c_bound)
                     card = enc.encode_size(vs, instance, slv, c_bound)
                     slv.append_formula(CardEnc.atmost(card, bound=limit_size, vpool=vs["pool"], encoding=EncType.totalizer).clauses)
-                if timeout > 0:
+                if timeout > 0 or check_mem:
                     timer = Timer(timeout, interrupt, [slv, interrupted])
                     timer.start()
-                solved = slv.solve_limited(expect_interrupt=True)
+                    solved = slv.solve_limited(expect_interrupt=True)
+                else:
+                    solved = slv.solve()
+
             except MemoryError:
                 if log:
                     print(

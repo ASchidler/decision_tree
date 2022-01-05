@@ -16,9 +16,10 @@ heart-statlog
 hepatitis
 house-votes-84
 hungarian
+hypothyroid
+kr-vs-kp
 iris
 irish
-kr-vs-kp
 lymphography
 meteo
 monks-1
@@ -28,6 +29,7 @@ mouse
 mushroom
 mux6
 new-thyroid
+primary-tumor
 promoters
 shuttleM
 soybean-large

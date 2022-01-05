@@ -1,7 +1,7 @@
-import nonbinary.depth_avellaneda_sat as enc1
+import nonbinary.depth_cp_sat as enc1
 import nonbinary.depth_partition as enc2
 
-_switch_threshold = 10
+_switch_threshold = 11
 
 
 def lb():
@@ -65,6 +65,14 @@ def estimate_size_add(instance, dl):
     return enc2.estimate_size_add(instance, dl) if dl >= _switch_threshold \
         else enc1.estimate_size_add(instance, dl)
 
+def encode_extended_leaf_size(vs, instance, solver, dl):
+    return enc2.encode_extended_leaf_size(vs, instance, solver, dl) if dl >= _switch_threshold \
+        else enc1.encode_extended_leaf_size(vs, instance, solver, dl)
+
+
+def encode_extended_leaf_limit(vs, solver, dl):
+    return enc2.encode_extended_leaf_limit(vs, solver, dl) if dl >= _switch_threshold \
+        else enc1.encode_extended_leaf_limit(vs, solver, dl)
 
 def increment():
     return 1

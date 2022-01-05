@@ -7,7 +7,7 @@ import time
 from collections import defaultdict
 from threading import Timer
 
-from pysat.solvers import Glucose3
+from pysat.solvers import Glucose3, Cadical
 
 import nonbinary.depth_avellaneda_base as base
 import nonbinary.depth_avellaneda_sat as nbs
@@ -272,7 +272,7 @@ else:
     #     exit(1)
 
     if not args.encoding == 3:
-        tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size)
+        tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size, check_mem=False)
     else:
         tree = nbt.run(instance, opt_size=args.size)
 
