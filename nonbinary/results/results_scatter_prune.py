@@ -4,16 +4,16 @@ from collections import defaultdict
 import math
 
 cmp_heur = True
-use_virtual_best = True
-use_virtual_all = True
+use_virtual_best = False
+use_virtual_all = False
 use_cart = False
 use_binoct = False
-use_best_select = True
+use_best_select = False
 #experiments = [("k", "SZ,EX"), ("m", "SZ"), ("n", "M"), ("q", "None")]
-#experiments = [("k", "DP-SL-SZ"), ("m", "DP-SZ")]
-experiments = [("m", "DP-SZ"), ("k", "DP-SL-SZ"), ("n", "MT-DP"), ("x", "DT Budget"),
-               ("q", "DP"), ("f", "SZ-DP"), ("g", "DT Encoding"), ("r", "Reduce Categoric"),
-               ("h", "2"), ("i", "3")]
+experiments = [("k", "DP-SL-SZ"), ("m", "DP-SZ")]
+# experiments = [("m", "DP-SZ"), ("k", "DP-SL-SZ"), ("n", "MT-DP"), ("x", "DT Budget"),
+#                ("q", "DP"), ("f", "SZ-DP"), ("g", "DT Encoding"), ("r", "Reduce Categoric"),
+#                ("h", "2"), ("i", "3")]
 
 #experiments = [("w", "Recursive")]
 

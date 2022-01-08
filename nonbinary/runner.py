@@ -131,7 +131,7 @@ def exit_timeout():
 instance, test_instance, validation_instance = nonbinary_instance.parse(instance_path, target_instance, args.slice, use_validation=args.validation)
 
 timer = None
-if args.time_limit > 0 and args.mode < 2:
+if args.time_limit > 0 and args.mode == 1:
     timer = Timer(args.time_limit * 1.1 - (time.time() - start_time), exit_timeout)
     timer.start()
 
@@ -268,11 +268,11 @@ else:
             if len(cl.strip()) > 0:
                 ignore.add(cl.strip())
 
-    # if target_instance not in ignore:
-    #     exit(1)
+    if target_instance not in ignore:
+        exit(1)
 
     if not args.encoding == 3:
-        tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size, check_mem=False)
+        tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size, check_mem=args.time_limit > 0, timeout=args.time_limit)
     else:
         tree = nbt.run(instance, opt_size=args.size)
 

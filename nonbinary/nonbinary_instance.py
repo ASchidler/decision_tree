@@ -630,11 +630,11 @@ def parse(path, filename, slice, use_validation=False, use_test=True):
         validation_file = _parse_file([os.path.join(path, target_files[target_idx])])
         target_files.pop(target_idx)
     data_file = _parse_file([os.path.join(path, x) for x in target_files])
-    data_file.finish()
+    data_file.finish(clean_domains=False)
     if validation_file is not None:
-        validation_file.finish(data_file)
+        validation_file.finish(data_file, clean_domains=False)
     if test_file:
-        test_file.finish(data_file)
+        test_file.finish(data_file, clean_domains=False)
 
     return data_file, test_file, validation_file
 

@@ -7,12 +7,6 @@ cmp_heur = True
 use_cart = False
 use_binoct = False
 
-#experiments = [("k", "SZ,EX"), ("m", "SZ"), ("n", "M"), ("q", "None")]
-#experiments = [("k", "DP-SL-SZ"), ("m", "DP-SZ")]
-# experiments = [("m", "DP-SZ"), ("k", "DP-SL-SZ"), ("n", "MT-DP"), ("x", "DT Budget"),
-#                ("q", "DP"), ("f", "SZ-DP"), ("g", "DT Encoding"), ("r", "Reduce Categoric"),
-#                ("h", "2"), ("i", "3")]
-
 experiments = [("m", "DT-SLIM")]
 
 #experiments = [("w", "Recursive")]
@@ -43,8 +37,7 @@ legend = []
 target_idx = fields[field_idx][0]
 
 for c_experiment, c_ex_name in experiments:
-    if cmp_heur or c_ex_name != experiments[0][1]:
-        legend.append(c_ex_name)
+    legend.append(c_ex_name)
 
     with open(f"results_{c_experiment}_comp{('' if c_experiment != 'm' or not use_binoct else '_binoct') if not use_cart else '_c'}.csv") as inp:
         for i, cl in enumerate(inp):
@@ -56,6 +49,9 @@ for c_experiment, c_ex_name in experiments:
                     # else:
                     #     if results[cf[0]][0] != cf[target_idx]:
                     #         raise RuntimeError("Base mismatch")
+                else:
+                    result1 = [cf[x[0] + offset - 6].strip() for x in fields]
+                    results[cf[0]].append(result1)
                 result1 = [cf[x[0] + offset].strip() for x in fields]
                 result2 = [cf[x[0] + offset + 6].strip() for x in fields]
                 results[cf[0]].append(result1)
@@ -64,15 +60,15 @@ for c_experiment, c_ex_name in experiments:
                 # else:
                 #     results[cf[0]].append(result1)
 
-X = [[] for _ in range(0 if cmp_heur else 1, len(legend))]
+X = [[] for _ in range(0, len(legend))]
 y = []
-lts = [[0 for _ in range(0, len(fields))] for _ in range(0 if cmp_heur else 1, len(legend))]
-lts2 = [[0 for _ in range(0, len(fields))] for _ in range(0 if cmp_heur else 1, len(legend))]
-gts = [[0 for _ in range(0, len(fields))] for _ in range(0 if cmp_heur else 1, len(legend))]
-gts2 = [[0 for _ in range(0, len(fields))] for _ in range(0 if cmp_heur else 1, len(legend))]
+lts = [[0 for _ in range(0, len(fields))] for _ in range(0, len(legend))]
+lts2 = [[0 for _ in range(0, len(fields))] for _ in range(0, len(legend))]
+gts = [[0 for _ in range(0, len(fields))] for _ in range(0, len(legend))]
+gts2 = [[0 for _ in range(0, len(fields))] for _ in range(0, len(legend))]
 
 for k, cl in results.items():
-    if len(cl) < len(experiments) + (1 if cmp_heur else 0) or any(x == -1 for x in cl):
+    if len(cl) < len(experiments) + 1 or any(x == -1 for x in cl):
         continue
 
     if not any(z == "-1" or z.strip() == "" for x in cl for z in x):
@@ -109,17 +105,21 @@ for x in X:
     max_x = max(max_x, max(x))
     min_x = min(min_x, min(x))
 
-    xp = [x[i] - y[i] for i in range(0, len(x))]
-    xp = [v if v != 0 else 0.00000001 for v in xp]
+    if field_idx == 2:
+        xp = [round(x[i] - y[i], 2) for i in range(0, len(x))]
+    else:
+        xp = [round((x[i] - y[i]) / y[i], 2) for i in range(0, len(x))]
+        xp = [round((x[i] / y[i] * 100), 2) for i in range(0, len(x))]
+    #xp = [v if v != 0 else 0.00000001 for v in xp]
     xp.sort()
 
-    ax.scatter(range(0, len(x)), xp, marker=symbols.pop(), s=10, alpha=0.7 if colors[-1] != '#eecc66' else 1,
+    ax.scatter(range(0, len(x)), xp, marker=symbols.pop(), s=3, alpha=0.7 if colors[-1] != '#eecc66' else 1,
                zorder=2 if colors[-1] != '#eecc66' else 1, color=colors.pop())
 
     for c_idx, c_v in enumerate(xp):
-        if c_v > 0:
+        if c_v > 100:
             if c_idx > 0:
-                ax.axvline(c_idx - 0.5, linestyle="--", color="grey", zorder=0)
+                ax.axvline(c_idx - 0.5, linestyle="--", color="grey", zorder=0, linewidth=0.5)
             break
 
 ax.set_axisbelow(True)
@@ -133,10 +133,10 @@ ax.set_ylabel('Difference')
 plt.rcParams["legend.loc"] = 'upper left'
 plt.rcParams['savefig.pad_inches'] = 0
 plt.autoscale(tight=True)
-plt.legend([x.replace("Virtual ","") for x in legend])
-if field_idx == 1:
-    #plt.xscale("log")
-    plt.yscale("symlog")
+#plt.legend([x.replace("Virtual ","") for x in legend])
+# if field_idx == 1:
+#     #plt.xscale("log")
+#     plt.yscale("symlog")
 # if field_idx == 0 or field_idx == 3:
 #     plt.xlim(min_x - 1, max_x + 1)
 #     plt.ylim(min_y - 1, max_y + 1)
@@ -148,7 +148,7 @@ if field_idx == 1:
 #     plt.ylim(min_y-0.01, max_y+0.01)
 # ax.axline([0, 0], [1, 1], linestyle="--", color="grey", zorder=0)
 
-plt.axhline(linestyle="--", color="grey", zorder=0)
+plt.axhline(linestyle="-", color="grey", zorder=0, linewidth=0.5, y = 100)
 
 plt.savefig(f"scatter_prune_{field_idx}.pdf", bbox_inches='tight')
 plt.show()
