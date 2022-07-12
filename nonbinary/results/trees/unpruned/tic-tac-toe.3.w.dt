@@ -1,389 +1,145 @@
-a(5) = b
--a(3) = b
---a(7) = b
----c(positive)
----a(7) = x
-----c(positive)
-----c(negative)
---a(3) = x
----a(7) = b
-----c(positive)
-----a(7) = x
+a(5) = o
+-a(3) = o
+--a(7) = x
+---a(6) = b
+----a(1) = o
+-----a(9) = o
+------c(negative)
+------c(positive)
 -----c(positive)
------a(1) = b
-------a(9) = b
--------c(positive)
--------a(9) = x
---------c(positive)
---------c(negative)
-------a(1) = x
--------a(2) = b
---------c(positive)
---------a(2) = x
----------c(positive)
----------c(negative)
--------a(4) = b
---------c(positive)
---------a(4) = x
----------c(positive)
----------c(negative)
----a(7) = b
-----c(negative)
-----a(7) = x
+----a(9) = o
+-----a(8) = o
+------c(positive)
+------c(negative)
 -----a(2) = b
-------a(9) = b
+------c(positive)
+------a(4) = b
 -------c(positive)
--------a(9) = x
+-------a(2) = o
+--------c(negative)
+--------a(4) = o
+---------a(1) = o
+----------c(positive)
+----------c(negative)
+---------a(6) = o
+----------c(positive)
+----------c(negative)
+---c(negative)
+--a(9) = o
+---a(1) = x
+----a(2) = o
+-----a(6) = x
+------c(negative)
+------c(positive)
+-----a(3) = b
+------a(4) = o
+-------c(negative)
+-------a(7) = o
+--------c(negative)
 --------c(positive)
---------a(1) = b
----------c(negative)
----------a(1) = x
-----------c(positive)
-----------c(positive)
-------a(2) = x
+------c(positive)
+----c(negative)
+---a(2) = b
+----a(6) = o
+-----a(4) = o
+------c(negative)
+------c(positive)
+-----c(positive)
+----a(4) = b
+-----a(8) = o
+------a(2) = o
+-------c(negative)
+-------c(positive)
+------c(positive)
+-----a(6) = o
+------a(4) = o
+-------c(negative)
 -------a(9) = b
 --------c(positive)
---------a(9) = x
+--------a(3) = b
+---------c(positive)
+---------a(1) = b
+----------c(negative)
+----------a(7) = b
+-----------c(negative)
+-----------a(1) = o
+------------a(2) = o
+-------------c(positive)
+-------------c(negative)
+------------a(2) = o
+-------------c(negative)
+-------------c(positive)
+------a(8) = b
+-------c(positive)
+-------a(2) = o
+--------a(8) = o
+---------c(negative)
+---------c(positive)
+--------a(8) = o
+---------c(positive)
+---------a(1) = o
+----------a(7) = o
+-----------c(negative)
+-----------c(positive)
+----------c(positive)
+-a(3) = o
+--a(2) = o
+---a(1) = b
+----a(6) = o
+-----a(9) = o
+------c(negative)
+------c(positive)
+-----c(positive)
+----c(negative)
+---a(9) = o
+----a(6) = o
+-----c(negative)
+-----a(8) = o
+------a(7) = o
+-------c(negative)
+-------a(4) = o
+--------c(negative)
+--------c(positive)
+------c(positive)
+----a(1) = o
+-----a(4) = o
+------a(7) = o
+-------c(negative)
+-------a(8) = o
+--------c(negative)
+--------c(positive)
+------a(8) = o
+-------a(6) = o
+--------c(negative)
+--------c(positive)
+-------c(positive)
+-----c(positive)
+--a(7) = o
+---a(1) = o
+----a(4) = o
+-----c(negative)
+-----a(6) = o
+------a(2) = o
+-------c(negative)
+-------a(8) = o
+--------c(negative)
+--------c(positive)
+------a(2) = x
+-------a(3) = b
+--------c(positive)
+--------a(5) = b
 ---------c(positive)
 ---------a(6) = b
 ----------c(positive)
-----------a(6) = x
------------c(negative)
------------c(negative)
--------a(1) = b
---------c(positive)
---------a(1) = x
----------c(negative)
----------c(negative)
------c(negative)
--a(5) = x
---a(3) = b
----a(7) = b
-----c(positive)
-----a(7) = x
------c(positive)
------a(4) = b
-------a(8) = b
+----------c(negative)
 -------c(positive)
--------a(8) = x
---------c(positive)
---------a(9) = b
----------c(negative)
----------a(9) = x
-----------c(positive)
-----------c(negative)
-------a(4) = x
--------a(6) = b
---------a(1) = b
----------c(negative)
----------a(1) = x
-----------c(negative)
-----------c(positive)
---------a(6) = x
----------c(positive)
----------a(8) = b
-----------c(positive)
-----------a(8) = x
------------c(positive)
------------a(2) = b
-------------c(positive)
-------------a(2) = x
--------------c(negative)
--------------c(negative)
+----a(9) = o
+-----a(8) = o
+------c(negative)
+------a(2) = o
 -------a(1) = b
 --------c(positive)
---------a(1) = x
----------a(9) = b
-----------c(positive)
-----------a(9) = x
------------c(positive)
------------a(6) = b
-------------c(positive)
-------------a(6) = x
--------------c(negative)
--------------c(negative)
----------c(negative)
----a(3) = x
-----a(7) = b
------c(positive)
------a(7) = x
-------c(positive)
-------a(2) = b
--------a(6) = b
 --------c(negative)
---------a(6) = x
----------a(4) = b
-----------a(1) = b
------------c(negative)
------------a(1) = x
-------------c(negative)
-------------c(positive)
-----------a(4) = x
------------c(positive)
------------a(1) = b
-------------c(positive)
-------------a(1) = x
--------------c(negative)
--------------c(negative)
----------c(negative)
--------a(2) = x
---------a(8) = b
----------c(positive)
----------a(8) = x
-----------c(positive)
-----------a(1) = b
------------c(negative)
------------a(1) = x
-------------c(positive)
-------------c(negative)
---------a(8) = b
----------c(positive)
----------a(8) = x
-----------a(4) = b
------------c(negative)
------------a(4) = x
-------------a(6) = b
--------------c(negative)
--------------a(6) = x
---------------c(positive)
---------------c(negative)
-------------c(negative)
-----------a(9) = b
------------c(positive)
------------a(9) = x
-------------c(positive)
-------------c(negative)
-----a(2) = b
------a(9) = b
-------c(positive)
-------a(9) = x
--------a(1) = b
---------c(positive)
---------a(1) = x
----------c(positive)
----------a(4) = b
-----------c(positive)
-----------a(4) = x
------------c(positive)
------------a(6) = b
-------------c(positive)
-------------a(6) = x
--------------c(negative)
--------------c(negative)
--------a(6) = b
---------c(positive)
---------a(6) = x
----------c(positive)
----------c(negative)
------a(2) = x
-------a(8) = b
--------a(6) = b
---------c(positive)
---------a(6) = x
----------a(4) = b
-----------c(positive)
-----------a(4) = x
------------c(positive)
------------c(negative)
----------a(9) = b
-----------c(negative)
-----------a(9) = x
------------c(positive)
------------c(negative)
--------a(8) = x
---------c(positive)
---------a(9) = b
----------c(positive)
----------a(9) = x
-----------a(1) = b
------------c(positive)
------------a(1) = x
-------------c(positive)
-------------a(7) = b
--------------c(negative)
--------------a(7) = x
---------------c(negative)
---------------c(positive)
-----------a(1) = b
------------a(6) = b
-------------c(negative)
-------------a(6) = x
--------------c(positive)
--------------c(negative)
------------a(1) = x
-------------c(negative)
-------------c(positive)
-------a(1) = b
--------a(6) = b
---------c(positive)
---------a(6) = x
----------c(positive)
----------a(4) = b
-----------c(positive)
-----------a(4) = x
------------c(negative)
------------c(negative)
--------a(1) = x
---------c(negative)
---------c(negative)
---a(3) = b
----a(7) = b
-----c(negative)
-----a(7) = x
------a(2) = b
-------a(1) = b
 -------c(positive)
--------a(1) = x
---------c(positive)
---------a(9) = b
----------c(negative)
----------a(9) = x
-----------c(positive)
-----------c(negative)
-------a(2) = x
--------a(6) = b
---------a(1) = b
----------c(negative)
----------a(1) = x
-----------c(positive)
-----------a(9) = b
------------c(negative)
------------a(9) = x
-------------c(positive)
-------------c(negative)
---------a(6) = x
----------c(negative)
----------a(4) = b
-----------c(positive)
-----------a(4) = x
------------a(1) = b
-------------c(positive)
-------------a(1) = x
--------------c(positive)
--------------c(negative)
------------c(negative)
--------a(8) = b
---------c(negative)
---------a(8) = x
----------a(9) = b
-----------c(positive)
-----------a(9) = x
------------c(positive)
------------c(negative)
----------c(negative)
------c(negative)
----a(3) = x
-----a(2) = b
------a(9) = b
-------c(negative)
-------a(9) = x
--------a(6) = b
---------c(positive)
---------a(6) = x
----------c(positive)
----------a(1) = b
-----------c(negative)
-----------a(1) = x
------------c(negative)
------------c(positive)
--------c(negative)
------a(2) = x
-------a(1) = b
--------a(6) = b
---------c(negative)
---------a(6) = x
----------a(9) = b
-----------c(positive)
-----------a(9) = x
------------c(positive)
------------c(negative)
----------c(negative)
--------a(1) = x
---------c(positive)
---------a(9) = b
----------c(negative)
----------a(9) = x
-----------a(6) = b
------------c(negative)
------------a(6) = x
-------------c(positive)
-------------c(negative)
-----------c(negative)
-------a(8) = b
--------a(7) = b
---------c(positive)
---------a(7) = x
----------a(1) = b
-----------c(positive)
-----------a(1) = x
------------a(4) = b
-------------c(positive)
-------------a(4) = x
--------------c(positive)
--------------c(negative)
------------a(4) = b
-------------c(positive)
-------------a(4) = x
--------------c(negative)
--------------c(negative)
----------c(positive)
--------a(8) = x
---------a(9) = b
----------c(negative)
----------a(9) = x
-----------a(1) = b
------------c(positive)
------------a(1) = x
-------------c(negative)
-------------c(positive)
-----------a(6) = b
------------c(negative)
------------a(6) = x
-------------c(negative)
-------------c(positive)
---------c(negative)
-----a(7) = b
------c(negative)
------a(7) = x
-------a(6) = b
--------a(9) = b
---------c(positive)
---------a(9) = x
----------c(positive)
----------a(1) = b
-----------c(positive)
-----------a(1) = x
------------c(positive)
------------c(negative)
--------a(6) = x
---------a(4) = b
----------a(9) = b
-----------c(positive)
-----------a(9) = x
------------c(positive)
------------c(negative)
----------a(4) = x
-----------a(1) = b
------------c(negative)
------------a(1) = x
-------------c(positive)
-------------c(negative)
-----------a(1) = b
------------c(positive)
------------a(1) = x
-------------c(negative)
-------------c(positive)
---------a(9) = b
----------a(4) = b
-----------c(negative)
-----------a(4) = x
------------c(positive)
------------c(negative)
----------a(9) = x
-----------a(8) = b
------------c(negative)
------------a(8) = x
-------------c(positive)
-------------c(positive)
-----------c(negative)
-------c(negative)
+-----c(positive)
+---c(positive)

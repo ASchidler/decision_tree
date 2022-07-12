@@ -84,17 +84,17 @@ fls = list(x for x in os.listdir(instance_path) if x.endswith(".data"))
 
 fls.sort()
 
-
+#
 # if args.choices:
 #     for i, cf in enumerate(fls):
 #         print(f"{i+1}: {cf}")
 #     exit(0)
-# names = set()
-# for i, cf in enumerate(fls):
-#     print(f"{i+1} {cf}")
-#     names.add(cf.split(".")[0])
-# for i, cf in enumerate(names):
-#     print(f"{i} {cf}")
+names = set()
+for i, cf in enumerate(fls):
+    print(f"{i+1} {cf}")
+    names.add(cf.split(".")[0])
+for i, cf in enumerate(names):
+    print(f"{i} {cf}")
 try:
     target_instance_idx = int(args.instance)
 

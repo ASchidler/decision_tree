@@ -29,8 +29,8 @@ print(f"{non_binary_class} non binary class instances")
 fig, ax = plt.subplots(figsize=(4.5, 3), dpi=80)
 ax.set_axisbelow(True)
 
-colors = ['black', '#eecc66', '#bb5566', '#004488']
-symbols = ['o', 's', 'x', 'v']
+colors = ['black', '#eecc66', '#228833', '#777777', '#004488', '#a50266']
+symbols = ['d', 'x', 's', 'o', 'v']
 
 for c_ignore in [True, False]:
     features = [x[1] for inst, x in instances.items() if c_ignore == (inst in ignores)]

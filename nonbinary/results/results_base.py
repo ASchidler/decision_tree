@@ -1,5 +1,7 @@
 import math
 import os
+import sys
+
 import nonbinary.tree_parsers as tp
 import parser
 from collections import defaultdict
@@ -55,6 +57,11 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
 # Get aggregates for encoding
 
 solved = set()
+solved_enc = defaultdict(set)
+solved_enc_thresh = defaultdict(lambda: defaultdict(set))
+
+thresholds = [60, 300, 600, 3600, 3 * 3600]
+
 for c_f in sorted(flags):
     cnt_unique = 0
     time_common = []
@@ -62,17 +69,26 @@ for c_f in sorted(flags):
     var_time_common = 0
 
     is_size = c_f.find("z") > -1
+    # TODO: Fix to exclude categorical tests
+    if c_f.find("c") > -1 or is_size or c_f.startswith("1") or c_f.startswith("2") or c_f.startswith("3")  or c_f.startswith("6"):
+        continue
 
     for c_file, c_file_v in files.items():
         if c_f in c_file_v:
+            avg_time = 0
+            num_slices = 0
             for c_slice, c_slice_data in c_file_v[c_f].items():
                 if c_slice_data.time is not None and c_slice_data.time <= 3600.0 * 6:
+                    num_slices =+ 1
+                    avg_time += c_slice_data.time
+                    solved_enc[c_f].add(c_file)
                     solved.add((c_file, c_slice))
                     is_in_none = True
                     is_in_all = True
                     cnt_total += 1
                     for c_f2 in flags:
-                        if c_f2 != c_f and ((c_f2.find("z") > -1) == is_size):
+                        #if c_f2 != c_f and ((c_f2.find("z") > -1) == is_size):
+                        if c_f2 != c_f and c_f2.find("z") == -1 and c_f2.find("c") == -1 and not c_f2.startswith("1") and not c_f2.startswith("2") and not c_f2.startswith("3")  and not c_f2.startswith("6"):
                             if c_f2 in c_file_v and c_slice in c_file_v[c_f2] and c_file_v[c_f2][c_slice].depth is not None:
                                 is_in_none = False
                             else:
@@ -82,12 +98,31 @@ for c_f in sorted(flags):
                         cnt_unique += 1
                     elif is_in_all:
                         time_common.append(c_slice_data.time)
-
+            if num_slices > 0:
+                avg_time /= num_slices
+                for c_t in thresholds:
+                    if avg_time <= c_t:
+                        solved_enc_thresh[c_f][c_t].add(c_file)
     time_avg = sum(time_common) / len(time_common)
     time_sigma = math.sqrt(sum((x - time_avg)**2 for x in time_common) / len(time_common))
     print(f"{c_f} {cnt_total} {cnt_unique} {time_avg} {time_sigma} {len(time_common)}")
 
 print(f"Totally solved: {solved}")
+
+all_instances = set()
+for c_f, c_solved in solved_enc.items():
+    all_instances.update(c_solved)
+    c_unique = set(c_solved)
+    for c_of, c_slvd in solved_enc.items():
+        if c_of != c_f:
+            c_unique -= c_slvd
+
+    ctr = solved_enc_thresh[c_f]
+    results_thresh = [str(len(ctr[c_t])) for c_t in thresholds]
+
+    print(f"{c_f} & {len(c_solved)} & {len(c_unique)} "+ "& ".join(results_thresh))
+
+print(f"Totally solved per file: {len(all_instances)}")
 
 # Get aggregates for decision tree types
 #

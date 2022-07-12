@@ -134,11 +134,11 @@ def get_tree(instance_path, params):
         "-t", instance_path, "-no-cv",
         *params],
         cwd=weka_path,
-        stderr=open(os.devnull, 'w'),
+        stderr=subprocess.PIPE,#open(os.devnull, 'w'),
         stdout=subprocess.PIPE
         )
 
-    output, _ = process.communicate()
+    output, oute = process.communicate()
     output = output.decode('ascii')
 
     mt = re.search("J48 u?n?pruned tree[^\-]*[\-]*(.*)Number of Leaves", output, re.DOTALL)
@@ -162,7 +162,9 @@ for fl in fls:
             output_path = f"nonbinary/results/trees/{fld}/{fl}.{c_slice}.w.dt"
         else:
             output_path = f"nonbinary/results/trees/pruned/{fl}.{c_slice}.w.dt"
-        if os.path.exists(output_path):
+
+        if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+            print(os.path.getsize(output_path))
             continue
 
         try:
@@ -209,7 +211,7 @@ for fl in fls:
                 outp.write(tree.as_string())
         else:
             def get_accuracy(c_val, m_val):
-                c_tree = parse_weka_tree(get_tree("/tmp/weka_instance.data", ["-C", f"{c_val}", "-M", f"{m_val}"]))
+                c_tree = parse_weka_tree(get_tree("/tmp/weka_instance.data", ["-B", "-C", f"{c_val}", "-M", f"{m_val}"]))
 
                 acc = c_tree.get_accuracy(instance_validation.examples)
                 sz = c_tree.get_nodes()
@@ -254,7 +256,7 @@ for fl in fls:
                 continue
 
             instance.export_c45("/tmp/weka_instance.data")
-            tree = parse_weka_tree(get_tree("/tmp/weka_instance.data", ["-C", f"{best_c}", "-M", f"{best_m}"]))
+            tree = parse_weka_tree(get_tree("/tmp/weka_instance.data", ["-B", "-C", f"{best_c}", "-M", f"{best_m}"]))
             with open(output_path, "w") as outp:
                 outp.write(tree.as_string())
             print(f"Final accuracy {tree.get_accuracy(instance_test.examples)}")

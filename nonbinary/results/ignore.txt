@@ -17,7 +17,6 @@ hepatitis
 house-votes-84
 hungarian
 hypothyroid
-kr-vs-kp
 iris
 irish
 lymphography
@@ -36,4 +35,3 @@ soybean-large
 spect
 wine
 zoo
-tic-tac-toe

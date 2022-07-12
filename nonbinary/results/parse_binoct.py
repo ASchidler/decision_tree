@@ -84,12 +84,15 @@ with open(target) as inp:
     tree_mode = False
     c_file = None
     c_slice = None
+    c_limit = None
     for cl in inp:
         if cl.startswith("[('"):
             c_file = cl.strip().split(" ")[-1]
             c_file = c_file.split("/")[1]
             c_file, c_slice, _ = c_file.split(".")
             c_slice = c_slice.replace("train", "")
+            c_limit_pos = cl.find("('-d',")+7
+            c_limit = cl[c_limit_pos: cl.find(")", c_limit_pos)]
 
         if cl.startswith("if"):
             tree_mode = True
@@ -98,7 +101,7 @@ with open(target) as inp:
             tree_data.append(cl.strip())
 
         if cl.startswith("num") and tree_mode:
-            parse_tree(tree_data, c_file, c_slice, target_depth)
+            parse_tree(tree_data, c_file, c_slice, c_limit)
             tree_data = []
             tree_mode = False
             c_file = None

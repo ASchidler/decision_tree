@@ -5,15 +5,16 @@ from collections import defaultdict
 import nonbinary.nonbinary_instance as nbi
 import pruning
 
-experiment = "k"
+experiment = "e"
 flags = set()
 ignore = set()
-target_algorithm = "w"
+target_algorithm = "c"
 
 with open("ignore.txt") as ip:
     for _, cl in enumerate(ip):
         if len(cl.strip()) > 0:
             ignore.add(cl.strip())
+ignore.clear()
 
 
 class TreeData:
@@ -48,7 +49,7 @@ for c_file in sorted(os.listdir(os.path.join("trees", experiment))):
         tree_p2 = None
         if os.path.exists(os.path.join("trees", "p2", c_file)):
             tree_p2 = tp.parse_internal_tree(os.path.join("trees", "p2", c_file))
-        sizes[file_name].append((len(instance.examples), instance.num_features, len(instance.classes)))
+        sizes[file_name].append((len(instance.examples) + len(instance_test.examples), instance.num_features, len(instance.classes)))
 
         for c_idx, c_t in enumerate([tree, tree_p, tree_p2]):
             if c_t is not None:
