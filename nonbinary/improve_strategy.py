@@ -21,9 +21,9 @@ sample_limit_mid = [300,
                     270, 270, 270, 270, 250,
                     200, 100, 0]
 
-sample_limit_long = [500,
-                     500, 500, 500, 500, 500,
-                     500, 500, 500, 500, 500,
+sample_limit_long = [50000,
+                     50000, 50000, 25000, 7000, 7000,
+                     1500, 800, 600, 500, 500,
                      400, 340, 250, 250, 215,
                      105, 105, 105, 105, 105,
                      105, 105, 105, 105, 105,
@@ -31,7 +31,7 @@ sample_limit_long = [500,
                      105, 105, 105, 105, 105,
                      105, 105, 105, 105, 105]
 
-literal_limit = 200 * 1000 * 1000
+literal_limit = 200 * 1000 * 1000 * 1000
 
 time_limits = [60, 300, 300]
 depth_limits = [12, 12, 12]
@@ -57,7 +57,7 @@ class SlimParameters:
         self.use_smt = not self.encoding.is_sat()
         self.use_dt = use_dt
         self.example_decision_tree = None
-        self.maximum_examples = 500
+        self.maximum_examples = 25000
         self.maximum_depth = 12
         self.sample_limits = [self.maximum_examples for _ in range(0, self.maximum_depth + 1)]
         self.solver_time_limit = 300

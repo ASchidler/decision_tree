@@ -1,3 +1,4 @@
+import sys
 from sys import maxsize
 
 from nonbinary.nonbinary_instance import ClassificationInstance
@@ -33,11 +34,11 @@ def build_unique_set(parameters, root, samples, reduce, limit=maxsize):
     new_instance.finish()
 
     if reduce:
-        print(f"{len(new_instance.examples)}")
+        #print(f"{len(new_instance.examples)}")
         new_instance.reduce_with_key(numeric_full=parameters.reduce_numeric_full or parameters.use_smt,
                                      cat_full=parameters.reduce_categoric_full or parameters.use_smt,
                                      reduce_alternate=parameters.reduce_alternate)
-        print(f"{len(new_instance.examples)}")
+        #print(f"{len(new_instance.examples)}")
     else:
         if not (parameters.use_smt or parameters.reduce_numeric_full or parameters.reduce_categoric_full):
             feature_key = c_features
@@ -139,11 +140,11 @@ def build_reduced_set(parameters, root, assigned, reduce):
                 new_instance.finish()
 
                 if reduce:
-                    print(f"{len(new_instance.examples)}")
+                    #print(f"{len(new_instance.examples)}")
                     new_instance.reduce_with_key(numeric_full=parameters.reduce_numeric_full or parameters.use_smt,
                                                  cat_full=parameters.reduce_categoric_full or parameters.use_smt,
                                                  reduce_alternate=parameters.reduce_alternate)
-                    print(f"{len(new_instance.examples)}")
+                    #print(f"{len(new_instance.examples)}")
                 else:
                     if not (parameters.use_smt or parameters.reduce_numeric_full or parameters.reduce_categoric_full):
                         feature_key = set(features)
@@ -287,7 +288,7 @@ def leaf_select(parameters, node, assigned):
         return False
 
     leaves = node.get_leaves()
-    new_tree = parameters.call_solver(new_instance, new_ub, c_d, leaves)
+    new_tree, is_sat = parameters.call_solver(new_instance, new_ub, c_d, leaves)
 
     if new_tree is None:
         return False
@@ -297,18 +298,26 @@ def leaf_select(parameters, node, assigned):
 
 
 def leaf_reduced(parameters, node, assigned, reduce=False):
-    new_instance, leaves, cd = build_unique_set(parameters, node, assigned[node.id], reduce=reduce)
+    limits = sys.maxsize
+    new_tree = None
+    new_instance = None
 
-    if cd < 2:
-        return False
+    while limits >= 2 and new_tree is None:
+        new_instance, leaves, cd = build_unique_set(parameters, node, assigned[node.id], reduce=reduce, limit=limits)
 
-    new_ub = parameters.get_max_bound(new_instance)
+        if cd < 2:
+            return False
 
-    if new_ub < 1:
-        return False
+        new_ub = parameters.get_max_bound(new_instance)
 
-    # Solve instance
-    new_tree = parameters.call_solver(new_instance, new_ub, cd, leaves)
+        if new_ub < 1:
+            return False
+
+        # Solve instance
+        new_tree, is_sat = parameters.call_solver(new_instance, new_ub, cd, leaves)
+
+        if new_tree is None and not is_sat:
+            limits = cd - 1
 
     # Either the branch is done, or
     if new_tree is not None:
@@ -334,7 +343,7 @@ def mid_reduced(parameters, node, assigned, reduce):
     if new_ub < 1:
         return False
 
-    new_tree = parameters.call_solver(new_instance, new_ub, i_depth, leaves)
+    new_tree, is_sat = parameters.call_solver(new_instance, new_ub, i_depth, leaves)
 
     if new_tree is not None:
         new_instance.unreduce(new_tree)

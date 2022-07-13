@@ -41,6 +41,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
     best_model = None
     best_depth = None
     interrupted = []
+    is_sat = None
 
     # Edge cases
     if len(instance.classes) == 1:
@@ -76,7 +77,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                 slv.append_formula(tot.cnf)
                 slv.add_clause([-tot.rhs[c_size_bound]])
             except MemoryError:
-                solved = False
+                solved = None
 
             timer = None
 
@@ -92,11 +93,14 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                     break
 
                 if solved:
+                    is_sat = True
                     model = {abs(x): x > 0 for x in slv.get_model()}
                     best_model = enc._decode(model, instance, c_bound, vs)
                     c_size_bound = best_model.root.get_leaves() - 1
                     slv.add_clause([-tot.rhs[c_size_bound]])
                 else:
+                    if is_sat is None:
+                        is_sat = False
                     break
         if best_model is not None:
             c_bound = best_model.get_depth()
@@ -133,7 +137,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                         f"E:{len(instance.examples)} T:MO C:{len(instance.classes)} F:{instance.num_features} DS:{sum(len(instance.domains[x]) for x in range(1, instance.num_features + 1))}"
                         f" DM:{max(len(instance.domains[x]) for x in range(1, instance.num_features + 1))} D:{c_bound} S:{enc.estimate_size(instance, c_bound)}"
                         f" R:{instance.reduced_key is not None} E:{-1 * sum(x/len(instance.examples) * math.log2(x/len(instance.examples)) for x in instance.class_distribution.values())}")
-                return best_model
+                return best_model, is_sat
             finally:
                 if timer is not None:
                     timer.cancel()
@@ -146,6 +150,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                         f" R:{instance.reduced_key is not None} E:{-1 * sum(x / len(instance.examples) * math.log2(x / len(instance.examples)) for x in instance.class_distribution.values())}")
                 break
             elif solved:
+                is_sat = True
                 model = {abs(x): x > 0 for x in slv.get_model()}
                 best_model = enc._decode(model, instance, c_bound, vs)
                 best_depth = c_bound
@@ -159,6 +164,8 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                 ub = best_model.get_depth()
                 c_bound = ub - enc.increment()
             else:
+                if is_sat is None:
+                    is_sat = False
                 if log:
                     print(
                         f"E:{len(instance.examples)} T:{time.time()-start}* C:{len(instance.classes)} F:{instance.num_features} DS:{sum(len(instance.domains[x]) for x in range(1, instance.num_features + 1))}"
@@ -185,7 +192,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                     slv.append_formula(tot.cnf)
                     slv.add_clause([-tot.rhs[c_size_bound]])
                 except MemoryError:
-                    return best_model
+                    return best_model, is_sat
 
                 if timeout > 0:
                     timer = Timer(timeout, interrupt, [slv, interrupted])
@@ -234,7 +241,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                 slv.append_formula(tot.cnf)
                 slv.add_clause([-tot.rhs[c_size_bound]])
             except MemoryError:
-                return best_model
+                return best_model, is_sat
 
             timer = None
 
@@ -260,7 +267,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
         if timer is not None:
             timer.cancel()
 
-    return best_model
+    return best_model, is_sat
 
 
 def run_incremental(enc, solver, strategy, increment=1, timeout=300, opt_size=False, use_dense=False):

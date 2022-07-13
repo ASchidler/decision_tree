@@ -51,7 +51,7 @@ if sys.argv[3] == "1":
                 sub_instance = nb_instance.ClassificationInstance()
                 for c_e in assigned[c_parent.id]:
                     sub_instance.add_example(c_e)
-
+                sub_instance.finish()
                 before = time.time()
                 result = ab.run(enc, sub_instance, Glucose3, start_bound=1, timeout=1200, ub=depth, log=True, slim=False)
 
@@ -72,7 +72,7 @@ else:
             sub_instance = nb_instance.ClassificationInstance()
             for ce in selection:
                 sub_instance.add_example(ce)
-
+            sub_instance.finish()
             result = ab.run(enc, sub_instance, Glucose3, start_bound=1, timeout=1200, log=True, slim=False)
             if result:
                 success_cnt += 1
