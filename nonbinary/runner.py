@@ -30,7 +30,7 @@ instance_path = "nonbinary/instances"
 instance_validation_path = "datasets/validate"
 
 # This is used for debugging, for experiments use proper memory limiting
-resource.setrlimit(resource.RLIMIT_AS, (23 * 1024 * 1024 * 1024 // 2, 12 * 1024 * 1024 * 1024))
+resource.setrlimit(resource.RLIMIT_AS, (14 * 1024 * 1024 * 1024, 14 * 1024 * 1024 * 1024))
 
 ap = argp.ArgumentParser(description="Python implementation for computing and improving decision trees.")
 ap.add_argument("instance", type=str)

@@ -3,10 +3,13 @@ from collections import defaultdict
 from sys import maxsize, stdout
 from threading import Timer
 
+import psutil
 from pysat.formula import IDPool
 from pysat.card import ITotalizer
 from decision_tree import DecisionTree
 import time
+
+from nonbinary import limits
 
 
 def _init_var(instance, limit, class_map):
@@ -65,6 +68,9 @@ def encode(instance, limit, solver, opt_size=False):
 
     # each node has a feature
     for i in range(1, 2**limit):
+        if psutil.Process().memory_info().vms > limits.mem_limit:
+            return
+
         clause = []
         for f1, f1v in f[i].items():
             clause.append(f1v)
@@ -93,6 +99,9 @@ def encode(instance, limit, solver, opt_size=False):
         if cf not in instance.is_categorical:
             idx.sort(key=lambda x: (instance.examples[x].features[cf], x))
 
+        if psutil.Process().memory_info().vms > limits.mem_limit:
+            return
+
         for n in range(1, 2**limit):
             for i in range(0, len(t[n])):
                 for j in range(i+1, len(t[n])):
@@ -102,9 +111,12 @@ def encode(instance, limit, solver, opt_size=False):
                 if cf in instance.is_categorical:
                     for i in range(0, len(instance.examples)):
                         f_val = instance.examples[i].features[cf] if instance.examples[i].features[cf] != "?" else instance.domains_max[cf]
-                        v_idx = instance.domains[cf].index(f_val)
-                        solver.add_clause([-f[n][cf], -s[i][n], t[n][v_idx]])
-                        solver.add_clause([-f[n][cf], s[i][n], -t[n][v_idx]])
+                        if f_val == "DummyValue":
+                            solver.add_clause([-f[n][cf], -s[i][n]])
+                        else:
+                            v_idx = instance.domains[cf].index(f_val)
+                            solver.add_clause([-f[n][cf], -s[i][n], t[n][v_idx]])
+                            solver.add_clause([-f[n][cf], s[i][n], -t[n][v_idx]])
                 else:
                     solver.add_clause([-f[n][cf], s[idx[0]][n]])
                     if instance.examples[idx[0]].features[cf] != instance.examples[idx[-1]].features[cf]:

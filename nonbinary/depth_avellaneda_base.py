@@ -70,14 +70,19 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
 
             try:
                 vs = enc.encode(instance, c_bound, slv, True)
-                enc.encode_extended_leaf_limit(vs, slv, c_bound)
-                card = enc.encode_size(vs, instance, slv, c_bound)
-                c_size_bound = min(c_size_bound, len(card)-1)
-                tot = ITotalizer(card, c_size_bound+1, top_id=vs["pool"].top + 1)
-                slv.append_formula(tot.cnf)
-                slv.add_clause([-tot.rhs[c_size_bound]])
+                if not interrupted:
+                    enc.encode_extended_leaf_limit(vs, slv, c_bound)
+                if not interrupted:
+                    card = enc.encode_size(vs, instance, slv, c_bound)
+                    c_size_bound = min(c_size_bound, len(card)-1)
+                    tot = ITotalizer(card, c_size_bound+1, top_id=vs["pool"].top + 1)
+                    slv.append_formula(tot.cnf)
+                    slv.add_clause([-tot.rhs[c_size_bound]])
             except MemoryError:
                 solved = None
+
+            if interrupted:
+                solved = False
 
             timer = None
 
@@ -299,7 +304,6 @@ def run_incremental(enc, solver, strategy, increment=1, timeout=300, opt_size=Fa
                     timer.start()
                     solved = slv.solve_limited(expect_interrupt=True)
                 except MemoryError:
-                    time.sleep(5)
                     solved = False
                 finally:
                     if timer is not None:

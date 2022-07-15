@@ -1,5 +1,7 @@
+import psutil
 from pysat.formula import IDPool
 
+from nonbinary import limits
 from nonbinary.decision_tree import DecisionTree
 
 
@@ -10,6 +12,9 @@ def _init_vars(instance, depth, vs, start=0):
     for i in range(0, len(instance.examples)):
         d[i] = {}
         for dl in range(0, depth):
+            if psutil.Process().memory_info().vms > limits.mem_limit:
+                return
+
             d[i][dl] = {}
             for cf in range(1, instance.num_features + 1):
                 if len(instance.domains[cf]) == 0:
@@ -26,6 +31,8 @@ def _init_vars(instance, depth, vs, start=0):
         g.extend({} for _ in range(start, len(instance.examples)))
 
     for i in range(0, len(instance.examples)):
+        if psutil.Process().memory_info().vms > limits.mem_limit:
+            return
         for j in range(i + 1, len(instance.examples)):
             g[i][j] = [pool.id(f"g{i}_{j}_{d}") for d in range(0, depth + 1)]
 
@@ -34,6 +41,9 @@ def _init_vars(instance, depth, vs, start=0):
 
 def encode(instance, depth, solver, opt_size, start=0, vs=None):
     g, d, p = _init_vars(instance, depth, vs, start)
+
+    if psutil.Process().memory_info().vms > limits.mem_limit:
+        return
 
     # Add level 0, all examples are in the same group
     for i in range(0, len(instance.examples)):
@@ -50,6 +60,9 @@ def encode(instance, depth, solver, opt_size, start=0, vs=None):
     for i in range(0, len(instance.examples)):
         for j in range(max(start, i + 1), len(instance.examples)):
             for dl in range(0, depth):
+                if psutil.Process().memory_info().vms > limits.mem_limit:
+                    return
+
                 for cf in range(1, instance.num_features + 1):
                     if len(instance.domains[cf]) == 0:
                         continue
@@ -72,11 +85,17 @@ def encode(instance, depth, solver, opt_size, start=0, vs=None):
                 solver.add_clause([g[i][j][dl], -g[i][j][dl + 1]])
 
     # Verify that d is consistent
+    if psutil.Process().memory_info().vms > limits.mem_limit:
+        return
+
     for i in range(0, len(instance.examples)):
         for j in range(max(start, i + 1), len(instance.examples)):
             for dl in range(0, depth):
                 for f in d[i][dl].keys():
                     solver.add_clause([-g[i][j][dl], -d[i][dl][f], d[j][dl][f]])
+
+    if psutil.Process().memory_info().vms > limits.mem_limit:
+        return
 
     # One feature per level and group
     for i in range(start, len(instance.examples)):

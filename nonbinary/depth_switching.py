@@ -1,7 +1,7 @@
 import nonbinary.depth_cp_sat as enc1
 import nonbinary.depth_partition as enc2
 
-_switch_threshold = 11
+_switch_threshold = 10
 
 
 def lb():

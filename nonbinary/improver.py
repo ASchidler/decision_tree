@@ -1,4 +1,5 @@
 import sys
+import time
 from sys import maxsize
 
 from nonbinary.nonbinary_instance import ClassificationInstance
@@ -61,7 +62,7 @@ def build_unique_set(parameters, root, samples, reduce, limit=maxsize):
     return new_instance, len(c_leafs), depth
 
 
-def build_reduced_set(parameters, root, assigned, reduce):
+def build_reduced_set(parameters, root, assigned, reduce, limit=sys.maxsize):
     max_dist = root.get_depth()
     q = [[] for _ in range(0, max_dist+1)]
     q[max_dist].append((0, root))
@@ -104,7 +105,7 @@ def build_reduced_set(parameters, root, assigned, reduce):
                 frontier.add(c_n.left.id)
                 frontier.add(c_n.right.id)
 
-        if c_max_depth > parameters.maximum_depth:
+        if c_max_depth > parameters.maximum_depth or c_max_depth > limit:
             break
 
         if cnt >= 3:
@@ -290,7 +291,10 @@ def leaf_select(parameters, node, assigned):
     leaves = node.get_leaves()
     new_tree, is_sat = parameters.call_solver(new_instance, new_ub, c_d, leaves)
 
-    if new_tree is None:
+    if is_sat is None:
+        # Wait after a memory out, to ensure resources are cleaned up
+        time.sleep(30)
+    elif new_tree is None:
         return False
     else:
         stitch(parameters.tree, new_tree, node, None)
@@ -298,32 +302,26 @@ def leaf_select(parameters, node, assigned):
 
 
 def leaf_reduced(parameters, node, assigned, reduce=False):
-    limits = sys.maxsize
-    new_tree = None
-    new_instance = None
+    new_instance, leaves, cd = build_unique_set(parameters, node, assigned[node.id], reduce=reduce)
 
-    while limits >= 2 and new_tree is None:
-        new_instance, leaves, cd = build_unique_set(parameters, node, assigned[node.id], reduce=reduce, limit=limits)
+    if cd < 2:
+        return False
 
-        if cd < 2:
-            return False
+    new_ub = parameters.get_max_bound(new_instance)
 
-        new_ub = parameters.get_max_bound(new_instance)
+    if new_ub < 1:
+        return False
 
-        if new_ub < 1:
-            return False
-
-        # Solve instance
-        new_tree, is_sat = parameters.call_solver(new_instance, new_ub, cd, leaves)
-
-        if new_tree is None and not is_sat:
-            limits = cd - 1
+    # Solve instance
+    new_tree, is_sat = parameters.call_solver(new_instance, new_ub, cd, leaves)
 
     # Either the branch is done, or
     if new_tree is not None:
         new_instance.unreduce(new_tree)
         stitch(parameters.tree, new_tree, node, None)
         return True
+    elif is_sat is None:
+        time.sleep(30)
 
     return False
 
@@ -334,22 +332,32 @@ def mid_reduced(parameters, node, assigned, reduce):
         return False
 
     c_parent = node
-    new_instance, i_depth, leaves = build_reduced_set(parameters, c_parent, assigned, reduce)
+    limits = sys.maxsize
+    new_tree = None
+    new_instance = None
 
-    if new_instance is None or len(new_instance.examples) == 0:
-        return False
+    while limits >= 2 and new_tree is None:
+        new_instance, i_depth, leaves = build_reduced_set(parameters, c_parent, assigned, reduce, limits)
 
-    new_ub = parameters.get_max_bound(new_instance)
-    if new_ub < 1:
-        return False
+        if new_instance is None or len(new_instance.examples) == 0:
+            return False
 
-    new_tree, is_sat = parameters.call_solver(new_instance, new_ub, i_depth, leaves)
+        new_ub = parameters.get_max_bound(new_instance)
+        if new_ub < 1:
+            return False
 
-    if new_tree is not None:
-        new_instance.unreduce(new_tree)
+        new_tree, is_sat = parameters.call_solver(new_instance, new_ub, i_depth, leaves)
 
-        # Stitch the new tree in the middle
-        stitch(parameters.tree, new_tree, c_parent, parameters.instance)
-        return True
+        if new_tree is not None:
+            new_instance.unreduce(new_tree)
+
+            # Stitch the new tree in the middle
+            stitch(parameters.tree, new_tree, c_parent, parameters.instance)
+            return True
+        elif is_sat is None:
+            time.sleep(30)
+            limits = i_depth - 1
+        else:
+            return False
 
     return False

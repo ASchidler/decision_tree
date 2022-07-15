@@ -25,7 +25,7 @@ instance_validation_path = "datasets/validate"
 validation_ratios = [0, 20, 30]
 
 # This is used for debugging, for experiments use proper memory limiting
-resource.setrlimit(resource.RLIMIT_AS, (23 * 1024 * 1024 * 1024 // 2, 12 * 1024 * 1024 * 1024))
+resource.setrlimit(resource.RLIMIT_AS, (24 * 1024 * 1024 * 1024, 24 * 1024 * 1024 * 1024))
 
 encodings = [se, da, dp, sn]
 strategies = [es.EntropyStrategy2, rs.RandomStrategy, ms.MaintainingStrategy]
