@@ -93,8 +93,8 @@ names = set()
 for i, cf in enumerate(fls):
     print(f"{i+1} {cf}")
     names.add(cf.split(".")[0])
-for i, cf in enumerate(names):
-    print(f"{i} {cf}")
+# for i, cf in enumerate(names):
+#     print(f"{i} {cf}")
 try:
     target_instance_idx = int(args.instance)
 

@@ -186,7 +186,7 @@ def encode_extended_leaf_size(vs, instance, solver, dl):
     return card_vars
 
 
-def encode_extended_leaf_limit(vs, solver, dl):
+def encode_extended_leaf_limit(vs, instance, solver, dl):
     c = vs["c"]
     cm = vs["class_map"]
 

@@ -20,9 +20,12 @@ def _init_vars(instance, depth, vs, start=0):
                 if len(instance.domains[cf]) == 0:
                     continue
 
-                # We don't need an entry for the last variable, as <= maxval is redundant
-                for j in range(0, len(instance.domains[cf]) - (0 if cf in instance.is_categorical else 1)):
-                    d[i][dl][instance.feature_idx[cf] + j] = pool.id(f"d{i}_{dl}_{instance.feature_idx[cf] + j}")
+                if cf in instance.is_categorical:
+                    # We don't need an entry for the last variable, as <= maxval is redundant
+                    for j in range(0, len(instance.domains[cf]) - (0 if cf in instance.is_categorical else 1)):
+                        d[i][dl][instance.feature_idx[cf] + j] = pool.id(f"d{i}_{dl}_{instance.feature_idx[cf] + j}")
+                else:
+                    d[i][dl][instance.feature_idx[cf]] = pool.id(f"d{i}_{dl}_{instance.feature_idx[cf]}")
 
     if not vs:
         g = [{} for _ in range(0, len(instance.examples))]
@@ -57,26 +60,45 @@ def encode(instance, depth, solver, opt_size, start=0, vs=None):
                 solver.add_clause([-g[i][j][depth]])
 
     # Verify that the examples are partitioned correctly
-    for i in range(0, len(instance.examples)):
-        for j in range(max(start, i + 1), len(instance.examples)):
+    for cf in range(1, instance.num_features + 1):
+        if len(instance.domains[cf]) == 0:
+            continue
+
+        if cf in instance.is_categorical:
+            for k in range(0, len(instance.domains[cf])):
+                if psutil.Process().memory_info().vms > limits.mem_limit:
+                    return
+                for dl in range(0, depth):
+                    for i in range(0, len(instance.examples)):
+                        for j in range(max(start, i + 1), len(instance.examples)):
+                            if (instance.examples[i].features[cf] == instance.domains[cf][k]) == (instance.examples[j].features[cf] == instance.domains[cf][k]):
+                                solver.add_clause([-g[i][j][dl], -d[i][dl][instance.feature_idx[cf] + k], g[i][j][dl + 1]])
+                            else:
+                                solver.add_clause([-d[i][dl][instance.feature_idx[cf] + k], -g[i][j][dl + 1]])
+        else:
+            for i in range(0, len(instance.examples)):
+                assert(i == instance.examples[i].id)
+
             for dl in range(0, depth):
                 if psutil.Process().memory_info().vms > limits.mem_limit:
                     return
+                sorted_examples = sorted(instance.examples, key=lambda x: x.features[cf])
+                for i in range(0, len(instance.examples)):
+                    e1 = sorted_examples[i]
+                    for j in range(max(start, i + 1), len(instance.examples)):
+                        e2 = sorted_examples[j]
+                        solver.add_clause([-d[i][dl][instance.feature_idx[cf]], -g[i][j][dl], g[i][j][dl + 1]])
 
-                for cf in range(1, instance.num_features + 1):
-                    if len(instance.domains[cf]) == 0:
-                        continue
-
-                    # We don't need an entry for the last variable, as <= maxval is redundant
-                    for k in range(0, len(instance.domains[cf]) - (0 if cf in instance.is_categorical else 1)):
-                        if cf in instance.is_categorical and \
-                                (instance.examples[i].features[cf] == instance.domains[cf][k]) == (instance.examples[j].features[cf] == instance.domains[cf][k]):
-                            solver.add_clause([-g[i][j][dl], -d[i][dl][instance.feature_idx[cf] + k], g[i][j][dl + 1]])
-                        elif cf not in instance.is_categorical and \
-                            (instance.examples[i].features[cf] <= instance.domains[cf][k]) == (instance.examples[j].features[cf] <= instance.domains[cf][k]):
-                            solver.add_clause([-g[i][j][dl], -d[i][dl][instance.feature_idx[cf] + k], g[i][j][dl + 1]])
-                        else:
-                            solver.add_clause([-d[i][dl][instance.feature_idx[cf] + k], -g[i][j][dl + 1]])
+                        # We don't need an entry for the last variable, as <= maxval is redundant
+                        for k in range(0, len(instance.domains[cf]) - (0 if cf in instance.is_categorical else 1)):
+                            if cf in instance.is_categorical and \
+                                    (instance.examples[i].features[cf] == instance.domains[cf][k]) == (instance.examples[j].features[cf] == instance.domains[cf][k]):
+                                solver.add_clause([-g[i][j][dl], -d[i][dl][instance.feature_idx[cf] + k], g[i][j][dl + 1]])
+                            elif cf not in instance.is_categorical and \
+                                (instance.examples[i].features[cf] <= instance.domains[cf][k]) == (instance.examples[j].features[cf] <= instance.domains[cf][k]):
+                                solver.add_clause([-g[i][j][dl], -d[i][dl][instance.feature_idx[cf] + k], g[i][j][dl + 1]])
+                            else:
+                                solver.add_clause([-d[i][dl][instance.feature_idx[cf] + k], -g[i][j][dl + 1]])
 
     # Verify that group cannot merge
     for i in range(0, len(instance.examples)):

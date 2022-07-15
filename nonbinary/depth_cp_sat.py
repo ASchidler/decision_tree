@@ -171,6 +171,9 @@ def encode(instance, limit, solver, opt_size=False):
 
 
 def encode_size(vs, instance, solver, dl):
+    if psutil.Process().memory_info().vms > limits.mem_limit:
+        return
+
     pool = vs["pool"]
     card_vars = []
     c = vs["c"]
@@ -184,6 +187,9 @@ def encode_size(vs, instance, solver, dl):
 
 
 def encode_extended_leaf_size(vs, instance, solver, dl):
+    if psutil.Process().memory_info().vms > limits.mem_limit:
+        return
+
     pool = vs["pool"]
     card_vars = []
     c = vs["c"]
@@ -198,7 +204,10 @@ def encode_extended_leaf_size(vs, instance, solver, dl):
     return card_vars
 
 
-def encode_extended_leaf_limit(vs, solver, dl):
+def encode_extended_leaf_limit(vs, instance, solver, dl):
+    if psutil.Process().memory_info().vms > limits.mem_limit:
+        return
+
     c = vs["c"]
     cm = vs["class_map"]
 

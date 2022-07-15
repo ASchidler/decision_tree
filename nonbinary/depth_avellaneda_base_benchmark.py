@@ -88,7 +88,7 @@ def run2(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, opt_size=F
             try:
                 vs = enc.encode(instance, c_bound, slv, opt_size or (maintain and limit_size > 0))
                 if limit_size > 0 and maintain:
-                    enc.encode_extended_leaf_limit(vs, slv, c_bound)
+                    enc.encode_extended_leaf_limit(vs, instance, slv, c_bound)
                     card = enc.encode_size(vs, instance, slv, c_bound)
                     slv.append_formula(CardEnc.atmost(card, bound=limit_size, vpool=vs["pool"], encoding=EncType.totalizer).clauses)
                 if timeout > 0:

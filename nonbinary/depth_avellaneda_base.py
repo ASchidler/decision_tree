@@ -71,7 +71,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
             try:
                 vs = enc.encode(instance, c_bound, slv, True)
                 if not interrupted:
-                    enc.encode_extended_leaf_limit(vs, slv, c_bound)
+                    enc.encode_extended_leaf_limit(vs, instance, slv, c_bound)
                 if not interrupted:
                     card = enc.encode_size(vs, instance, slv, c_bound)
                     c_size_bound = min(c_size_bound, len(card)-1)
@@ -126,9 +126,11 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
             try:
                 vs = enc.encode(instance, c_bound, slv, opt_size or (maintain and limit_size > 0) or size_first)
                 if limit_size > 0 and (maintain or size_first):
-                    enc.encode_extended_leaf_limit(vs, slv, c_bound)
-                    card = enc.encode_size(vs, instance, slv, c_bound)
-                    slv.append_formula(CardEnc.atmost(card, bound=limit_size, vpool=vs["pool"], encoding=EncType.totalizer).clauses)
+                    if not interrupted:
+                        enc.encode_extended_leaf_limit(vs, instance, slv, c_bound)
+                    if not interrupted:
+                        card = enc.encode_size(vs, instance, slv, c_bound)
+                        slv.append_formula(CardEnc.atmost(card, bound=limit_size, vpool=vs["pool"], encoding=EncType.totalizer).clauses)
                 if timeout > 0 or check_mem:
                     timer = Timer(timeout, interrupt, [slv, interrupted])
                     timer.start()
@@ -192,10 +194,11 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                 solved = True
                 try:
                     vs = enc.encode(instance, best_depth, slv, opt_size=True)
-                    card = enc.encode_extended_leaf_size(vs, instance, slv, best_depth)
-                    tot = ITotalizer(card, c_size_bound+1, top_id=vs["pool"].top + 1)
-                    slv.append_formula(tot.cnf)
-                    slv.add_clause([-tot.rhs[c_size_bound]])
+                    if not interrupted:
+                        card = enc.encode_extended_leaf_size(vs, instance, slv, best_depth)
+                        tot = ITotalizer(card, c_size_bound+1, top_id=vs["pool"].top + 1)
+                        slv.append_formula(tot.cnf)
+                        slv.add_clause([-tot.rhs[c_size_bound]])
                 except MemoryError:
                     return best_model, is_sat
 
@@ -239,7 +242,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                         CardEnc.atmost(card, bound=best_extension, vpool=vs["pool"], encoding=EncType.totalizer).clauses
                     )
                 elif maintain:
-                    enc.encode_extended_leaf_limit(vs, slv, c_bound)
+                    enc.encode_extended_leaf_limit(vs, instance, slv, c_bound)
 
                 card = enc.encode_size(vs, instance, slv, best_depth)
                 tot = ITotalizer(card, c_size_bound+1, top_id=vs["pool"].top + 1)
