@@ -4,7 +4,7 @@ import nonbinary.depth_avellaneda_base as base
 import nonbinary.depth_avellaneda_sat as nbs
 import nonbinary.depth_avellaneda_sat2 as nbs2
 import nonbinary.depth_avellaneda_sat3 as nbs3
-import nonbinary.depth_partition as nbp
+import nonbinary.depth_partition2 as nbp
 import nonbinary.nonbinary_instance
 import nonbinary.size_narodytska as nbn
 import nonbinary.depth_avellaneda_smt2 as nbt

@@ -70,12 +70,15 @@ def encode(instance, depth, solver, opt_size, start=0, vs=None):
                 return
             for dl in range(0, depth):
                 for i in range(0, len(instance.examples)):
-                    for j in range(max(start, i + 1), len(instance.examples)):
-                        if instance.examples[i].features[cf] == instance.examples[j].features[cf]:
-                            solver.add_clause([-g[i][j][dl], -d[i][dl][cf], -lx[dl][i], lx[dl][j]])
-                            solver.add_clause([-g[i][j][dl], -d[i][dl][cf], -lx[dl][j], lx[dl][i]])
-                        else:
-                            solver.add_clause([-g[i][j][dl], -d[i][dl][cf], -lx[dl][i], -lx[dl][j]])
+                    if instance.examples[i].features[cf] == "DummyValue":
+                        solver.add_clause([-d[i][dl][cf], -lx[dl][i]])
+                    else:
+                        for j in range(max(start, i + 1), len(instance.examples)):
+                            if instance.examples[i].features[cf] == instance.examples[j].features[cf]:
+                                solver.add_clause([-g[i][j][dl], -d[i][dl][cf], -lx[dl][i], lx[dl][j]])
+                                solver.add_clause([-g[i][j][dl], -d[i][dl][cf], -lx[dl][j], lx[dl][i]])
+                            else:
+                                solver.add_clause([-g[i][j][dl], -d[i][dl][cf], -lx[dl][i], -lx[dl][j]])
         else:
             for i in range(0, len(instance.examples)):
                 assert(i == instance.examples[i].id)
@@ -90,14 +93,11 @@ def encode(instance, depth, solver, opt_size, start=0, vs=None):
                         e2 = sorted_examples[j]
 
                         solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][cf], -lx[dl][e2.id], lx[dl][e1.id]])
-                        solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][cf], lx[dl][e1.id], -lx[dl][e2.id]])
+                        #solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][cf], lx[dl][e1.id], -lx[dl][e2.id]])
 
                         if e1.features[cf] == e2.features[cf]:
-                            solver.add_clause(
-                                [-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][cf],
-                                 -lx[dl][e1.id], lx[dl][e2.id]])
-                            solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][cf],
-                             lx[dl][e2.id], -lx[dl][e1.id]])
+                            solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][cf], -lx[dl][e1.id], lx[dl][e2.id]])
+                            #solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][cf], lx[dl][e2.id], -lx[dl][e1.id]])
 
     # Verify that group cannot merge
     for i in range(0, len(instance.examples)):
@@ -213,6 +213,7 @@ def _decode(model, instance, depth, vs):
                     for c_sample in cg:
                         if model[lx[cdl][c_sample[0]]]:
                             return cf, c_sample[1].features[cf]
+
                     return cf, "ThisWillBeReducedAway"
                 else:
                     values = []
@@ -311,7 +312,7 @@ def _decode(model, instance, depth, vs):
             df_tree(new_grps[0], parent, d+1)
 
     df_tree(list(enumerate(instance.examples)), None, 0)
-    tree.clean(instance)
+    # tree.clean(instance)
     return tree
 
 

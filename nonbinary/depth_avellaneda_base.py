@@ -43,6 +43,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
     best_depth = None
     interrupted = []
     is_sat = None
+    has_timed_out = False
 
     # Edge cases
     if len(instance.classes) == 1:
@@ -166,7 +167,10 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                         f"E:{len(instance.examples)} T:MO C:{len(instance.classes)} F:{instance.num_features} DS:{sum(len(instance.domains[x]) for x in range(1, instance.num_features + 1))}"
                         f" DM:{max(len(instance.domains[x]) for x in range(1, instance.num_features + 1))} D:{c_bound} S:{enc.estimate_size(instance, c_bound)}"
                         f" R:{instance.reduced_key is not None} E:{-1 * sum(x / len(instance.examples) * math.log2(x / len(instance.examples)) for x in instance.class_distribution.values())}")
-                break
+                # has_timed_out = True
+                # time.sleep(60)
+                # c_bound = c_bound - enc.increment()
+                # interrupted = []
             elif solved:
                 is_sat = True
                 model = {abs(x): x > 0 for x in slv.get_model()}
@@ -182,8 +186,9 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                 ub = best_model.get_depth()
                 c_bound = ub - enc.increment()
             else:
-                if is_sat is None:
+                if is_sat is None and not has_timed_out:
                     is_sat = False
+
                 if log:
                     print(
                         f"E:{len(instance.examples)} T:{time.time()-start}* C:{len(instance.classes)} F:{instance.num_features} DS:{sum(len(instance.domains[x]) for x in range(1, instance.num_features + 1))}"

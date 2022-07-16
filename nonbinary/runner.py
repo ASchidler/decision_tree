@@ -268,8 +268,8 @@ else:
             if len(cl.strip()) > 0:
                 ignore.add(cl.strip())
 
-    if target_instance not in ignore:
-        exit(1)
+    # if target_instance not in ignore:
+    #     exit(1)
 
     if not args.encoding == 3:
         tree, _ = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size, check_mem=args.time_limit > 0, timeout=args.time_limit)
