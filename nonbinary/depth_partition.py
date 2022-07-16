@@ -277,7 +277,7 @@ def _decode(model, instance, depth, vs):
 
         if len(new_grps) > 1:
             if parent is None:
-                n_n = tree.set_root(f, f_t)
+                n_n = tree.set_root(f, f_t, f in instance.is_categorical)
             else:
                 n_n = tree.add_node(f, f_t, parent.id, is_left, f in instance.is_categorical)
 

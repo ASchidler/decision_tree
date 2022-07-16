@@ -58,7 +58,7 @@ class SlimParameters:
         self.use_dt = use_dt
         self.example_decision_tree = None
         self.maximum_examples = 25000
-        self.maximum_depth = 12
+        self.maximum_depth = 14
         self.sample_limits = [self.maximum_examples for _ in range(0, self.maximum_depth + 1)]
         self.solver_time_limit = 300
         self.benchmark = benchmark

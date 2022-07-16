@@ -26,12 +26,7 @@ def _init_vars(instance, depth, vs, start=0):
                 if len(instance.domains[cf]) == 0:
                     continue
 
-                if cf in instance.is_categorical:
-                    # We don't need an entry for the last variable, as <= maxval is redundant
-                    for j in range(0, len(instance.domains[cf]) - (0 if cf in instance.is_categorical else 1)):
-                        d[i][dl][instance.feature_idx[cf] + j] = pool.id(f"d{i}_{dl}_{instance.feature_idx[cf] + j}")
-                else:
-                    d[i][dl][instance.feature_idx[cf]] = pool.id(f"d{i}_{dl}_{instance.feature_idx[cf]}")
+                d[i][dl][cf] = pool.id(f"d{i}_{dl}_{cf}")
 
     if not vs:
         g = [{} for _ in range(0, len(instance.examples))]
@@ -71,16 +66,16 @@ def encode(instance, depth, solver, opt_size, start=0, vs=None):
             continue
 
         if cf in instance.is_categorical:
-            for k in range(0, len(instance.domains[cf])):
-                if psutil.Process().memory_info().vms > limits.mem_limit:
-                    return
-                for dl in range(0, depth):
-                    for i in range(0, len(instance.examples)):
-                        for j in range(max(start, i + 1), len(instance.examples)):
-                            if (instance.examples[i].features[cf] == instance.domains[cf][k]) == (instance.examples[j].features[cf] == instance.domains[cf][k]):
-                                solver.add_clause([-g[i][j][dl], -d[i][dl][instance.feature_idx[cf] + k], g[i][j][dl + 1]])
-                            else:
-                                solver.add_clause([-d[i][dl][instance.feature_idx[cf] + k], -g[i][j][dl + 1]])
+            if psutil.Process().memory_info().vms > limits.mem_limit:
+                return
+            for dl in range(0, depth):
+                for i in range(0, len(instance.examples)):
+                    for j in range(max(start, i + 1), len(instance.examples)):
+                        if instance.examples[i].features[cf] == instance.examples[j].features[cf]:
+                            solver.add_clause([-g[i][j][dl], -d[i][dl][cf], -lx[dl][i], lx[dl][j]])
+                            solver.add_clause([-g[i][j][dl], -d[i][dl][cf], -lx[dl][j], lx[dl][i]])
+                        else:
+                            solver.add_clause([-g[i][j][dl], -d[i][dl][cf], -lx[dl][i], -lx[dl][j]])
         else:
             for i in range(0, len(instance.examples)):
                 assert(i == instance.examples[i].id)
@@ -94,14 +89,14 @@ def encode(instance, depth, solver, opt_size, start=0, vs=None):
                     for j in range(max(start, i + 1), len(instance.examples)):
                         e2 = sorted_examples[j]
 
-                        solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][instance.feature_idx[cf]], -lx[dl][e2.id], lx[dl][e1.id]])
-                        solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][instance.feature_idx[cf]], lx[dl][e1.id], -lx[dl][e2.id]])
+                        solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][cf], -lx[dl][e2.id], lx[dl][e1.id]])
+                        solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][cf], lx[dl][e1.id], -lx[dl][e2.id]])
 
                         if e1.features[cf] == e2.features[cf]:
                             solver.add_clause(
-                                [-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][instance.feature_idx[cf]],
+                                [-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][cf],
                                  -lx[dl][e1.id], lx[dl][e2.id]])
-                            solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][instance.feature_idx[cf]],
+                            solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][cf],
                              lx[dl][e2.id], -lx[dl][e1.id]])
 
     # Verify that group cannot merge
@@ -121,7 +116,7 @@ def encode(instance, depth, solver, opt_size, start=0, vs=None):
     for i in range(0, len(instance.examples)):
         for j in range(max(start, i + 1), len(instance.examples)):
             for dl in range(0, depth):
-                for f in d[i][dl].keys():
+                for f in range(1, instance.num_features + 1):
                     solver.add_clause([-g[i][j][dl], -d[i][dl][f], d[j][dl][f]])
 
     if psutil.Process().memory_info().vms > limits.mem_limit:
@@ -214,34 +209,21 @@ def _decode(model, instance, depth, vs):
         ce = cg[0][0]
         for cf, cfv in ds[ce][cdl].items():
             if model[cfv]:
-                real_f = None
-
-                if instance.num_features == 1:
-                    real_f = 1
-                    tsh = instance.domains[1][cf - instance.feature_idx[1]]
-                    return real_f, tsh
-                else:
-                    for r_f in range(2, instance.num_features+1):
-                        if instance.feature_idx[r_f - 1] <= cf < instance.feature_idx[r_f]:
-                            real_f = r_f - 1
-                            break
-                        elif r_f == instance.num_features:
-                            real_f = r_f
-
-                if real_f in instance.is_categorical:
-                    tsh = instance.domains[real_f][cf - instance.feature_idx[real_f]]
-                    return real_f, tsh
+                if cf in instance.is_categorical:
+                    for c_sample in cg:
+                        if model[lx[cdl][c_sample[0]]]:
+                            return cf, c_sample[1].features[cf]
                 else:
                     values = []
                     values2 = []
                     for c_sample in cg:
                         if model[lx[cdl][c_sample[0]]]:
-                            values.append(c_sample[1].features[real_f])
+                            values.append(c_sample[1].features[cf])
                         else:
-                            values2.append(c_sample[1].features[real_f])
+                            values2.append(c_sample[1].features[cf])
 
                     tsh = max(values) if values else max(values2)
-                    return real_f, tsh
+                    return cf, tsh
 
         return None
 
@@ -318,7 +300,7 @@ def _decode(model, instance, depth, vs):
 
         if len(new_grps) > 1:
             if parent is None:
-                n_n = tree.set_root(f, f_t)
+                n_n = tree.set_root(f, f_t, f in instance.is_categorical)
             else:
                 n_n = tree.add_node(f, f_t, parent.id, is_left, f in instance.is_categorical)
 
