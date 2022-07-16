@@ -213,6 +213,7 @@ def _decode(model, instance, depth, vs):
                     for c_sample in cg:
                         if model[lx[cdl][c_sample[0]]]:
                             return cf, c_sample[1].features[cf]
+                    return cf, "ThisWillBeReducedAway"
                 else:
                     values = []
                     values2 = []
