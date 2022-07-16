@@ -40,7 +40,11 @@ def _init_vars(instance, depth, vs, start=0):
 
 
 def encode(instance, depth, solver, opt_size, start=0, vs=None):
-    g, d, p = _init_vars(instance, depth, vs, start)
+    x = _init_vars(instance, depth, vs, start)
+    if x is None:
+        return None
+
+    g, d, p = x
 
     if psutil.Process().memory_info().vms > limits.mem_limit:
         return

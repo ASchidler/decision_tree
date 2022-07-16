@@ -13,7 +13,7 @@ import nonbinary.depth_avellaneda_base as base
 import nonbinary.depth_avellaneda_sat as nbs
 import nonbinary.depth_avellaneda_sat2 as nbs2
 import nonbinary.depth_avellaneda_sat3 as nbs3
-import nonbinary.depth_partition as nbp
+import nonbinary.depth_partition2 as nbp
 import nonbinary.size_narodytska as nbn
 import nonbinary.depth_avellaneda_smt2 as nbt
 import nonbinary.depth_switching as nbw
@@ -272,7 +272,7 @@ else:
         exit(1)
 
     if not args.encoding == 3:
-        tree = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size, check_mem=args.time_limit > 0, timeout=args.time_limit)
+        tree, _ = base.run(enc, instance, Glucose3, slim=False, opt_size=args.size, check_mem=args.time_limit > 0, timeout=args.time_limit)
     else:
         tree = nbt.run(instance, opt_size=args.size)
 

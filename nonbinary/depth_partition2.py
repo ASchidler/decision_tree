@@ -8,10 +8,16 @@ from nonbinary.decision_tree import DecisionTree
 def _init_vars(instance, depth, vs, start=0):
     pool = IDPool() if not vs else vs["pool"]
     d = {} if not vs else vs["d"]
+    lx = {}
 
     for i in range(0, len(instance.examples)):
         d[i] = {}
         for dl in range(0, depth):
+            if dl not in lx:
+                lx[dl] = {}
+
+            lx[dl][i] = pool.id(f"lx{dl}{i}")
+
             if psutil.Process().memory_info().vms > limits.mem_limit:
                 return
 
@@ -39,11 +45,11 @@ def _init_vars(instance, depth, vs, start=0):
         for j in range(i + 1, len(instance.examples)):
             g[i][j] = [pool.id(f"g{i}_{j}_{d}") for d in range(0, depth + 1)]
 
-    return g, d, pool
+    return g, d, pool, lx
 
 
 def encode(instance, depth, solver, opt_size, start=0, vs=None):
-    g, d, p = _init_vars(instance, depth, vs, start)
+    g, d, p, lx = _init_vars(instance, depth, vs, start)
 
     if psutil.Process().memory_info().vms > limits.mem_limit:
         return
@@ -87,24 +93,26 @@ def encode(instance, depth, solver, opt_size, start=0, vs=None):
                     e1 = sorted_examples[i]
                     for j in range(max(start, i + 1), len(instance.examples)):
                         e2 = sorted_examples[j]
-                        solver.add_clause([-d[i][dl][instance.feature_idx[cf]], -g[i][j][dl], g[i][j][dl + 1]])
 
-                        # We don't need an entry for the last variable, as <= maxval is redundant
-                        for k in range(0, len(instance.domains[cf]) - (0 if cf in instance.is_categorical else 1)):
-                            if cf in instance.is_categorical and \
-                                    (instance.examples[i].features[cf] == instance.domains[cf][k]) == (instance.examples[j].features[cf] == instance.domains[cf][k]):
-                                solver.add_clause([-g[i][j][dl], -d[i][dl][instance.feature_idx[cf] + k], g[i][j][dl + 1]])
-                            elif cf not in instance.is_categorical and \
-                                (instance.examples[i].features[cf] <= instance.domains[cf][k]) == (instance.examples[j].features[cf] <= instance.domains[cf][k]):
-                                solver.add_clause([-g[i][j][dl], -d[i][dl][instance.feature_idx[cf] + k], g[i][j][dl + 1]])
-                            else:
-                                solver.add_clause([-d[i][dl][instance.feature_idx[cf] + k], -g[i][j][dl + 1]])
+                        solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][instance.feature_idx[cf]], -lx[dl][e2.id], lx[dl][e1.id]])
+                        solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][instance.feature_idx[cf]], lx[dl][e1.id], -lx[dl][e2.id]])
+
+                        if e1.features[cf] == e2.features[cf]:
+                            solver.add_clause(
+                                [-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][instance.feature_idx[cf]],
+                                 -lx[dl][e1.id], lx[dl][e2.id]])
+                            solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][instance.feature_idx[cf]],
+                             lx[dl][e2.id], -lx[dl][e1.id]])
 
     # Verify that group cannot merge
     for i in range(0, len(instance.examples)):
         for j in range(max(start, i + 1), len(instance.examples)):
             for dl in range(0, depth):
                 solver.add_clause([g[i][j][dl], -g[i][j][dl + 1]])
+                solver.add_clause([-g[i][j][dl], -lx[dl][i], -lx[dl][j], g[i][j][dl + 1]])
+                solver.add_clause([-g[i][j][dl], lx[dl][i], lx[dl][j], g[i][j][dl + 1]])
+                solver.add_clause([-g[i][j][dl], lx[dl][i], -lx[dl][j], -g[i][j][dl + 1]])
+                solver.add_clause([-g[i][j][dl], -lx[dl][i], lx[dl][j], -g[i][j][dl + 1]])
 
     # Verify that d is consistent
     if psutil.Process().memory_info().vms > limits.mem_limit:
@@ -131,7 +139,7 @@ def encode(instance, depth, solver, opt_size, start=0, vs=None):
                         solver.add_clause([-f1val, -f2val])
             solver.add_clause(clause)
 
-    return {"g": g, "d": d, "pool": p}
+    return {"g": g, "d": d, "lx": lx, "pool": p}
 
 
 def encode_size(vs, instance, solver, dl):
@@ -199,27 +207,41 @@ def _decode(model, instance, depth, vs):
     tree = DecisionTree()
     g = vs["g"]
     ds = vs["d"]
+    lx = vs["lx"]
 
     # Root
-    def find_feature(ce, cdl):
+    def find_feature(cg, cdl):
+        ce = cg[0][0]
         for cf, cfv in ds[ce][cdl].items():
             if model[cfv]:
+                real_f = None
+
                 if instance.num_features == 1:
                     real_f = 1
                     tsh = instance.domains[1][cf - instance.feature_idx[1]]
                     return real_f, tsh
                 else:
                     for r_f in range(2, instance.num_features+1):
-                        real_f = None
                         if instance.feature_idx[r_f - 1] <= cf < instance.feature_idx[r_f]:
                             real_f = r_f - 1
+                            break
                         elif r_f == instance.num_features:
                             real_f = r_f
-                        if real_f is not None:
-                            tsh = instance.domains[real_f][cf - instance.feature_idx[real_f]]
-                            return real_f, tsh
-                # else:
-                #     print(f"ERROR double feature {cf} and {ce_feature} for experiment {ce}, at level {cdl}.")
+
+                if real_f in instance.is_categorical:
+                    tsh = instance.domains[real_f][cf - instance.feature_idx[real_f]]
+                    return real_f, tsh
+                else:
+                    values = []
+                    values2 = []
+                    for c_sample in cg:
+                        if model[lx[cdl][c_sample[0]]]:
+                            values.append(c_sample[1].features[real_f])
+                        else:
+                            values2.append(c_sample[1].features[real_f])
+
+                    tsh = max(values) if values else max(values2)
+                    return real_f, tsh
 
         return None
 
@@ -242,7 +264,7 @@ def _decode(model, instance, depth, vs):
             return
 
         # Find feature
-        f, f_t = find_feature(grp[0][0], d)
+        f, f_t = find_feature(grp, d)
 
         # Find groups
         new_grps = []
@@ -255,6 +277,7 @@ def _decode(model, instance, depth, vs):
                 v = max(e_id, n_id)
 
                 if model[g[u][v][d+1]]:
+                    assert(model[lx[d][u]] == model[lx[d][u]])
                     if found:
                         print("Double group membership")
                         exit(1)
