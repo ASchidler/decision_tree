@@ -267,6 +267,9 @@ class DecisionTree:
     def assign(self, instance):
         assigned = defaultdict(list)
         for e in instance.examples:
+            if e.ignore:
+                continue
+
             pth = self.root.get_path(e)
             for c_node in pth:
                 assigned[c_node.id].append(e)

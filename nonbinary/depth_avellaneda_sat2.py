@@ -92,6 +92,8 @@ def encode(instance, limit, solver, opt_size=False):
                 solver.add_clause(clause)
 
     for i in range(0, len(instance.examples)):
+        if instance.examples[i].ignore:
+            continue
         _alg1(instance, i, limit, 0, 1, list(), f, x, d, solver)
         _alg2(instance, i, limit, 0, 1, list(), class_map, x, c, solver)
 

@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation, getcontext
 from collections import defaultdict
 from gmpy2 import popcount
 
+
 class Example:
     def __init__(self, inst, features, cls, surrogate_cls=None):
         self.cls = cls
@@ -15,6 +16,7 @@ class Example:
         self.surrogate_cls = surrogate_cls
         self.original_values = None
         self.impurities = None
+        self.ignore = False
 
     def copy(self, instance):
         return Example(instance, self.features[1:], self.cls, self.surrogate_cls)
@@ -119,13 +121,30 @@ class ClassificationInstance:
             else:
                 self.domains[i] = sorted(list(self.domains[i]))
 
+        classes = defaultdict(lambda: defaultdict(list))
+        for i in range(0, len(self.examples)):
+            classes[tuple([x if x != "?" else self.domains_max[f] for f, x in enumerate(self.examples[i].features)])][self.examples[i].cls].append(i)
+
+        for ck, cv in classes.items():
+            if len(cv) > 1:
+                min_cnt = min(len(x) for x in cv.values())
+                target_c = None
+                for ck2, cv2 in cv.items():
+                    if len(cv2) == min_cnt:
+                        target_c = ck2
+                        break
+                for ck2, cv2 in cv.items():
+                    if ck2 != target_c:
+                        for ce in cv2:
+                            self.examples[ce].ignore = True
+
     def add_example(self, e):
         if self.num_features == -1:
             self.num_features = len(e.features) - 1
             self.domains = [set() for _ in range(0, self.num_features + 1)]
             self.domain_counts = [defaultdict(int) for _ in range(0, self.num_features + 1)]
         elif len(e.features) - 1 != self.num_features:
-            raise RuntimeError("Examples have different number of features")
+            raise RuntimeError("Examples have different numbers of features")
 
         e.id = len(self.examples)
         self.examples.append(e)

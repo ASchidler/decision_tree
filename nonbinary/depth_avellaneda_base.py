@@ -167,10 +167,11 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                         f"E:{len(instance.examples)} T:MO C:{len(instance.classes)} F:{instance.num_features} DS:{sum(len(instance.domains[x]) for x in range(1, instance.num_features + 1))}"
                         f" DM:{max(len(instance.domains[x]) for x in range(1, instance.num_features + 1))} D:{c_bound} S:{enc.estimate_size(instance, c_bound)}"
                         f" R:{instance.reduced_key is not None} E:{-1 * sum(x / len(instance.examples) * math.log2(x / len(instance.examples)) for x in instance.class_distribution.values())}")
-                # has_timed_out = True
-                # time.sleep(60)
-                # c_bound = c_bound - enc.increment()
-                # interrupted = []
+                has_timed_out = True
+                time.sleep(60)
+                c_bound = c_bound - enc.increment()
+                interrupted = []
+                # break
             elif solved:
                 is_sat = True
                 model = {abs(x): x > 0 for x in slv.get_model()}

@@ -89,8 +89,13 @@ def encode(instance, depth, solver, opt_size, start=0, vs=None):
                 sorted_examples = sorted(instance.examples, key=lambda x: x.features[cf])
                 for i in range(0, len(instance.examples)):
                     e1 = sorted_examples[i]
+                    if e1.ignore:
+                        continue
+
                     for j in range(max(start, i + 1), len(instance.examples)):
                         e2 = sorted_examples[j]
+                        if e2.ignore:
+                            continue
 
                         solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][cf], -lx[dl][e2.id], lx[dl][e1.id]])
                         #solver.add_clause([-g[min(e1.id, e2.id)][max(e1.id, e2.id)][dl], -d[e1.id][dl][cf], lx[dl][e1.id], -lx[dl][e2.id]])
@@ -311,7 +316,8 @@ def _decode(model, instance, depth, vs):
         else:
             df_tree(new_grps[0], parent, d+1)
 
-    df_tree(list(enumerate(instance.examples)), None, 0)
+    first_group = [(i, e) for i, e in enumerate(instance.examples) if not e.ignore]
+    df_tree(first_group, None, 0)
     # tree.clean(instance)
     return tree
 

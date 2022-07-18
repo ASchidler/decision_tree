@@ -25,5 +25,5 @@ with open(output_file + "_0.csv", "w") as zf:
                         fields = cln.split(" ")
                         fields = [x.split(":")[1].strip() for x in fields]
 
-                        target_file.write(f"{instance_name};{fields[0]};{fields[4]};{fields[2]};{fields[6]};"
+                        target_file.write(f"{instance_name};{fields[0]};{fields[3]};{fields[2]};{fields[6]};"
                                           f"{fields[1].replace('*', '')};{0 if fields[1].find('*') > -1 else 1};{fields[7]};{fields[5]}{os.linesep}")

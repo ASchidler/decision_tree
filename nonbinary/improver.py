@@ -269,7 +269,7 @@ def stitch(old_tree, new_tree, root, instance):
         old_tree.clean(instance)
 
 
-def leaf_select(parameters, node, assigned):
+def leaf_select(parameters, node, assigned, instance):
     if len(assigned[node.id]) > parameters.maximum_examples:
         return False
     c_d = node.get_depth()
@@ -279,6 +279,10 @@ def leaf_select(parameters, node, assigned):
     new_instance = ClassificationInstance()
     for s in assigned[node.id]:
         n_s = s.copy(new_instance)
+        for f, v in enumerate(n_s.features):
+            if v == "?":
+                n_s.features[f] = instance.domains_max[f]
+
         n_s.cls = f"-{n_s.cls}"
         new_instance.add_example(n_s)
     new_instance.is_categorical.update(parameters.instance.is_categorical)
@@ -301,7 +305,7 @@ def leaf_select(parameters, node, assigned):
         return True
 
 
-def leaf_reduced(parameters, node, assigned, reduce=False):
+def leaf_reduced(parameters, node, assigned, instance, reduce=False):
     new_instance, leaves, cd = build_unique_set(parameters, node, assigned[node.id], reduce=reduce)
 
     if cd < 2:
@@ -311,6 +315,11 @@ def leaf_reduced(parameters, node, assigned, reduce=False):
 
     if new_ub < 1:
         return False
+
+    for cs in new_instance.examples:
+        for f, v in enumerate(cs.features):
+            if v == "?":
+                cs.features[f] = instance.domains_max[f]
 
     # Solve instance
     new_tree, is_sat = parameters.call_solver(new_instance, new_ub, cd, leaves)
@@ -326,7 +335,7 @@ def leaf_reduced(parameters, node, assigned, reduce=False):
     return False
 
 
-def mid_reduced(parameters, node, assigned, reduce):
+def mid_reduced(parameters, node, assigned, instance, reduce):
     # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
     if node.is_leaf:
         return False
@@ -345,6 +354,11 @@ def mid_reduced(parameters, node, assigned, reduce):
         new_ub = parameters.get_max_bound(new_instance)
         if new_ub < 1:
             return False
+
+        for cs in new_instance.examples:
+            for f, v in enumerate(cs.features):
+                if v == "?":
+                    cs.features[f] = instance.domains_max[f]
 
         new_tree, is_sat = parameters.call_solver(new_instance, new_ub, i_depth, leaves)
 

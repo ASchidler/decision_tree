@@ -93,7 +93,7 @@ def encode(instance, limit, solver, opt_size=False):
             if not opt_size:
                 solver.add_clause(clause)
 
-    idx = list(range(0, len(instance.examples)))
+    idx = [i for i in range(0, len(instance.examples)) if not instance.examples[i].ignore]
 
     for cf in range(1, instance.num_features + 1):
         if cf not in instance.is_categorical:
@@ -122,7 +122,7 @@ def encode(instance, limit, solver, opt_size=False):
                     if instance.examples[idx[0]].features[cf] != instance.examples[idx[-1]].features[cf]:
                         solver.add_clause([-f[n][cf], -s[idx[-1]][n]])
 
-                    for i in range(0, len(instance.examples)-1):
+                    for i in range(0, len(idx)-1):
                         idx1 = idx[i]
                         idx2 = idx[i+1]
 
@@ -233,7 +233,7 @@ def _decode(model, instance, limit, vs):
     tree = DecisionTree()
     assigned_fs = {}
 
-    idx = list(range(0, len(instance.examples)))
+    idx = [i for i in range(0, len(instance.examples)) if not instance.examples[i].ignore]
     is_sorted = False
 
     # Find features

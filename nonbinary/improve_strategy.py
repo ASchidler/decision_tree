@@ -24,7 +24,7 @@ sample_limit_mid = [300,
 sample_limit_long = [50000,
                      50000, 50000, 25000, 7000, 7000,
                      1500, 800, 600, 500, 500,
-                     250, 250, 250, 250, 250,
+                     500, 500, 500, 500, 500,
                      250, 250, 250, 250, 250,
                      250, 250, 250, 250, 250,
                      250, 250, 250, 250, 250,
@@ -246,25 +246,25 @@ def run(parameters, test, limit_idx=1):
             op = None
             result = False
             if not allow_reduction:
-                result = improver.leaf_select(parameters, root, assigned)
+                result = improver.leaf_select(parameters, root, assigned, parameters.instance)
                 if result:
                     op = "ls"
                 if not result:
-                    result = improver.leaf_reduced(parameters, root, assigned, False)
+                    result = improver.leaf_reduced(parameters, root, assigned, parameters.instance, False)
                     if result:
                         op = "la"
 
                 if not result:
-                    result = improver.mid_reduced(parameters, root, assigned, False)
+                    result = improver.mid_reduced(parameters, root, assigned, parameters.instance, False)
                     if result:
                         op = "ma"
             else:
                 if len(assigned[root.id]) <= 5000:
-                    result = improver.leaf_reduced(parameters, root, assigned, True)
+                    result = improver.leaf_reduced(parameters, root, assigned, parameters.instance, True)
                     if result:
                         op = "lr"
                     if not result:
-                        result = improver.mid_reduced(parameters, root, assigned, True)
+                        result = improver.mid_reduced(parameters, root, assigned, parameters.instance, True)
                         if result:
                             op = "mr"
 
