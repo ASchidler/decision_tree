@@ -23,8 +23,8 @@ sample_limit_mid = [300,
 
 sample_limit_long = [50000,
                      50000, 50000, 25000, 7000, 7000,
-                     1500, 800, 600, 500, 500,
-                     500, 500, 500, 500, 500,
+                     1500, 800, 600, 500, 250,
+                     250, 250, 250, 250, 250,
                      250, 250, 250, 250, 250,
                      250, 250, 250, 250, 250,
                      250, 250, 250, 250, 250,
@@ -245,28 +245,40 @@ def run(parameters, test, limit_idx=1):
 
             op = None
             result = False
+            is_done = False
             if not allow_reduction:
-                result = improver.leaf_select(parameters, root, assigned, parameters.instance)
+                ran = False
+                result, orig = improver.leaf_select(parameters, root, assigned, parameters.instance)
                 if result:
                     op = "ls"
-                if not result:
-                    result = improver.leaf_reduced(parameters, root, assigned, parameters.instance, False)
+                elif result is None or not orig:
+                    result, _, ran = improver.leaf_reduced(parameters, root, assigned, parameters.instance, False)
                     if result:
                         op = "la"
+                elif result == False:
+                    is_done = True
 
-                if not result:
-                    result = improver.mid_reduced(parameters, root, assigned, parameters.instance, False)
+                if result is None and ran:
+                    result, orig, _ = improver.leaf_reduced(parameters, root, assigned, parameters.instance, True)
+                    if result:
+                        op = "lr"
+
+                if result is None:
+                    result, _ = improver.mid_reduced(parameters, root, assigned, parameters.instance, False)
                     if result:
                         op = "ma"
             else:
-                if len(assigned[root.id]) <= 5000:
-                    result = improver.leaf_reduced(parameters, root, assigned, parameters.instance, True)
+                if len(assigned[root.id]):
+                    result, orig, _ = improver.leaf_reduced(parameters, root, assigned, parameters.instance, True)
                     if result:
                         op = "lr"
-                    if not result:
-                        result = improver.mid_reduced(parameters, root, assigned, parameters.instance, True)
+                    if result is None or not orig:
+                        result, _ = improver.mid_reduced(parameters, root, assigned, parameters.instance, True)
                         if result:
                             op = "mr"
+                    elif result == False:
+                        is_done = True
+
 
             if result:
                 process_change(op)
@@ -274,10 +286,25 @@ def run(parameters, test, limit_idx=1):
             if 0 < parameters.timelimit < (time.time() - start_time):
                 return
 
+            def mark_as_done(c_root, target):
+                c_q = [c_root]
+                while c_q:
+                    c_n = c_q.pop()
+                    target.add(c_n.id)
+                    if not c_n.is_leaf:
+                        c_q.extend([c_n.left, c_n.right])
+
             if not allow_reduction:
                 c_ignore.add(root.id)
+                if is_done:
+                    mark_as_done(root, c_ignore)
+                    break
             else:
                 c_ignore_reduce.add(root.id)
+                if is_done:
+                    mark_as_done(root, c_ignore_reduce)
+                    break
+
             if result:
                 # TODO: This could be more efficient... We only have to re-compute assigned from the current root!
                 assigned = parameters.tree.assign(parameters.instance)

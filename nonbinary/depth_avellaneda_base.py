@@ -153,7 +153,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
             except MemoryError:
                 if log:
                     print(
-                        f"E:{len(instance.examples)} T:MO C:{len(instance.classes)} F:{instance.num_features} DS:{sum(len(instance.domains[x]) for x in range(1, instance.num_features + 1))}"
+                        f"E:{len(instance.examples)} T:MO/{time.time()-start} C:{len(instance.classes)} F:{instance.num_features} DS:{sum(len(instance.domains[x]) for x in range(1, instance.num_features + 1))}"
                         f" DM:{max(len(instance.domains[x]) for x in range(1, instance.num_features + 1))} D:{c_bound} S:{enc.estimate_size(instance, c_bound)}"
                         f" R:{instance.reduced_key is not None} E:{-1 * sum(x/len(instance.examples) * math.log2(x/len(instance.examples)) for x in instance.class_distribution.values())}")
                 return best_model, is_sat
@@ -164,14 +164,14 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
             if interrupted:
                 if log:
                     print(
-                        f"E:{len(instance.examples)} T:MO C:{len(instance.classes)} F:{instance.num_features} DS:{sum(len(instance.domains[x]) for x in range(1, instance.num_features + 1))}"
+                        f"E:{len(instance.examples)} T:MO/{time.time()-start} C:{len(instance.classes)} F:{instance.num_features} DS:{sum(len(instance.domains[x]) for x in range(1, instance.num_features + 1))}"
                         f" DM:{max(len(instance.domains[x]) for x in range(1, instance.num_features + 1))} D:{c_bound} S:{enc.estimate_size(instance, c_bound)}"
                         f" R:{instance.reduced_key is not None} E:{-1 * sum(x / len(instance.examples) * math.log2(x / len(instance.examples)) for x in instance.class_distribution.values())}")
-                has_timed_out = True
-                time.sleep(60)
-                c_bound = c_bound - enc.increment()
-                interrupted = []
-                # break
+                # has_timed_out = True
+                # time.sleep(30)
+                # c_bound = c_bound - enc.increment()
+                # interrupted = []
+                break
             elif solved:
                 is_sat = True
                 model = {abs(x): x > 0 for x in slv.get_model()}
@@ -199,6 +199,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                 c_bound += enc.increment()
                 clb = c_bound + enc.increment()
 
+    interrupted = []
     best_extension = None
     if best_model and slim and not maintain and not size_first:
         best_extension = best_model.root.get_extended_leaves()
@@ -249,6 +250,7 @@ def run(enc, instance, solver, start_bound=1, timeout=0, ub=maxsize, c_depth=max
                 if timer is not None:
                     timer.cancel()
 
+    interrupted = []
     if opt_size and best_model and not size_first and enc.estimate_size(instance, best_depth) + enc.estimate_size_add(instance, best_depth) < limits.size_limit\
             and not size_first:
         with solver() as slv:

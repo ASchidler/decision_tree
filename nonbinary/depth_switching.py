@@ -69,7 +69,6 @@ def encode_extended_leaf_size(vs, instance, solver, dl):
     return enc2.encode_extended_leaf_size(vs, instance, solver, dl) if dl >= _switch_threshold \
         else enc1.encode_extended_leaf_size(vs, instance, solver, dl)
 
-
 def encode_extended_leaf_limit(vs, instance, solver, dl):
     return enc2.encode_extended_leaf_limit(vs, instance, solver, dl) if dl >= _switch_threshold \
         else enc1.encode_extended_leaf_limit(vs, instance, solver, dl)

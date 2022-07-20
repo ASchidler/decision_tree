@@ -5,7 +5,7 @@ from sys import maxsize
 from nonbinary.nonbinary_instance import ClassificationInstance
 
 
-def build_unique_set(parameters, root, samples, reduce, limit=maxsize):
+def build_unique_set(parameters, root, samples, reduce, limit=maxsize, reduce_limit=5000):
     c_features = set()
     c_leafs = []
 
@@ -24,17 +24,20 @@ def build_unique_set(parameters, root, samples, reduce, limit=maxsize):
             q.append((c_q.right, d + 1))
             c_features.add((c_q.feature, c_q.threshold, c_q.is_categorical))
 
-    new_instance = ClassificationInstance()
-    new_instance.is_categorical.update(parameters.instance.is_categorical)
-    for s in samples:
-        if root.decide(s)[0] != s.cls:  # Skip misclassified
-            continue
-        new_s = s.copy(new_instance)
-        new_s.cls = f"-{s.cls}"
-        new_instance.add_example(new_s)
-    new_instance.finish()
+    def create_local_instance():
+        new_local_instance = ClassificationInstance()
+        new_local_instance.is_categorical.update(parameters.instance.is_categorical)
+        for s in samples:
+            if root.decide(s)[0] != s.cls:  # Skip misclassified
+                continue
+            new_s = s.copy(new_local_instance)
+            new_s.cls = f"-{s.cls}"
+            new_local_instance.add_example(new_s)
+        new_local_instance.finish()
+        return new_local_instance
 
-    if reduce:
+    new_instance = create_local_instance()
+    if reduce and len(new_instance.examples) < reduce_limit:
         #print(f"{len(new_instance.examples)}")
         new_instance.reduce_with_key(numeric_full=parameters.reduce_numeric_full or parameters.use_smt,
                                      cat_full=parameters.reduce_categoric_full or parameters.use_smt,
@@ -59,10 +62,18 @@ def build_unique_set(parameters, root, samples, reduce, limit=maxsize):
 
         new_instance.reduce(feature_key)
 
+    if reduce and len(new_instance.examples) > reduce_limit and parameters.decide_instance(new_instance, depth):
+        new_instance = create_local_instance()
+        new_instance.reduce_with_key(numeric_full=parameters.reduce_numeric_full or parameters.use_smt,
+                                     cat_full=parameters.reduce_categoric_full or parameters.use_smt,
+                                     reduce_alternate=parameters.reduce_alternate)
+    elif reduce and len(new_instance.examples) > reduce_limit:
+        return None, 0, 0
+
     return new_instance, len(c_leafs), depth
 
 
-def build_reduced_set(parameters, root, assigned, reduce, limit=sys.maxsize):
+def build_reduced_set(parameters, root, assigned, reduce, limit=sys.maxsize, reduce_limit=5000):
     max_dist = root.get_depth()
     q = [[] for _ in range(0, max_dist+1)]
     q[max_dist].append((0, root))
@@ -70,10 +81,30 @@ def build_reduced_set(parameters, root, assigned, reduce, limit=sys.maxsize):
     features = set()
     last_instance = None
     cnt = 0
+    cnt_internal = 0
     frontier = {root.id}
     max_depth = 0
     c_max_depth = 0
 
+    reduced = False
+
+    def create_local_instance(cm):
+        new_local_instance = ClassificationInstance()
+        new_local_instance.is_categorical.update(parameters.instance.is_categorical)
+        for s in assigned[root.id]:
+            if root.decide(s)[0] != s.cls:  # Skip misclassified
+                continue
+            n_s = s.copy(new_local_instance)
+            n_s.cls, is_leaf = cm[s.id]
+            if not is_leaf and s.cls in classes:
+                n_s.surrogate_cls = f"-{s.cls}"
+            new_local_instance.add_example(n_s)
+        new_local_instance.class_sizes = class_sizes
+        new_local_instance.is_categorical.update(parameters.instance.is_categorical)
+        new_local_instance.finish()
+        return new_local_instance
+
+    class_mapping = None
     while q:
         while q and not q[-1]:
             q.pop()
@@ -126,21 +157,9 @@ def build_reduced_set(parameters, root, assigned, reduce, limit=sys.maxsize):
 
             # If all "leaves" are leaves, this method is not required, as it will be handled by separate improvements
             if cnt_internal > 0:
-                new_instance = ClassificationInstance()
-                new_instance.is_categorical.update(parameters.instance.is_categorical)
-                for s in assigned[root.id]:
-                    if root.decide(s)[0] != s.cls:  # Skip misclassified
-                        continue
-                    n_s = s.copy(new_instance)
-                    n_s.cls, is_leaf = class_mapping[s.id]
-                    if not is_leaf and s.cls in classes:
-                        n_s.surrogate_cls = f"-{s.cls}"
-                    new_instance.add_example(n_s)
-                new_instance.class_sizes = class_sizes
-                new_instance.is_categorical.update(parameters.instance.is_categorical)
-                new_instance.finish()
+                new_instance = create_local_instance(class_mapping)
 
-                if reduce:
+                if reduce and len(new_instance.examples) < reduce_limit:
                     #print(f"{len(new_instance.examples)}")
                     new_instance.reduce_with_key(numeric_full=parameters.reduce_numeric_full or parameters.use_smt,
                                                  cat_full=parameters.reduce_categoric_full or parameters.use_smt,
@@ -165,15 +184,30 @@ def build_reduced_set(parameters, root, assigned, reduce, limit=sys.maxsize):
 
                     new_instance.reduce(feature_key)
 
-                # TODO: This leads to adding as many nodes as possible. To emphasize the remaining depth more,
-                #  one should stop when the node with the highest remaining depth fails due to too high depth
-                #  or too many samples
                 if parameters.decide_instance(new_instance, c_max_depth) or \
                         (last_instance is None and parameters.decide_instance(new_instance, 1)):
                     last_instance = new_instance
+                    if reduce and len(new_instance.examples) < reduce_limit:
+                        reduced = True
+                    else:
+                        reduced = False
                     max_depth = c_max_depth
                 else:
                     q = None
+
+    if reduce and not reduced and cnt >= 3 and cnt_internal > 0:
+        new_instance = create_local_instance(class_mapping)
+
+        if reduce and len(new_instance.examples) < reduce_limit:
+            # print(f"{len(new_instance.examples)}")
+            new_instance.reduce_with_key(numeric_full=parameters.reduce_numeric_full or parameters.use_smt,
+                                         cat_full=parameters.reduce_categoric_full or parameters.use_smt,
+                                         reduce_alternate=parameters.reduce_alternate)
+            if parameters.decide_instance(new_instance, c_max_depth) or \
+                    (last_instance is None and parameters.decide_instance(new_instance, 1)):
+                return new_instance, max_depth, len(frontier)
+            else:
+                return None, 0, 1
 
     return last_instance, max_depth, len(frontier)
 
@@ -271,10 +305,10 @@ def stitch(old_tree, new_tree, root, instance):
 
 def leaf_select(parameters, node, assigned, instance):
     if len(assigned[node.id]) > parameters.maximum_examples:
-        return False
+        return None, False
     c_d = node.get_depth()
     if c_d < 2:
-        return False
+        return False, True
 
     new_instance = ClassificationInstance()
     for s in assigned[node.id]:
@@ -289,8 +323,9 @@ def leaf_select(parameters, node, assigned, instance):
     new_instance.finish()
 
     new_ub = parameters.get_max_bound(new_instance)
+    original_ub = new_ub >= c_d
     if new_ub < 1:
-        return False
+        return None, original_ub
 
     leaves = node.get_leaves()
     new_tree, is_sat = parameters.call_solver(new_instance, new_ub, c_d, leaves)
@@ -298,23 +333,26 @@ def leaf_select(parameters, node, assigned, instance):
     if is_sat is None:
         # Wait after a memory out, to ensure resources are cleaned up
         time.sleep(30)
-    elif new_tree is None:
-        return False
+
+    if new_tree is None:
+        return is_sat, original_ub
     else:
         stitch(parameters.tree, new_tree, node, None)
-        return True
+        return True, original_ub
 
 
-def leaf_reduced(parameters, node, assigned, instance, reduce=False):
-    new_instance, leaves, cd = build_unique_set(parameters, node, assigned[node.id], reduce=reduce)
+def leaf_reduced(parameters, node, assigned, instance, reduce=False, reduce_limit=5000):
+    new_instance, leaves, cd = build_unique_set(parameters, node, assigned[node.id], reduce=reduce, reduce_limit=5000)
+    if new_instance is None:
+        return None, True, False
 
     if cd < 2:
-        return False
+        return False, True, False
 
     new_ub = parameters.get_max_bound(new_instance)
-
+    original_ub = new_ub >= cd
     if new_ub < 1:
-        return False
+        return False, True, False
 
     for cs in new_instance.examples:
         for f, v in enumerate(cs.features):
@@ -328,14 +366,14 @@ def leaf_reduced(parameters, node, assigned, instance, reduce=False):
     if new_tree is not None:
         new_instance.unreduce(new_tree)
         stitch(parameters.tree, new_tree, node, None)
-        return True
+        return True, original_ub, True
     elif is_sat is None:
         time.sleep(30)
 
-    return False
+    return is_sat, original_ub, True
 
 
-def mid_reduced(parameters, node, assigned, instance, reduce):
+def mid_reduced(parameters, node, assigned, instance, reduce, reduce_limit=5000):
     # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
     if node.is_leaf:
         return False
@@ -346,14 +384,15 @@ def mid_reduced(parameters, node, assigned, instance, reduce):
     new_instance = None
 
     while limits >= 2 and new_tree is None:
-        new_instance, i_depth, leaves = build_reduced_set(parameters, c_parent, assigned, reduce, limits)
+        new_instance, i_depth, leaves = build_reduced_set(parameters, c_parent, assigned, reduce, limits, reduce_limit)
 
         if new_instance is None or len(new_instance.examples) == 0:
-            return False
+            return None, True
 
         new_ub = parameters.get_max_bound(new_instance)
+        original_ub = new_ub >= i_depth
         if new_ub < 1:
-            return False
+            return None, original_ub
 
         for cs in new_instance.examples:
             for f, v in enumerate(cs.features):
@@ -367,11 +406,13 @@ def mid_reduced(parameters, node, assigned, instance, reduce):
 
             # Stitch the new tree in the middle
             stitch(parameters.tree, new_tree, c_parent, parameters.instance)
-            return True
+            return True, original_ub
         elif is_sat is None:
             time.sleep(30)
+            # Try again with lower limit until we get UNSAT
             limits = i_depth - 1
+            return None, original_ub
         else:
-            return False
+            return False, original_ub
 
-    return False
+    return None, True
