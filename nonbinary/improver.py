@@ -2,6 +2,7 @@ import sys
 import time
 from sys import maxsize
 
+import nonbinary.nonbinary_instance
 from nonbinary.nonbinary_instance import ClassificationInstance
 
 
@@ -73,7 +74,7 @@ def build_unique_set(parameters, root, samples, reduce, limit=maxsize, reduce_li
     return new_instance, len(c_leafs), depth
 
 
-def build_reduced_set(parameters, root, assigned, reduce, limit=sys.maxsize, reduce_limit=5000):
+def build_reduced_set(parameters, root, assigned, reduce, limit=sys.maxsize, reduce_limit=5000, duplicate=False):
     max_dist = root.get_depth()
     q = [[] for _ in range(0, max_dist+1)]
     q[max_dist].append((0, root))
@@ -87,17 +88,19 @@ def build_reduced_set(parameters, root, assigned, reduce, limit=sys.maxsize, red
     c_max_depth = 0
 
     reduced = False
+    duplicate_instance = None
 
     def create_local_instance(cm):
         new_local_instance = ClassificationInstance()
         new_local_instance.is_categorical.update(parameters.instance.is_categorical)
-        for s in assigned[root.id]:
-            if root.decide(s)[0] != s.cls:  # Skip misclassified
+
+        for cs in assigned[root.id]:
+            if root.decide(cs)[0] != cs.cls:  # Skip misclassified
                 continue
-            n_s = s.copy(new_local_instance)
-            n_s.cls, is_leaf = cm[s.id]
-            if not is_leaf and s.cls in classes:
-                n_s.surrogate_cls = f"-{s.cls}"
+            n_s = cs.copy(new_local_instance)
+            n_s.cls, is_leaf = cm[cs.id]
+            if not is_leaf and cs.cls in classes:
+                n_s.surrogate_cls = f"-{cs.cls}"
             new_local_instance.add_example(n_s)
         new_local_instance.class_sizes = class_sizes
         new_local_instance.is_categorical.update(parameters.instance.is_categorical)
@@ -158,6 +161,8 @@ def build_reduced_set(parameters, root, assigned, reduce, limit=sys.maxsize, red
             # If all "leaves" are leaves, this method is not required, as it will be handled by separate improvements
             if cnt_internal > 0:
                 new_instance = create_local_instance(class_mapping)
+                if duplicate:
+                    duplicate_instance = new_instance.copy()
 
                 if reduce and len(new_instance.examples) < reduce_limit:
                     #print(f"{len(new_instance.examples)}")
@@ -197,6 +202,8 @@ def build_reduced_set(parameters, root, assigned, reduce, limit=sys.maxsize, red
 
     if reduce and not reduced and cnt >= 3 and cnt_internal > 0:
         new_instance = create_local_instance(class_mapping)
+        if duplicate:
+            duplicate_instance = new_instance.copy()
 
         if reduce and len(new_instance.examples) < reduce_limit:
             # print(f"{len(new_instance.examples)}")
@@ -209,7 +216,7 @@ def build_reduced_set(parameters, root, assigned, reduce, limit=sys.maxsize, red
             else:
                 return None, 0, 1
 
-    return last_instance, max_depth, len(frontier)
+    return last_instance, max_depth, len(frontier), duplicate_instance
 
 
 def stitch(old_tree, new_tree, root, instance):
@@ -341,8 +348,8 @@ def leaf_select(parameters, node, assigned, instance):
         return True, original_ub
 
 
-def leaf_reduced(parameters, node, assigned, instance, reduce=False, reduce_limit=5000):
-    new_instance, leaves, cd = build_unique_set(parameters, node, assigned[node.id], reduce=reduce, reduce_limit=5000)
+def leaf_reduced(parameters, node, assigned, instance, reduce=False, reduce_limit=10000):
+    new_instance, leaves, cd = build_unique_set(parameters, node, assigned[node.id], reduce=reduce, reduce_limit=reduce_limit)
     if new_instance is None:
         return None, True, False
 
@@ -373,7 +380,7 @@ def leaf_reduced(parameters, node, assigned, instance, reduce=False, reduce_limi
     return is_sat, original_ub, True
 
 
-def mid_reduced(parameters, node, assigned, instance, reduce, reduce_limit=5000):
+def mid_reduced(parameters, node, assigned, instance, reduce, reduce_limit=10000, rerun=False):
     # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
     if node.is_leaf:
         return False
@@ -384,7 +391,8 @@ def mid_reduced(parameters, node, assigned, instance, reduce, reduce_limit=5000)
     new_instance = None
 
     while limits >= 2 and new_tree is None:
-        new_instance, i_depth, leaves = build_reduced_set(parameters, c_parent, assigned, reduce, limits, reduce_limit)
+        new_instance, i_depth, leaves, duplicate_instance = \
+            build_reduced_set(parameters, c_parent, assigned, reduce, limits, reduce_limit, duplicate=rerun)
 
         if new_instance is None or len(new_instance.examples) == 0:
             return None, True
@@ -409,10 +417,21 @@ def mid_reduced(parameters, node, assigned, instance, reduce, reduce_limit=5000)
             return True, original_ub
         elif is_sat is None:
             time.sleep(30)
-            # Try again with lower limit until we get UNSAT
-            limits = i_depth - 1
-            return None, original_ub
-        else:
-            return False, original_ub
+
+        if rerun and len(new_instance.examples) and len(new_instance.examples) <= reduce_limit:
+            duplicate_instance.reduce_with_key(numeric_full=parameters.reduce_numeric_full or parameters.use_smt,
+                                         cat_full=parameters.reduce_categoric_full or parameters.use_smt,
+                                         reduce_alternate=parameters.reduce_alternate)
+            new_tree, is_sat = parameters.call_solver(duplicate_instance, new_ub, i_depth, leaves)
+            if new_tree is not None:
+                new_instance.unreduce(new_tree)
+
+                # Stitch the new tree in the middle
+                stitch(parameters.tree, new_tree, c_parent, parameters.instance)
+                return True, original_ub
+            elif is_sat is None:
+                time.sleep(30)
+
+        return is_sat, original_ub
 
     return None, True

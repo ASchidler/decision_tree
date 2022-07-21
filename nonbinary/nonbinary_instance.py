@@ -48,6 +48,18 @@ class ClassificationInstance:
         self.class_sizes = None
         self.layer_reduced = False
 
+    def copy(self):
+        new_instance = ClassificationInstance()
+        new_instance.is_categorical.update(self.is_categorical)
+
+        for s in self.examples:
+            n_s = s.copy(new_instance)
+            new_instance.add_example(n_s)
+        new_instance.class_sizes = self.class_sizes
+        new_instance.finish()
+
+        return new_instance
+
     def finish(self, base_instance=None, clean_domains=True):
         c_idx = 1
         self.domains_max = [0 for _ in range(0, self.num_features + 1)]
@@ -241,7 +253,16 @@ class ClassificationInstance:
         if reduce_alternate and len(self.examples) <= 2000:
             key = self.min_key_greedy2(cat_full, numeric_full)
         else:
-            key = self.min_key_greedy(cat_full, numeric_full)
+            if len(self.examples) <= 4000:
+                key = self.min_key_greedy(cat_full, numeric_full)
+            else:
+                class_count = defaultdict(int)
+                for c_e in self.examples:
+                    class_count[c_e.cls] += 1
+                if min(class_count.values()) <= 150 and len(self.examples) <= 8000:
+                    key = self.min_key_greedy(cat_full, numeric_full)
+                else:
+                    key = self.min_key_random(cat_full, numeric_full)
 
         self.reduce(key)
 

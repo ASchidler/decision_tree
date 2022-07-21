@@ -248,31 +248,37 @@ def run(parameters, test, limit_idx=1):
             is_done = False
             if not allow_reduction:
                 ran = False
+                print("ls")
                 result, orig = improver.leaf_select(parameters, root, assigned, parameters.instance)
                 if result:
                     op = "ls"
                 elif result is None or not orig:
+                    print("la")
                     result, _, ran = improver.leaf_reduced(parameters, root, assigned, parameters.instance, False)
                     if result:
                         op = "la"
                 elif result == False:
                     is_done = True
 
-                if result is None and ran:
+                if not result and ran:
+                    print("lr")
                     result, orig, _ = improver.leaf_reduced(parameters, root, assigned, parameters.instance, True)
                     if result:
                         op = "lr"
 
                 if result is None:
-                    result, _ = improver.mid_reduced(parameters, root, assigned, parameters.instance, False)
+                    print("ma")
+                    result, _ = improver.mid_reduced(parameters, root, assigned, parameters.instance, False, rerun=True)
                     if result:
                         op = "ma"
             else:
                 if len(assigned[root.id]):
                     result, orig, _ = improver.leaf_reduced(parameters, root, assigned, parameters.instance, True)
+                    print("lr")
                     if result:
                         op = "lr"
                     if result is None or not orig:
+                        print("mr")
                         result, _ = improver.mid_reduced(parameters, root, assigned, parameters.instance, True)
                         if result:
                             op = "mr"
