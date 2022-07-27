@@ -1,0 +1,9 @@
+a(21) = f
+-a(10) = f
+--a(33) = f
+---a(32) = t
+----c(nowin)
+----c(won)
+---c(nowin)
+--c(nowin)
+-c(won)
