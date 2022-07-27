@@ -15,6 +15,7 @@ def parse_file(fl, experiment):
     time_taken = None
     c_encoding = ""
     c_val = ""
+    parsed_first = False
 
     for ci, cl in enumerate(fl):
         if type(cl) is not str:
@@ -25,6 +26,9 @@ def parse_file(fl, experiment):
             if cl.startswith("Only "):
                 # Error if the index is too high
                 return
+
+        if not parsed_first and cl.startswith("Instance:"):
+            parsed_first = True
             data_file = cl.split(",")[0].split(":")[1].strip()
             c_flags = cl[cl.find("(")+1:cl.find(")")].split(",")
             cfs = {x[0]: x[1] for x in (y.strip().split("=") for y in c_flags)}
@@ -136,7 +140,10 @@ with tarfile.open(argv[1]) as tar_file:
             continue
 
         file_parts = file_parts[0].split("-")
-        experiment = file_parts[-1][0]
+        if file_parts[-2] == "encoding" or file_parts[-3] == "encoding":
+            experiment = "e"
+        else:
+            experiment = file_parts[-1][0]
 
         cetf = tar_file.extractfile(ctf)
         parse_file(cetf, experiment)
