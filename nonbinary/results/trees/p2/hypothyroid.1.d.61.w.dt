@@ -1,0 +1,7 @@
+a(23) <= 64.0
+-a(15) <= 24
+--a(15) <= 5.96533
+---c(negative)
+---c(hypothyroid)
+--c(hypothyroid)
+-c(negative)

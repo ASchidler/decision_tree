@@ -1,0 +1,11 @@
+a(2) <= 13
+-a(1) <= 3
+--c(mouse)
+--a(1) <= 6
+---c(elephant)
+---c(mouse)
+-a(2) <= 15
+--c(elephant)
+--a(1) <= 2
+---c(mouse)
+---c(elephant)

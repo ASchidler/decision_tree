@@ -1,0 +1,15 @@
+a(5) <= 4.0
+-a(2) <= 22.0
+--a(5) <= 2.0
+---a(5) <= -1.0
+----c(Medium-N/A)
+----a(2) <= 21.0
+-----a(3) = Other
+------c(Low-Low)
+------c(Medium-Low)
+-----c(Low-Low)
+---c(Medium-Low)
+--c(Low-Low)
+-a(5) <= 7.0
+--c(Low-Medium)
+--c(Medium-High)

@@ -1,0 +1,53 @@
+a(26) <= 0.0
+-a(15) <= 1.0
+--a(15) <= 0.0
+---a(22) <= 1.0
+----a(14) <= 0.0
+-----c(bacterial-blight)
+-----c(bacterial-pustule)
+----c(purple-seed-stain)
+---a(18) <= 1.0
+----a(28) <= 0.0
+-----a(1) <= 3.0
+------a(3) <= 1.0
+-------a(1) <= 1.0
+--------c(brown-spot)
+--------c(phyllosticta-leaf-spot)
+-------a(6) <= 0.0
+--------c(alternarialeaf-spot)
+--------c(brown-spot)
+------a(23) <= 0.169117
+-------a(4) <= 1.13
+--------a(1) <= 4.0
+---------a(2) <= 0.464882
+----------c(frog-eye-leaf-spot)
+----------c(alternarialeaf-spot)
+---------c(alternarialeaf-spot)
+--------c(alternarialeaf-spot)
+-------c(brown-spot)
+-----c(frog-eye-leaf-spot)
+----c(downy-mildew)
+--a(21) <= 0.0
+---a(4) <= 1.13
+----a(3) <= 1.0
+-----c(powdery-mildew)
+-----c(purple-seed-stain)
+----c(diaporthe-pod-&-stem-blight)
+---a(22) <= 1.0
+----a(4) <= 0.0
+-----c(rhizoctonia-root-rot)
+-----a(29) <= 2.0
+------c(anthracnose)
+------c(diaporthe-stem-canker)
+----a(1) <= 4.0
+-----a(2) <= 0.464882
+------c(anthracnose)
+------c(phytophthora-rot)
+-----c(anthracnose)
+-a(3) <= 1.0
+--a(26) <= 1.0
+---c(brown-stem-rot)
+---c(charcoal-rot)
+--a(1) <= 1.0
+---c(herbicide-injury)
+---c(cyst-nematode)

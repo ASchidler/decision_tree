@@ -1,0 +1,7 @@
+a(3) <= 21.0
+-a(4) <= 30.0
+--c(mouse)
+--a(1) <= 2.0
+---c(mouse)
+---c(elephant)
+-c(elephant)

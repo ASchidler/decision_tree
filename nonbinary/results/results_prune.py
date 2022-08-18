@@ -5,9 +5,9 @@ import nonbinary.nonbinary_instance as nbi
 import nonbinary.pruning as p
 
 algos = ["w"]
-trees = ["m"]
+trees = ["d"]
 #flags = ["0", "a", "y"]
-flags = ["01z"]
+flags = ["61"]
 #flags = ["00", "00z", "40", "40z", "50", "50z", "70", "70z"]
 #flags = ["uzy"]
 use_ccp = False

@@ -1,0 +1,35 @@
+a(5) = o
+-a(7) = x
+--a(1) = x
+---a(4) = x
+----c(positive)
+----a(3) = x
+-----a(2) = x
+------c(positive)
+------c(negative)
+-----c(negative)
+---a(9) = x
+----a(8) = x
+-----c(positive)
+-----c(negative)
+----c(negative)
+--a(3) = x
+---a(2) = x
+----a(1) = x
+-----c(positive)
+-----c(negative)
+----a(9) = x
+-----a(6) = x
+------c(positive)
+------c(negative)
+-----c(negative)
+---c(negative)
+-a(9) = o
+--a(7) = o
+---c(negative)
+---c(positive)
+--a(1) = o
+---a(4) = x
+----c(positive)
+----c(positive)
+---c(positive)

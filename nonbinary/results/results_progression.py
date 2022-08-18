@@ -4,13 +4,14 @@ import sys
 import tarfile
 import matplotlib.pyplot as plt
 
-logfiles = [
-    ("dt-nb-k-1.tar.bz2", "DP-SL-SZ"), ("dt-nb-k-2.tar.bz2", "DP-SL-SZ"),
-    ("dt-nb-m-1.tar.bz2", "DP-SZ"),
-    ("dt-nb-n-1.tar.bz2", "MT-DP"), ("dt-nb-n-2.tar.bz2", "MT-DP"),
-    ("dt-nb-q-1.tar.bz2", "DP"), ("dt-nb-q-2.tar.bz2", "DP"),
-    ("dt-nb-f-1.tar.bz2", "SZ-DP")
-]
+# logfiles = [
+#     ("dt-nb-k-1.tar.bz2", "DP-SL-SZ"), ("dt-nb-k-2.tar.bz2", "DP-SL-SZ"),
+#     ("dt-nb-m-1.tar.bz2", "DP-SZ"),
+#     ("dt-nb-n-1.tar.bz2", "MT-DP"), ("dt-nb-n-2.tar.bz2", "MT-DP"),
+#     ("dt-nb-q-1.tar.bz2", "DP"), ("dt-nb-q-2.tar.bz2", "DP"),
+#     ("dt-nb-f-1.tar.bz2", "SZ-DP")
+# ]
+logfiles = [("bdd-journal-unpruned-z.tar.bz2", "DT-SLIM")]
 # logfiles = [
 #     ("dt-nb-m-1.tar.bz2", "Old Budget"),
 #     ("dt-nb-x-1.tar.bz2", "DT Budget"),
@@ -21,6 +22,7 @@ slice = sys.argv[2]
 
 fields = [(1, "Depth"), (2, "Size"), (4, "Accuracy"), (5, "Avg. Decision Length")]
 field_idx = 0
+
 
 colors = ['#228833', 'black', '#eecc66', '#bb5566', '#004488']
 symbols = ['d', 'x', 's', 'v', 'o']
@@ -51,26 +53,31 @@ for logfile, logfile_name in logfiles:
 
             cetf = tar_file.extractfile(ctf)
 
+            started = False
             for ci, cl in enumerate(cetf):
                 if type(cl) is not str:
                     cl = cl.decode('ascii')
 
-                if ci == 0:
-                    if not cl.startswith("Instance: "+instance_name) or cl.find("slice="+ slice) == -1:
+                if cl.startswith("Instance:"):
+                    if cl.startswith("Instance: "+instance_name) and cl.find("slice="+ slice) != -1:
+                        started = True
+                    else:
                         break
-                done = True
-                if cl.startswith("START") or cl.startswith("END"):
-                    cl = cl.replace(":", "")[len("START Tree"):]
-                    cf = cl.split(",")
-                    cv = [x.strip().split(" ")[-1].strip() for x in cf]
-                    avg_d = None if len(cv) < 6 else cv[4]
-                    entries.append((cv[-1], cv[0], cv[1], cv[2], cv[3], avg_d))
-                elif cl.startswith("Time:") or cl.startswith("Time "):
-                    # Time: 230.2385	Training 1.0000	Test 0.8406	Depth 019	Nodes 139	Method ma
-                    cf = cl.replace(":", "").strip().split("\t")
-                    cv = [x.strip().split(" ")[-1].strip() for x in cf]
-                    avg_d = None if len(cv) < 7 else cv[5]
-                    entries.append((cv[0], cv[3], cv[4], cv[1], cv[2], avg_d))
+
+                if started:
+                    done = True
+                    if cl.startswith("START") or cl.startswith("END"):
+                        cl = cl.replace(":", "")[len("START Tree"):]
+                        cf = cl.split(",")
+                        cv = [x.strip().split(" ")[-1].strip() for x in cf]
+                        avg_d = None if len(cv) < 6 else cv[4]
+                        entries.append((cv[-1], cv[0], cv[1], cv[2], cv[3], avg_d))
+                    elif cl.startswith("Time:") or cl.startswith("Time "):
+                        # Time: 230.2385	Training 1.0000	Test 0.8406	Depth 019	Nodes 139	Method ma
+                        cf = cl.replace(":", "").strip().split("\t")
+                        cv = [x.strip().split(" ")[-1].strip() for x in cf]
+                        avg_d = None if len(cv) < 7 else cv[5]
+                        entries.append((cv[0], cv[3], cv[4], cv[1], cv[2], avg_d))
 
 legend = []
 done = set()

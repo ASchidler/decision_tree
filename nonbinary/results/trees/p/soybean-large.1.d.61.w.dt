@@ -1,0 +1,153 @@
+a(14) <= 0.0
+-a(2) <= 0.464882
+--a(8) <= 0.0
+---a(9) <= 0.0
+----a(1) <= 4.0
+-----a(22) <= 1.0
+------a(1) <= 3.0
+-------a(15) <= 0.0
+--------c(bacterial-blight)
+--------c(phyllosticta-leaf-spot)
+-------a(7) <= 1.0
+--------c(frog-eye-leaf-spot)
+--------c(alternarialeaf-spot)
+------c(purple-seed-stain)
+-----a(21) <= 0.0
+------a(22) <= 1.0
+-------c(alternarialeaf-spot)
+-------c(purple-seed-stain)
+------c(frog-eye-leaf-spot)
+----a(7) <= 1.0
+-----a(28) <= 0.0
+------a(1) <= 5.0
+-------a(3) <= 1.0
+--------c(frog-eye-leaf-spot)
+--------c(alternarialeaf-spot)
+-------a(16) <= 0.170818
+--------c(downy-mildew)
+--------c(alternarialeaf-spot)
+------c(frog-eye-leaf-spot)
+-----a(21) <= 0.0
+------a(1) <= 4.0
+-------a(6) <= 0.0
+--------c(phyllosticta-leaf-spot)
+--------c(frog-eye-leaf-spot)
+-------a(19) <= 0.0
+--------c(alternarialeaf-spot)
+--------c(purple-seed-stain)
+------c(frog-eye-leaf-spot)
+---a(1) <= 3.0
+----a(1) <= 2.0
+-----a(16) <= 0.170818
+------a(18) <= 1.0
+-------c(brown-spot)
+-------c(downy-mildew)
+------a(3) <= 1.0
+-------c(phyllosticta-leaf-spot)
+-------c(brown-spot)
+-----a(6) <= 0.0
+------c(alternarialeaf-spot)
+------a(16) <= 0.170818
+-------a(23) <= 0.169117
+--------c(frog-eye-leaf-spot)
+--------c(brown-spot)
+-------a(9) <= 0.0
+--------c(brown-spot)
+--------c(bacterial-blight)
+----a(4) <= 1.13
+-----a(9) <= 0.0
+------a(3) <= 1.0
+-------a(26) <= 0.0
+--------c(alternarialeaf-spot)
+--------c(brown-stem-rot)
+-------a(23) <= 0.169117
+--------c(frog-eye-leaf-spot)
+--------c(brown-spot)
+------a(16) <= 0.170818
+-------a(22) <= 1.0
+--------c(frog-eye-leaf-spot)
+--------c(brown-spot)
+-------a(15) <= 0.0
+--------c(bacterial-blight)
+--------c(alternarialeaf-spot)
+-----a(15) <= 0.0
+------c(bacterial-blight)
+------a(22) <= 1.0
+-------c(alternarialeaf-spot)
+-------c(frog-eye-leaf-spot)
+--a(1) <= 4.0
+---a(4) <= 1.13
+----a(1) <= 3.0
+-----a(3) <= 1.0
+------a(1) <= 2.0
+-------a(17) <= 0.049645
+--------c(brown-spot)
+--------c(phyllosticta-leaf-spot)
+-------a(26) <= 0.0
+--------c(phyllosticta-leaf-spot)
+--------c(brown-stem-rot)
+------a(1) <= 2.0
+-------a(18) <= 1.0
+--------c(brown-spot)
+--------c(downy-mildew)
+-------a(23) <= 0.169117
+--------c(frog-eye-leaf-spot)
+--------c(brown-spot)
+-----a(15) <= 0.0
+------c(bacterial-pustule)
+------a(19) <= 0.0
+-------a(18) <= 1.0
+--------c(alternarialeaf-spot)
+--------c(downy-mildew)
+-------a(23) <= 0.169117
+--------c(brown-stem-rot)
+--------c(brown-spot)
+----a(16) <= 0.170818
+-----a(8) <= 0.0
+------a(11) <= 0.339869
+-------c(downy-mildew)
+-------c(frog-eye-leaf-spot)
+------a(18) <= 1.0
+-------c(brown-spot)
+-------c(downy-mildew)
+-----a(15) <= 0.0
+------c(bacterial-blight)
+------c(phyllosticta-leaf-spot)
+---a(6) <= 0.0
+----c(alternarialeaf-spot)
+----a(4) <= 1.13
+-----a(22) <= 1.0
+------a(18) <= 1.0
+-------a(16) <= 0.170818
+--------c(frog-eye-leaf-spot)
+--------c(alternarialeaf-spot)
+-------c(downy-mildew)
+------a(3) <= 1.0
+-------c(brown-stem-rot)
+-------a(9) <= 0.0
+--------c(brown-spot)
+--------c(frog-eye-leaf-spot)
+-----a(28) <= 0.0
+------c(alternarialeaf-spot)
+------c(frog-eye-leaf-spot)
+-a(21) <= 0
+--a(13) <= 0
+---a(26) <= 0
+----a(22) <= 0.959459
+-----c(powdery-mildew)
+-----c(purple-seed-stain)
+----a(27) <= 0.033783
+-----c(brown-stem-rot)
+-----c(charcoal-rot)
+---a(15) <= 0
+----c(bacterial-pustule)
+----c(diaporthe-pod-&-stem-blight)
+--a(35) <= 0
+---a(28) <= 1
+----a(29) <= 2
+-----c(anthracnose)
+-----c(diaporthe-stem-canker)
+----a(12) <= 0
+-----c(rhizoctonia-root-rot)
+-----c(phytophthora-rot)
+---c(phytophthora-rot)

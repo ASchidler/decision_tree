@@ -1,0 +1,35 @@
+a(66) = ad
+-a(3) = f
+--c(mixed_cochlear_unk_discontinuity)
+--c(conductive_discontinuity)
+-a(66) = a
+--a(1) = f
+---a(11) = f
+----a(58) = f
+-----a(2) = normal
+------a(6) = unmeasured
+-------c(cochlear_unknown)
+-------a(7) = f
+--------a(57) = f
+---------c(normal_ear)
+---------c(cochlear_unknown)
+--------c(cochlear_unknown)
+------c(cochlear_unknown)
+-----c(cochlear_poss_noise)
+----c(possible_menieres)
+---a(6) = mild
+----a(15) = f
+-----c(cochlear_age)
+-----c(cochlear_age_and_noise)
+----a(14) = t
+-----c(possible_menieres)
+-----a(57) = t
+------c(cochlear_age_and_noise)
+------c(cochlear_age)
+--a(1) = t
+---c(mixed_cochlear_age_otitis_media)
+---a(7) = t
+----a(66) = b
+-----c(mixed_cochlear_unk_ser_om)
+-----c(mixed_poss_noise_om)
+----c(conductive_fixation)

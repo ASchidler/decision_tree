@@ -15,6 +15,7 @@ def parse_file(fl, experiment):
     time_taken = None
     c_encoding = ""
     c_val = ""
+    parsed_first = False
 
     start = False
     for ci, cl in enumerate(fl):
@@ -138,7 +139,10 @@ with tarfile.open(argv[1]) as tar_file:
             continue
 
         file_parts = file_parts[0].split("-")
-        experiment = file_parts[-1][0]
+        if file_parts[-2] == "encoding" or file_parts[-3] == "encoding":
+            experiment = "e"
+        else:
+            experiment = file_parts[-1][0]
 
         cetf = tar_file.extractfile(ctf)
         parse_file(cetf, experiment)

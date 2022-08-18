@@ -1,0 +1,5 @@
+a(5) <= 4.0
+-a(2) <= 22.0
+--c(Medium-Low)
+--c(Low-Low)
+-c(Low-Medium)

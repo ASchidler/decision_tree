@@ -1,0 +1,9 @@
+a(2) <= 15
+-a(2) <= 14
+--a(3) <= 20
+---c(mouse)
+---c(elephant)
+--c(mouse)
+-a(3) <= 22
+--c(mouse)
+--c(elephant)
