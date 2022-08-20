@@ -1,9 +1,11 @@
 a(5) <= 37
--a(2) <= 11
+-a(3) <= 20
 --c(mouse)
 --a(1) <= 2
 ---c(mouse)
 ---c(elephant)
--a(2) <= 16
+-a(2) <= 15
 --c(mouse)
---c(elephant)
+--a(3) <= 19
+---c(mouse)
+---c(elephant)

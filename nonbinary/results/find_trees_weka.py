@@ -250,7 +250,7 @@ for fl in fls:
                 c_c += 0.01 if c_c < 0.05 else 0.05
 
             try:
-                instance, instance_test, instance_validation = parse(pth, fl, c_slice, use_validation=False)
+                instance, instance_test, instance_validation = parse(pth, fl, c_slice, use_validation=True)
             except FileNotFoundError:
                 # Invalid slice for instances with test set.
                 continue

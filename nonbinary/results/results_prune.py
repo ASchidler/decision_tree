@@ -10,7 +10,7 @@ trees = ["d"]
 flags = ["61"]
 #flags = ["00", "00z", "40", "40z", "50", "50z", "70", "70z"]
 #flags = ["uzy"]
-use_ccp = False
+use_ccp = True
 
 for c_file in sorted(os.listdir("../instances")):
     if c_file.endswith(".data"):
@@ -27,7 +27,8 @@ for c_file in sorted(os.listdir("../instances")):
                     if os.path.exists(out_path):
                         continue
 
-                    tree_path = os.path.join("trees", c_t, f"{fd[0]}.{fd[1]}.{c_t}.{c_f}.{c_a}.dt")
+                    #tree_path = os.path.join("trees", c_t, f"{fd[0]}.{fd[1]}.{c_t}.{c_f}.{c_a}.dt")
+                    tree_path = os.path.join("trees", "v", f"{fd[0]}.{fd[1]}.v.v{c_f.replace('u', '')}.{c_a}.dt")
                     v_tree_path = os.path.join("trees", "v", f"{fd[0]}.{fd[1]}.v.v{c_f.replace('u', '')}.{c_a}.dt")
                     #v_tree_path = os.path.join("trees", "validation", f"{fd[0]}.{fd[1]}.{c_a}.dt")
 
