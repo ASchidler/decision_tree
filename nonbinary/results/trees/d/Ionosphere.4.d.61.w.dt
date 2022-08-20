@@ -1,0 +1,550 @@
+a(24) <= -0.16228
+-a(17) <= 0.22813
+--a(25) <= 0.03286
+---a(4) <= 0.13582
+----c(0)
+----c(1)
+---a(10) <= -0.06811
+----c(0)
+----c(1)
+--a(28) <= -0.10211
+---a(28) <= -1
+----c(0)
+----c(1)
+---a(24) <= -0.26571
+----c(0)
+----c(1)
+-a(24) <= 0.25728
+--a(19) <= 0.73827
+---a(21) <= -0.00003
+----a(34) <= -0.00006
+-----c(1)
+-----c(0)
+----a(23) <= 0.17021
+-----c(0)
+-----c(1)
+---a(9) <= 0.76087
+----a(16) <= 0.14137
+-----c(0)
+-----c(1)
+----a(33) <= 0.48319
+-----c(0)
+-----c(1)
+--a(31) <= 0.42267
+---a(15) <= 0.57620
+----a(16) <= 0.32558
+-----c(0)
+-----c(1)
+----a(27) <= 0.49090
+-----c(1)
+-----c(0)
+---a(26) <= -0.12174
+----a(31) <= 0.99112
+-----c(1)
+-----c(0)
+----a(30) <= 0
+-----c(0)
+-----c(1)
+1 HTRU_2.1.data
+2 HTRU_2.2.data
+3 HTRU_2.3.data
+4 HTRU_2.4.data
+5 HTRU_2.5.data
+6 IndiansDiabetes.1.data
+7 IndiansDiabetes.2.data
+8 IndiansDiabetes.3.data
+9 IndiansDiabetes.4.data
+10 IndiansDiabetes.5.data
+11 Ionosphere.1.data
+12 Ionosphere.2.data
+13 Ionosphere.3.data
+14 Ionosphere.4.data
+15 Ionosphere.5.data
+16 Statlog_satellite.1.data
+17 Statlog_satellite.2.data
+18 Statlog_satellite.3.data
+19 Statlog_satellite.4.data
+20 Statlog_satellite.5.data
+21 anneal.1.data
+22 anneal.2.data
+23 anneal.3.data
+24 anneal.4.data
+25 appendicitis.1.data
+26 appendicitis.2.data
+27 appendicitis.3.data
+28 appendicitis.4.data
+29 appendicitis.5.data
+30 audiology.1.data
+31 audiology.2.data
+32 audiology.3.data
+33 audiology.4.data
+34 australian.1.data
+35 australian.2.data
+36 australian.3.data
+37 australian.4.data
+38 australian.5.data
+39 backache.1.data
+40 backache.2.data
+41 backache.3.data
+42 backache.4.data
+43 backache.5.data
+44 balance-scale.1.data
+45 balance-scale.2.data
+46 balance-scale.3.data
+47 balance-scale.4.data
+48 balance-scale.5.data
+49 bank_conv.1.data
+50 bank_conv.2.data
+51 bank_conv.3.data
+52 bank_conv.4.data
+53 bank_conv.5.data
+54 banknote.1.data
+55 banknote.2.data
+56 banknote.3.data
+57 banknote.4.data
+58 banknote.5.data
+59 biodeg.1.data
+60 biodeg.2.data
+61 biodeg.3.data
+62 biodeg.4.data
+63 biodeg.5.data
+64 breast-cancer-wisconsin.1.data
+65 breast-cancer-wisconsin.2.data
+66 breast-cancer-wisconsin.3.data
+67 breast-cancer-wisconsin.4.data
+68 breast-cancer-wisconsin.5.data
+69 cancer.1.data
+70 cancer.2.data
+71 cancer.3.data
+72 cancer.4.data
+73 cancer.5.data
+74 car.1.data
+75 car.2.data
+76 car.3.data
+77 car.4.data
+78 car.5.data
+79 ccdefault.1.data
+80 ccdefault.2.data
+81 ccdefault.3.data
+82 ccdefault.4.data
+83 ccdefault.5.data
+84 cleve.1.data
+85 cleve.2.data
+86 cleve.3.data
+87 cleve.4.data
+88 cleve.5.data
+89 cleveland.1.data
+90 cleveland.2.data
+91 cleveland.3.data
+92 cleveland.4.data
+93 cleveland.5.data
+94 colic.1.data
+95 colic.2.data
+96 colic.3.data
+97 colic.4.data
+98 colic.5.data
+99 compas-scores.1.data
+100 compas-scores.2.data
+101 compas-scores.3.data
+102 compas-scores.4.data
+103 compas-scores.5.data
+104 corral.1.data
+105 corral.2.data
+106 corral.3.data
+107 corral.4.data
+108 corral.5.data
+109 german-credit.1.data
+110 german-credit.2.data
+111 german-credit.3.data
+112 german-credit.4.data
+113 german-credit.5.data
+114 haberman.1.data
+115 haberman.2.data
+116 haberman.3.data
+117 haberman.4.data
+118 haberman.5.data
+119 hand_posture.1.data
+120 hand_posture.2.data
+121 hand_posture.3.data
+122 hand_posture.4.data
+123 hand_posture.5.data
+124 heart-statlog.1.data
+125 heart-statlog.2.data
+126 heart-statlog.3.data
+127 heart-statlog.4.data
+128 heart-statlog.5.data
+129 heloc_dataset_v1.1.data
+130 heloc_dataset_v1.2.data
+131 heloc_dataset_v1.3.data
+132 heloc_dataset_v1.4.data
+133 heloc_dataset_v1.5.data
+134 hepatitis.1.data
+135 hepatitis.2.data
+136 hepatitis.3.data
+137 hepatitis.4.data
+138 hepatitis.5.data
+139 hiv_1625.1.data
+140 hiv_1625.2.data
+141 hiv_1625.3.data
+142 hiv_1625.4.data
+143 hiv_1625.5.data
+144 hiv_746.1.data
+145 hiv_746.2.data
+146 hiv_746.3.data
+147 hiv_746.4.data
+148 hiv_746.5.data
+149 hiv_impens.1.data
+150 hiv_impens.2.data
+151 hiv_impens.3.data
+152 hiv_impens.4.data
+153 hiv_impens.5.data
+154 hiv_schilling.1.data
+155 hiv_schilling.2.data
+156 hiv_schilling.3.data
+157 hiv_schilling.4.data
+158 hiv_schilling.5.data
+159 house-votes-84.1.data
+160 house-votes-84.2.data
+161 house-votes-84.3.data
+162 house-votes-84.4.data
+163 house-votes-84.5.data
+164 hungarian.1.data
+165 hungarian.2.data
+166 hungarian.3.data
+167 hungarian.4.data
+168 hungarian.5.data
+169 hypothyroid.1.data
+170 hypothyroid.2.data
+171 hypothyroid.3.data
+172 hypothyroid.4.data
+173 hypothyroid.5.data
+174 ida.1.data
+175 ida.2.data
+176 ida.3.data
+177 ida.4.data
+178 iris.1.data
+179 iris.2.data
+180 iris.3.data
+181 iris.4.data
+182 iris.5.data
+183 irish.1.data
+184 irish.2.data
+185 irish.3.data
+186 irish.4.data
+187 irish.5.data
+188 kr-vs-kp.1.data
+189 kr-vs-kp.2.data
+190 kr-vs-kp.3.data
+191 kr-vs-kp.4.data
+192 kr-vs-kp.5.data
+193 letter_recognition.1.data
+194 letter_recognition.2.data
+195 letter_recognition.3.data
+196 letter_recognition.4.data
+197 letter_recognition.5.data
+198 lymphography.1.data
+199 lymphography.2.data
+200 lymphography.3.data
+201 lymphography.4.data
+202 lymphography.5.data
+203 magic04.1.data
+204 magic04.2.data
+205 magic04.3.data
+206 magic04.4.data
+207 magic04.5.data
+208 messidor.1.data
+209 messidor.2.data
+210 messidor.3.data
+211 messidor.4.data
+212 messidor.5.data
+213 meteo.1.data
+214 meteo.2.data
+215 meteo.3.data
+216 meteo.4.data
+217 meteo.5.data
+218 monks-1.1.data
+219 monks-1.2.data
+220 monks-1.3.data
+221 monks-1.4.data
+222 monks-2.1.data
+223 monks-2.2.data
+224 monks-2.3.data
+225 monks-2.4.data
+226 monks-3.1.data
+227 monks-3.2.data
+228 monks-3.3.data
+229 monks-3.4.data
+230 mouse.1.data
+231 mouse.2.data
+232 mouse.3.data
+233 mouse.4.data
+234 mouse.5.data
+235 mushroom.1.data
+236 mushroom.2.data
+237 mushroom.3.data
+238 mushroom.4.data
+239 mushroom.5.data
+240 musk1.1.data
+241 musk1.2.data
+242 musk1.3.data
+243 musk1.4.data
+244 musk1.5.data
+245 musk2.1.data
+246 musk2.2.data
+247 musk2.3.data
+248 musk2.4.data
+249 musk2.5.data
+250 mux6.1.data
+251 mux6.2.data
+252 mux6.3.data
+253 mux6.4.data
+254 mux6.5.data
+255 new-thyroid.1.data
+256 new-thyroid.2.data
+257 new-thyroid.3.data
+258 new-thyroid.4.data
+259 new-thyroid.5.data
+260 objectivity.1.data
+261 objectivity.2.data
+262 objectivity.3.data
+263 objectivity.4.data
+264 objectivity.5.data
+265 pendigits.1.data
+266 pendigits.2.data
+267 pendigits.3.data
+268 pendigits.4.data
+269 primary-tumor.1.data
+270 primary-tumor.2.data
+271 primary-tumor.3.data
+272 primary-tumor.4.data
+273 primary-tumor.5.data
+274 promoters.1.data
+275 promoters.2.data
+276 promoters.3.data
+277 promoters.4.data
+278 promoters.5.data
+279 segment.1.data
+280 segment.2.data
+281 segment.3.data
+282 segment.4.data
+283 segment.5.data
+284 seismic_bumps.1.data
+285 seismic_bumps.2.data
+286 seismic_bumps.3.data
+287 seismic_bumps.4.data
+288 seismic_bumps.5.data
+289 shuttleM.1.data
+290 shuttleM.2.data
+291 shuttleM.3.data
+292 shuttleM.4.data
+293 shuttleM.5.data
+294 soybean-large.1.data
+295 soybean-large.2.data
+296 soybean-large.3.data
+297 soybean-large.4.data
+298 spambase.1.data
+299 spambase.2.data
+300 spambase.3.data
+301 spambase.4.data
+302 spambase.5.data
+303 spect.1.data
+304 spect.2.data
+305 spect.3.data
+306 spect.4.data
+307 spect.5.data
+308 splice.1.data
+309 splice.2.data
+310 splice.3.data
+311 splice.4.data
+312 splice.5.data
+313 tic-tac-toe.1.data
+314 tic-tac-toe.2.data
+315 tic-tac-toe.3.data
+316 tic-tac-toe.4.data
+317 tic-tac-toe.5.data
+318 vehicle.1.data
+319 vehicle.2.data
+320 vehicle.3.data
+321 vehicle.4.data
+322 vehicle.5.data
+323 wine.1.data
+324 wine.2.data
+325 wine.3.data
+326 wine.4.data
+327 wine.5.data
+328 yeast.1.data
+329 yeast.2.data
+330 yeast.3.data
+331 yeast.4.data
+332 yeast.5.data
+333 zoo.1.data
+334 zoo.2.data
+335 zoo.3.data
+336 zoo.4.data
+337 zoo.5.data
+Instance: Ionosphere, Namespace(benchmark=False, categorical=False, encoding=6, heuristic=0, incremental_strategy=0, instance='14', limit_idx=2, maintain=False, mode=1, reduce=False, reduce_alternate=False, reduce_categoric=False, reduce_first=False, reduce_numeric=False, size=False, size_first=False, slice=4, slim_opt=False, time_limit=43200, use_dense=False, use_dt=0, validation=False)
+START Tree Depth: 10, Nodes: 33, Training: 1.0, Test: 0.8, Avg. Length: 5.480427046263345, Time: 0.09443473815917969
+ls
+Running 9, 2,843,181,056
+No path through node 113
+No path through node 175
+No path through node 177
+No path through node 178
+No path through node 179
+No path through node 211
+No path through node 219
+No path through node 226
+No path through node 239
+No path through node 242
+No path through node 261
+No path through node 266
+No path through node 270
+No path through node 271
+No path through node 278
+No path through node 284
+No path through node 286
+No path through node 310
+No path through node 314
+No path through node 315
+No path through node 316
+No path through node 317
+No path through node 318
+No path through node 319
+No path through node 320
+No path through node 327
+No path through node 328
+No path through node 330
+No path through node 331
+No path through node 340
+No path through node 342
+No path through node 347
+No path through node 359
+No path through node 366
+No path through node 389
+No path through node 390
+No path through node 398
+No path through node 406
+No path through node 408
+No path through node 411
+No path through node 412
+No path through node 418
+No path through node 419
+No path through node 426
+No path through node 434
+No path through node 435
+No path through node 438
+No path through node 439
+No path through node 440
+No path through node 442
+No path through node 443
+No path through node 446
+No path through node 447
+No path through node 450
+No path through node 452
+No path through node 455
+No path through node 465
+No path through node 468
+No path through node 472
+No path through node 473
+No path through node 476
+No path through node 477
+No path through node 478
+No path through node 482
+No path through node 484
+No path through node 485
+No path through node 488
+No path through node 489
+No path through node 491
+No path through node 492
+No path through node 496
+E:281 T:44.50175380706787 C:2 F:34 DS:1653 DM:71 D:9 S:2843181056 R:False E:0.9422095333978915
+Running 8, 1,302,536,448
+No path through node 111
+No path through node 210
+No path through node 216
+No path through node 245
+E:281 T:27.836942434310913 C:2 F:34 DS:1653 DM:71 D:8 S:1302536448 R:False E:0.9422095333978915
+Running 7, 591,741,184
+E:281 T:10.180854082107544 C:2 F:34 DS:1653 DM:71 D:7 S:591741184 R:False E:0.9422095333978915
+Running 6, 266,107,072
+E:281 T:42.76214027404785 C:2 F:34 DS:1653 DM:71 D:6 S:266107072 R:False E:0.9422095333978915
+Running 5, 118,171,776
+E:281 T:22.765979051589966 C:2 F:34 DS:1653 DM:71 D:5 S:118171776 R:False E:0.9422095333978915
+Running 4, 51,645,008
+Interrupted
+E:281 T:MO/300.5605409145355 C:2 F:34 DS:1653 DM:71 D:4 S:51645008 R:False E:0.9422095333978915
+Time 448.8889	Training 1.0000	Test 0.8143	Depth 005	Nodes 55	Avg. Length 4.907473309608541	Method ls	
+ls
+Running 4, 51,645,008
+Interrupted
+E:281 T:MO/300.5466048717499 C:2 F:34 DS:1653 DM:71 D:4 S:51645008 R:False E:0.9422095333978915
+la
+Running 4, 765,696
+E:236 T:2.750154972076416* C:2 F:20 DS:47 DM:4 D:4 S:765696 R:True E:0.9747785474909672
+lr
+Running 4, 408,096
+E:181 T:0.20296382904052734* C:2 F:11 DS:32 DM:7 D:4 S:408096 R:True E:0.998215767216794
+ls
+Running 3, 10,290,240
+E:186 T:5.591663360595703* C:2 F:34 DS:1139 DM:46 D:3 S:10290240 R:False E:0.9383153522334069
+ls
+Running 3, 2,217,688
+E:95 T:0.3998878002166748 C:2 F:34 DS:511 DM:27 D:3 S:2217688 R:False E:0.9494520153879484
+Running 2, 913,904
+E:95 T:0.06937932968139648* C:2 F:34 DS:511 DM:27 D:2 S:913904 R:False E:0.9494520153879484
+Time 788.8229	Training 1.0000	Test 0.8286	Depth 005	Nodes 47	Avg. Length 4.661921708185053	Method ls	
+ls
+Running 2, 913,904
+E:95 T:0.06805682182312012* C:2 F:34 DS:511 DM:27 D:2 S:913904 R:False E:0.9494520153879484
+Running 4, 408,096
+E:181 T:0.20372462272644043* C:2 F:11 DS:32 DM:7 D:4 S:408096 R:True E:0.998215767216794
+lr
+34, 281
+END Tree Depth: 5, Nodes: 47, Training: 1.0, Test: 0.8285714285714286, Avg. Length: 4.661921708185053, Time: 789.3476293087006
+a(24) <= -0.16228
+-a(17) <= 0.22813
+--a(25) <= 0.03286
+---a(4) <= 0.13582
+----c(0)
+----c(1)
+---a(10) <= -0.06811
+----c(0)
+----c(1)
+--a(28) <= -0.10211
+---a(28) <= -1
+----c(0)
+----c(1)
+---a(24) <= -0.26571
+----c(0)
+----c(1)
+-a(24) <= 0.25728
+--a(19) <= 0.73827
+---a(21) <= -0.00003
+----a(34) <= -0.00006
+-----c(1)
+-----c(0)
+----a(23) <= 0.17021
+-----c(0)
+-----c(1)
+---a(9) <= 0.76087
+----a(16) <= 0.14137
+-----c(0)
+-----c(1)
+----a(33) <= 0.48319
+-----c(0)
+-----c(1)
+--a(31) <= 0.42267
+---a(15) <= 0.57620
+----a(16) <= 0.32558
+-----c(0)
+-----c(1)
+----a(27) <= 0.49090
+-----c(1)
+-----c(0)
+---a(26) <= -0.12174
+----a(31) <= 0.99112
+-----c(1)
+-----c(0)
+----a(30) <= 0
+-----c(0)
+-----c(1)
