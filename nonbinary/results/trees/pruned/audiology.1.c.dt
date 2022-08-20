@@ -1,0 +1,59 @@
+a(1) = t
+-a(15) = t
+--a(2) = mild
+---c(cochlear_age_and_noise)
+---c(possible_menieres)
+--a(66) = a
+---a(10) = t
+----c(possible_menieres)
+----c(cochlear_age)
+---a(7) = f
+----c(mixed_cochlear_age_otitis_media)
+----c(mixed_cochlear_age_fixation)
+-a(15) = t
+--a(10) = f
+---a(13) = f
+----a(66) = a
+-----a(55) = t
+------c(cochlear_unknown)
+------c(cochlear_poss_noise)
+-----c(otitis_media)
+----c(cochlear_noise_and_heredity)
+---a(14) = t
+----c(cochlear_unknown)
+----c(mixed_cochlear_unk_discontinuity)
+--a(66) = a
+---a(2) = normal
+----a(14) = f
+-----a(57) = f
+------a(7) = t
+-------c(cochlear_unknown)
+-------a(47) = t
+--------c(cochlear_unknown)
+--------a(36) = t
+---------c(cochlear_unknown)
+---------a(70) = p56
+----------c(cochlear_unknown)
+----------a(19) = f
+-----------c(normal_ear)
+-----------c(cochlear_unknown)
+------c(cochlear_unknown)
+-----c(possible_brainstem_disorder)
+----a(11) = f
+-----a(12) = f
+------a(70) = p29
+-------c(acoustic_neuroma)
+-------c(cochlear_unknown)
+------c(retrocochlear_unknown)
+-----c(possible_menieres)
+---a(6) = normal
+----a(66) = as
+-----c(conductive_fixation)
+-----c(mixed_poss_central_om)
+----a(66) = as
+-----c(mixed_cochlear_unk_fixation)
+-----a(7) = t
+------c(mixed_cochlear_unk_ser_om)
+------a(66) = ad
+-------c(conductive_discontinuity)
+-------c(otitis_media)
