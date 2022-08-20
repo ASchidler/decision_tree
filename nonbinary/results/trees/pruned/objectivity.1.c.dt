@@ -1,0 +1,53 @@
+a(22) <= 35.5
+-a(42) <= 2.5
+--a(13) <= 5.5
+---a(43) <= 1.5
+----c(objective)
+----c(subjective)
+---a(26) <= 0.5
+----a(22) <= 11.5
+-----c(objective)
+-----a(44) <= 21
+------c(subjective)
+------a(5) <= 60.5
+-------c(objective)
+-------a(4) <= 23.5
+--------a(27) <= 28
+---------c(subjective)
+---------c(objective)
+--------c(objective)
+----a(9) <= 52
+-----c(objective)
+-----a(38) <= 2.5
+------c(objective)
+------c(subjective)
+--c(subjective)
+-a(41) <= 11.5
+--a(5) <= 56.5
+---c(objective)
+---a(53) <= 48.5
+----a(15) <= 15
+-----a(27) <= 13.5
+------a(13) <= 11
+-------c(objective)
+-------c(subjective)
+------a(31) <= 47.5
+-------c(subjective)
+-------c(objective)
+-----c(objective)
+----a(13) <= 3.5
+-----c(objective)
+-----a(53) <= 50.5
+------a(40) <= 55
+-------c(objective)
+-------c(subjective)
+------a(40) <= 20.5
+-------c(objective)
+-------a(20) <= 110.5
+--------c(subjective)
+--------c(objective)
+--a(20) <= 53
+---a(49) <= 20
+----c(objective)
+----c(subjective)
+---c(subjective)

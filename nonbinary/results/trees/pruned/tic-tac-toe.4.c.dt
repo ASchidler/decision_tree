@@ -1,0 +1,9 @@
+a(5) = o
+-a(3) = x
+--c(positive)
+--a(7) = x
+---c(positive)
+---c(negative)
+-a(9) = o
+--c(positive)
+--c(positive)
