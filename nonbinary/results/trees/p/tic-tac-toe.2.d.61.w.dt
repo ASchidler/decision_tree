@@ -8,13 +8,13 @@ a(8) = o
 -----c(negative)
 ---a(5) = o
 ----c(negative)
-----a(7) = x
------c(positive)
------c(negative)
+----c(positive)
 --a(2) = b
 ---c(positive)
----a(5) = x
-----c(positive)
+---a(4) = x
+----a(5) = x
+-----c(positive)
+-----c(negative)
 ----c(negative)
 -a(7) = o
 --a(4) = o
@@ -38,20 +38,16 @@ a(8) = o
 -----c(positive)
 ---a(2) = o
 ----a(5) = o
------a(3) = o
+-----a(9) = x
 ------c(positive)
-------a(9) = x
--------c(positive)
--------c(negative)
+------c(negative)
 -----a(1) = b
 ------c(positive)
 ------a(3) = o
 -------c(negative)
 -------c(positive)
 ----a(5) = o
------a(1) = x
+-----a(9) = o
+------c(negative)
 ------c(positive)
-------a(9) = o
--------c(negative)
--------c(positive)
 -----c(positive)

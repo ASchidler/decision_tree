@@ -17,16 +17,12 @@ a(3) <= 1.585585
 ---a(27) <= 0
 ----a(22) <= 0
 -----a(1) <= 2
-------c(phyllosticta-leaf-spot)
+------c(brown-spot)
 ------c(bacterial-pustule)
 -----a(3) <= 0
 ------c(brown-stem-rot)
 ------c(phytophthora-rot)
-----a(19) <= 0
------c(cyst-nematode)
------a(31) <= 0
-------c(charcoal-rot)
-------c(herbicide-injury)
+----c(charcoal-rot)
 --a(8) <= 0
 ---a(21) <= 0
 ----a(15) <= 1
@@ -45,11 +41,7 @@ a(3) <= 1.585585
 -----a(27) <= 0
 ------c(brown-stem-rot)
 ------c(charcoal-rot)
-----a(7) <= 1.630434
------c(powdery-mildew)
------a(5) <= 0.228855
-------c(cyst-nematode)
-------c(powdery-mildew)
+----c(powdery-mildew)
 -a(8) <= 0.766169
 --a(22) <= 0
 ---a(7) <= 1
@@ -81,15 +73,21 @@ a(3) <= 1.585585
 -----a(1) <= 2
 ------c(brown-spot)
 ------a(14) <= 0
+-------c(bacterial-blight)
+-------c(cyst-nematode)
+----a(28) <= 0.568075
+-----a(22) <= 0
+------c(diaporthe-stem-canker)
+------a(13) <= 0
+-------c(anthracnose)
 -------c(brown-spot)
--------c(bacterial-pustule)
-----a(21) <= 2
------a(22) <= 1
-------c(rhizoctonia-root-rot)
-------c(phytophthora-rot)
------a(30) <= 0
-------c(brown-spot)
-------c(phytophthora-rot)
+-----a(21) <= 2
+------a(22) <= 1
+-------c(rhizoctonia-root-rot)
+-------c(phytophthora-rot)
+------a(30) <= 0
+-------c(frog-eye-leaf-spot)
+-------c(phytophthora-rot)
 ---a(9) <= 0
 ----a(19) <= 0
 -----a(13) <= 1

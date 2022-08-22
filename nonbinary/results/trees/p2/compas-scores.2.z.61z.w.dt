@@ -1,0 +1,35 @@
+a(5) <= 6.0
+-a(8) <= 25.0
+--a(5) <= 4.0
+---a(2) <= 22.0
+----a(5) <= 2.0
+-----c(Low-Low)
+-----c(Medium-Low)
+----c(Low-Low)
+---a(2) <= 28.0
+----a(2) <= 25.0
+-----a(9) <= 97.0
+------a(16) = (M1)
+-------c(Medium-Medium)
+-------a(5) <= 5.0
+--------a(14) <= 10.0
+---------a(2) <= 23.0
+----------c(Medium-Medium)
+----------c(Low-Medium)
+---------c(Medium-Medium)
+--------c(Medium-Medium)
+------c(Medium-Medium)
+-----c(Low-Medium)
+----c(Low-Medium)
+--c(Low-Medium)
+-a(5) <= 7.0
+--a(4) <= 0.0
+---a(2) <= 28.0
+----c(Medium-Medium)
+----c(Low-Medium)
+---c(Medium-Medium)
+--a(2) <= 27.0
+---a(5) <= 8.0
+----c(Medium-High)
+----c(High-High)
+---c(Medium-High)

@@ -1,0 +1,147 @@
+a(22) <= 35.5
+-a(13) <= 6.5
+--a(7) <= 28
+---a(41) <= 6.5
+----a(47) <= 0.5
+-----a(1) <= 450
+------a(14) <= 55
+-------a(44) <= 3
+--------a(2) <= 7
+---------c(objective)
+---------c(subjective)
+--------c(objective)
+-------a(53) <= 10
+--------a(45) <= 11
+---------c(objective)
+---------c(subjective)
+--------a(44) <= 9
+---------c(subjective)
+---------c(objective)
+------a(49) <= 2
+-------a(19) <= 2
+--------c(objective)
+--------c(subjective)
+-------a(25) <= 3
+--------c(objective)
+--------c(subjective)
+-----a(15) <= 0
+------a(40) <= 4
+-------c(objective)
+-------a(49) <= 0
+--------a(55) <= 6
+---------c(objective)
+---------c(subjective)
+--------a(20) <= 7
+---------c(subjective)
+---------c(objective)
+------a(50) <= 0
+-------a(25) <= 6
+--------a(37) <= 0
+---------c(objective)
+---------c(subjective)
+--------c(subjective)
+-------a(59) <= 13
+--------c(subjective)
+--------a(52) <= 5
+---------c(objective)
+---------c(subjective)
+----a(45) <= 4
+-----a(34) <= 0
+------c(subjective)
+------c(objective)
+-----a(59) <= 15
+------a(2) <= 41
+-------a(41) <= 7
+--------c(subjective)
+--------c(objective)
+-------a(13) <= 3
+--------c(objective)
+--------c(subjective)
+------a(1) <= 447
+-------c(objective)
+-------a(1) <= 489
+--------c(subjective)
+--------c(objective)
+---a(7) <= 32
+----c(subjective)
+----c(objective)
+--a(14) <= 154
+---a(34) <= 9
+----a(3) <= 10
+-----c(objective)
+-----c(subjective)
+----a(53) <= 19
+-----a(27) <= 19
+------c(subjective)
+------c(objective)
+-----a(49) <= 1
+------c(subjective)
+------c(objective)
+---a(13) <= 17
+----a(9) <= 67
+-----a(27) <= 15
+------c(subjective)
+------c(objective)
+-----a(15) <= 5
+------c(subjective)
+------c(objective)
+----a(51) <= 14
+-----c(objective)
+-----c(subjective)
+-a(51) <= 77
+--a(32) <= 14.5
+---a(5) <= 76
+----a(45) <= 27
+-----a(1) <= 683
+------c(subjective)
+------c(objective)
+-----a(5) <= 59
+------c(objective)
+------c(subjective)
+----a(20) <= 48
+-----a(56) <= 12
+------c(objective)
+------c(subjective)
+-----a(44) <= 60
+------c(subjective)
+------c(objective)
+---a(30) <= 48.5
+----a(42) <= 1
+-----a(38) <= 4
+------a(51) <= 41
+-------a(33) <= 5
+--------c(subjective)
+--------c(objective)
+-------c(subjective)
+------a(23) <= 2
+-------a(6) <= 3
+--------c(subjective)
+--------c(objective)
+-------c(subjective)
+-----a(17) <= 19
+------c(objective)
+------c(subjective)
+----a(20) <= 48
+-----a(59) <= 20
+------a(41) <= 6
+-------c(subjective)
+-------c(objective)
+------a(7) <= 23
+-------c(objective)
+-------c(subjective)
+-----a(4) <= 37
+------a(11) <= 2
+-------a(30) <= 77
+--------c(subjective)
+--------c(objective)
+-------a(59) <= 32
+--------c(subjective)
+--------c(objective)
+------a(22) <= 71
+-------c(subjective)
+-------a(47) <= 2
+--------c(objective)
+--------c(subjective)
+--a(5) <= 225
+---c(objective)
+---c(subjective)

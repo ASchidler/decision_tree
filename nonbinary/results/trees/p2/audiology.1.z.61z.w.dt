@@ -1,0 +1,47 @@
+a(2) = normal
+-a(6) = mild
+--a(15) = f
+---a(5) = elevated
+----c(cochlear_unknown)
+----a(10) = t
+-----c(possible_brainstem_disorder)
+-----a(1) = f
+------c(normal_ear)
+------c(cochlear_age)
+---c(cochlear_poss_noise)
+--a(4) = normal
+---a(1) = f
+----a(6) = normal
+-----a(7) = f
+------c(normal_ear)
+------c(cochlear_unknown)
+-----c(cochlear_unknown)
+----c(cochlear_age)
+---a(59) = absent
+----c(normal_ear)
+----a(1) = f
+-----c(cochlear_unknown)
+-----c(cochlear_age)
+-a(66) = a
+--a(1) = f
+---a(5) = absent
+----c(retrocochlear_unknown)
+----a(10) = t
+-----a(15) = t
+------c(cochlear_unknown)
+------c(possible_menieres)
+-----a(15) = f
+------c(cochlear_unknown)
+------c(cochlear_poss_noise)
+---a(14) = f
+----a(15) = t
+-----c(cochlear_age_and_noise)
+-----c(cochlear_age)
+----c(possible_menieres)
+--a(6) = normal
+---c(conductive_fixation)
+---a(4) = absent
+----a(66) = b
+-----c(mixed_cochlear_unk_ser_om)
+-----c(mixed_cochlear_unk_fixation)
+----c(mixed_cochlear_age_otitis_media)

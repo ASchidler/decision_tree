@@ -1,0 +1,33 @@
+a(34) <= 15.0
+-a(50) <= 7.0
+--c(objective)
+--c(subjective)
+-a(1) <= 820
+--a(41) <= 1
+---a(5) <= 55
+----a(9) <= 32
+-----c(subjective)
+-----c(objective)
+----c(subjective)
+---a(59) <= 20
+----a(55) <= 24
+-----c(objective)
+-----c(subjective)
+----a(9) <= 49
+-----c(objective)
+-----c(subjective)
+--a(23) <= 1
+---a(44) <= 54
+----c(subjective)
+----a(3) <= 22
+-----a(42) <= 1
+------c(objective)
+------c(subjective)
+-----a(15) <= 3
+------a(6) <= 3
+-------c(subjective)
+-------c(objective)
+------a(30) <= 55
+-------c(subjective)
+-------c(objective)
+---c(subjective)

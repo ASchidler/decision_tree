@@ -1,5 +1,3 @@
-a(1) <= 5
--a(3) <= 21
---c(mouse)
---c(elephant)
+a(3) <= 21
+-c(mouse)
 -c(elephant)

@@ -26,9 +26,7 @@ a(14) <= 0
 ---a(1) <= 5
 ----a(16) <= 0
 -----c(frog-eye-leaf-spot)
------a(15) <= 0
-------c(bacterial-blight)
-------c(alternarialeaf-spot)
+-----c(bacterial-blight)
 ----a(29) <= 0
 -----c(alternarialeaf-spot)
 -----c(frog-eye-leaf-spot)
