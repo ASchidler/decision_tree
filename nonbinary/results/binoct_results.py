@@ -6,7 +6,7 @@ from nonbinary.tree_parsers import parse_internal_tree
 pth = "nonbinary/results/trees/binoct"
 instance_pth = "nonbinary/instances"
 outp_path = "nonbinary/results/results_binoct.csv"
-max_depth = 5
+max_depth = 6
 fls = os.listdir(instance_pth)
 
 results = defaultdict(lambda: defaultdict(list))

@@ -8,7 +8,7 @@ import pruning
 experiment = "d"
 flags = set()
 ignore = set()
-target_algorithm = "c"
+target_algorithm = "w"
 
 with open("ignore.txt") as ip:
     for _, cl in enumerate(ip):

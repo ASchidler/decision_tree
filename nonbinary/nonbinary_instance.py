@@ -657,7 +657,7 @@ def parse(path, filename, slice, use_validation=False, use_test=True):
     test_file = None
     if os.path.exists(os.path.join(path, filename + ".test")):
         if slice != 1:
-            raise FileNotFoundError("File has an existing test set, slice cannot be different than 1")
+            raise FileNotFoundError("File has an existing test set, slice cannot be different from 1")
         test_file = _parse_file([os.path.join(path, filename + ".test")])
     elif use_test:
         target_idx = (slice + 3) % len(target_files)
