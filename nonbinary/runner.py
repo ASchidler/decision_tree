@@ -34,49 +34,48 @@ resource.setrlimit(resource.RLIMIT_AS, (14 * 1024 * 1024 * 1024, 14 * 1024 * 102
 
 ap = argp.ArgumentParser(description="Python implementation for computing and improving decision trees.")
 ap.add_argument("instance", type=str)
-ap.add_argument("-e", dest="encoding", action="store", type=int, default=0, choices=[0, 1, 2, 3, 4, 5, 6, 7],
-                help="Which encoding to use.")
-
-ap.add_argument("-r", dest="reduce", action="store_true", default=False,
-                help="Use support set based reduction. Decreases instance size, but tree may be sub-optimal.")
-ap.add_argument("-k", dest="reduce_alternate", action="store_true", default=False,
-                help="Use extended greedy heuristic.")
+ap.add_argument("-a", dest="incremental_strategy", action="store", default=0, type=int, choices=[0, 1, 2])
 ap.add_argument("-b", dest="benchmark", action="store_true", default=False,
                 help="Benchmark all encodings together.")
 ap.add_argument("-c", dest="categorical", action="store_true", default=False,
                 help="Treat all features as categorical, this means a one hot encoding as in previous encodings.")
-ap.add_argument("-t", dest="time_limit", action="store", default=0, type=int,
-                help="The timelimit in seconds.")
-ap.add_argument("-z", dest="size", action="store_true", default=False,
-                help="Decrease the size as well as the depth.")
-ap.add_argument("-s", dest="slim_opt", action="store_true", default=False,
-                help="Optimize away extension leaves.")
-ap.add_argument("-f", dest="size_first", action="store_true", default=False,
-                help="Optimize size before depth.")
 ap.add_argument("-d", dest="validation", action="store_true", default=False,
                 help="Use data with validation set.")
-
-ap.add_argument("-l", dest="slice", action="store", default=1, type=int,
-                help="Which slice to use from the five cross validation sets.")
-
-ap.add_argument("-w", dest="heuristic", action="store", default=0, type=int, choices=[0, 1, 2],
-                help="Use CART instead of WEKA trees.")
-ap.add_argument("-m", dest="mode", action="store", default=0, choices=[0, 1, 2, 3], type=int,
-                help="Solving mode.")
-ap.add_argument("-u", dest="maintain", action="store_true", default=False,
-                help="Force maintaining of sizes for SLIM.")
-ap.add_argument("-o", dest="reduce_categoric", action="store_true", default=False,
-                help="In SLIM use full categoric features instead of just single thresholds.")
-ap.add_argument("-n", dest="reduce_numeric", action="store_true", default=False,
-                help="In SLIM use full numeric features instead of just single thresholds.")
-ap.add_argument("-i", dest="limit_idx", action="store", default=1, type=int,
-                help="Set of limits.")
-
+ap.add_argument("-e", dest="encoding", action="store", type=int, default=0, choices=[0, 1, 2, 3, 4, 5, 6, 7],
+                help="Which encoding to use.")
+ap.add_argument("-f", dest="size_first", action="store_true", default=False,
+                help="Optimize size before depth.")
 ap.add_argument("-g", dest="use_dt", action="store", default=0, type=int, choices=[0, 1, 2],
                 help="Use a decision tree to decide which encoding to use.")
+ap.add_argument("-i", dest="limit_idx", action="store", default=1, type=int,
+                help="Set of limits.")
 ap.add_argument("-j", dest="reduce_first", action="store_true", default=False)
+ap.add_argument("-k", dest="reduce_alternate", action="store_true", default=False,
+                help="Use extended greedy heuristic.")
+ap.add_argument("-l", dest="slice", action="store", default=1, type=int,
+                help="Which slice to use from the five cross validation sets.")
+ap.add_argument("-m", dest="mode", action="store", default=0, choices=[0, 1, 2, 3], type=int,
+                help="Solving mode.")
+ap.add_argument("-n", dest="reduce_numeric", action="store_true", default=False,
+                help="In SLIM use full numeric features instead of just single thresholds.")
+ap.add_argument("-o", dest="reduce_categoric", action="store_true", default=False,
+                help="In SLIM use full categoric features instead of just single thresholds.")
+ap.add_argument("-r", dest="reduce", action="store_true", default=False,
+                help="Use support set based reduction. Decreases instance size, but tree may be sub-optimal.")
+ap.add_argument("-s", dest="slim_opt", action="store_true", default=False,
+                help="Optimize away extension leaves.")
+ap.add_argument("-t", dest="time_limit", action="store", default=0, type=int,
+                help="The timelimit in seconds.")
+ap.add_argument("-u", dest="maintain", action="store_true", default=False,
+                help="Force maintaining of sizes for SLIM.")
+ap.add_argument("-w", dest="heuristic", action="store", default=0, type=int, choices=[0, 1, 2],
+                help="Use CART instead of WEKA trees.")
 ap.add_argument("-x", dest="use_dense", action="store_true", default=False)
-ap.add_argument("-a", dest="incremental_strategy", action="store", default=0, type=int, choices=[0, 1, 2])
+ap.add_argument("-y", dest="assigned", action="store_true", default=False,
+                help="Use minimized assigned order instead of deepest branch.")
+ap.add_argument("-z", dest="size", action="store_true", default=False,
+                help="Decrease the size as well as the depth.")
+
 
 args = ap.parse_args()
 
@@ -248,7 +247,7 @@ elif args.mode == 1:
     parameters = improve_strategy.SlimParameters(tree, instance, enc, Glucose3, args.size, args.slim_opt,
                                                  args.maintain, args.reduce_numeric, args.reduce_categoric,
                                                  args.time_limit, args.use_dt == 1, args.benchmark, args.size_first,
-                                                 args.use_dt == 2, args.reduce_first, args.reduce_alternate)
+                                                 args.use_dt == 2, args.reduce_first, args.reduce_alternate, args.assigned)
     if args.use_dt == 1:
         parameters.example_decision_tree = tree_parsers.parse_internal_tree("nonbinary/benchmark_tree.dt")
     elif args.use_dt == 2:

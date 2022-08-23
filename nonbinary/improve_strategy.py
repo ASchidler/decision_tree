@@ -43,7 +43,7 @@ encodings = [None, s1, s2, s3]
 
 class SlimParameters:
     def __init__(self, tree, instance, encoding, slv, opt_size, opt_slim, maintain, reduce_numeric, reduce_categoric, timelimit, use_dt, benchmark,
-                 size_first, use_enc_dt, reduce_first, reduce_alternate):
+                 size_first, use_enc_dt, reduce_first, reduce_alternate, choose_assigned):
         self.tree = tree
         self.instance = instance
         self.encoding = encoding
@@ -67,6 +67,7 @@ class SlimParameters:
         self.enc_decision_tree = None
         self.reduce_first = reduce_first
         self.reduce_alternate = reduce_alternate
+        self.choose_assigned = choose_assigned
 
     def call_solver(self, new_instance, new_ub, cd, leaves):
         if not self.benchmark:
@@ -190,6 +191,46 @@ def find_deepest_leaf(tree, ignore=None):
     return path
 
 
+def find_least_occupied_leaf(tree, assigned, ignore=None):
+    if not ignore:
+        ignore = set()
+
+    path = []
+
+    c_min = None
+    q = [tree.root]
+    parent = {}
+
+    while q:
+        c_node = q.pop()
+        if c_node.is_leaf and c_node.id not in ignore:
+            if c_min is None or c_min[0] > len(assigned[c_node.id]):
+                c_min = (len(assigned[c_node.id]), c_node)
+        elif not c_node.is_leaf:
+            parent[c_node.left.id] = c_node
+            parent[c_node.right.id] = c_node
+            q.extend([c_node.left, c_node.right])
+
+    c_node = c_min[1]
+    while c_node is not None:
+        if c_node.id not in ignore:
+            path.append(c_node)
+        if c_node.id not in parent:
+            break
+        c_node = parent[c_node.id]
+
+    # while not c_node.is_leaf:
+    #     path.append(c_node)
+    #     if c_node.left.id not in ignore and (len(assigned[c_node.left.id]) < len(assigned[c_node.right.id]) or c_node.right.id in ignore):
+    #         c_node = c_node.left
+    #     elif c_node.right.id in ignore:
+    #         break
+    #     else:
+    #         c_node = c_node.right
+    # path.reverse()
+
+    return path
+
 def clear_ignore(ignore, root):
     q = [root]
 
@@ -229,11 +270,19 @@ def run(parameters, test, limit_idx=1):
 
     while tree_size > len(c_ignore_reduce):
         allow_reduction = False
-        pth = find_deepest_leaf(parameters.tree, c_ignore)
+
+        if parameters.choose_assigned:
+            pth = find_least_occupied_leaf(parameters.tree, assigned, c_ignore)
+        else:
+            pth = find_deepest_leaf(parameters.tree, c_ignore)
 
         if pth is None:
             allow_reduction = True
-            pth = find_deepest_leaf(parameters.tree, c_ignore_reduce)
+            if parameters.choose_assigned:
+                pth = find_least_occupied_leaf(parameters.tree, assigned, c_ignore_reduce)
+            else:
+                pth = find_deepest_leaf(parameters.tree, c_ignore_reduce)
+
             if pth is None:
                 return
 
