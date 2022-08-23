@@ -1,0 +1,19 @@
+a(1) <= 0
+-a(13) <= 0
+--a(11) <= 0
+---a(4) <= 0
+----a(16) <= 0
+-----c(republican)
+-----c(democrat)
+----c(democrat)
+---c(democrat)
+--a(12) <= 0
+---c(republican)
+---c(democrat)
+-a(12) <= 0
+--a(5) <= 0
+---c(democrat)
+---c(republican)
+--a(5) <= 0
+---c(democrat)
+---c(republican)

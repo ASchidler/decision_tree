@@ -1,0 +1,49 @@
+a(5) <= 9.0
+-a(2) <= 25.0
+--a(5) <= 4.0
+---a(2) <= 22.0
+----a(1) = Female
+-----c(Medium-Low)
+-----a(5) <= 2.0
+------a(2) <= 21.0
+-------c(Medium-Low)
+-------c(Low-Low)
+------c(Medium-Low)
+----a(5) <= 2.0
+-----c(Low-Low)
+-----a(11) = O
+------c(Medium-Low)
+------c(Low-Low)
+---a(5) <= 7.0
+----c(Medium-Medium)
+----a(9) <= 4.0
+-----c(Medium-High)
+-----c(High-High)
+--a(5) <= 7.0
+---a(5) <= 4.0
+----c(Low-Low)
+----a(4) <= 0.0
+-----c(Low-Medium)
+-----a(9) <= 15.0
+------a(9) <= 1.0
+-------a(12) <= 0.0
+--------c(Low-Medium)
+--------c(Medium-Medium)
+-------c(Medium-Medium)
+------c(Low-Medium)
+---a(5) <= 8.0
+----a(2) <= 27.0
+-----c(Medium-High)
+-----a(10) <= 1.0
+------c(Low-High)
+------a(2) <= 39.0
+-------c(Medium-High)
+-------c(Low-High)
+----a(10) <= 1.0
+-----c(Medium-High)
+-----c(Low-High)
+-a(3) = African-American
+--c(High-High)
+--a(2) <= 25.0
+---c(High-High)
+---c(Medium-High)

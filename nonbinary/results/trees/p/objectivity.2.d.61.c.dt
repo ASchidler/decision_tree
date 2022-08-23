@@ -1,0 +1,15 @@
+a(34) <= 19.5
+-a(42) <= 1.5
+--a(22) <= 50
+---c(objective)
+---c(subjective)
+--a(20) <= 13
+---a(59) <= 18
+----c(subjective)
+----c(objective)
+---a(41) <= 1
+----c(subjective)
+----c(objective)
+-a(40) <= 21
+--c(objective)
+--c(subjective)

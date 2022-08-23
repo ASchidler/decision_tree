@@ -1,0 +1,15 @@
+a(3) <= 20.5
+-a(2) <= 14.5
+--c(mouse)
+--a(2) <= 16.5
+---a(5) <= 41.5
+----c(elephant)
+----c(mouse)
+---c(mouse)
+-a(1) <= 2.5
+--c(mouse)
+--a(1) <= 7.5
+---c(elephant)
+---a(2) <= 14
+----c(mouse)
+----c(elephant)

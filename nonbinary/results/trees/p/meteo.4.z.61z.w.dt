@@ -1,7 +1,7 @@
-a(4) = true
--a(1) = rain
+a(1) = rain
+-a(4) = true
 --c(-)
 --c(+)
--a(1) = sunny
---c(-)
+-a(1) = overcast
 --c(+)
+--c(-)

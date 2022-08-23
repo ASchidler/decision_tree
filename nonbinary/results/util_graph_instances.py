@@ -13,6 +13,7 @@ with open("results/ignore.txt") as ig:
     for cig in ig:
         ignores.add(cig.strip())
 
+
 for c_file in os.listdir("instances"):
     if c_file.endswith(".data"):
         if int(c_file[-6:-5]) == 1:
@@ -24,7 +25,6 @@ for c_file in os.listdir("instances"):
 
         if int(c_file[-6:-5]) == 5:
             no_test_set += 1
-
 print(f"{non_binary_class} non binary class instances")
 fig, ax = plt.subplots(figsize=(4.5, 3), dpi=80)
 ax.set_axisbelow(True)

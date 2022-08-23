@@ -1,15 +1,7 @@
 a(4) <= 0
--a(16) <= 0
---a(7) <= 0
----c(republican)
----a(5) <= 0
-----c(democrat)
-----c(republican)
---a(9) <= 0
----c(republican)
----c(democrat)
 -a(5) <= 0
 --c(democrat)
---a(8) <= 0
----c(democrat)
----c(republican)
+--c(republican)
+-a(5) <= 0
+--c(democrat)
+--c(republican)

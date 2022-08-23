@@ -174,7 +174,6 @@ def prune_c45_optimized(tree, instance, validation_tree, validation_training, va
     return best_accuracy, best_c, best_m
 
 
-
 def _cost_complexity_alphas(tree, instance):
     errors = {}
     branch_error = {}
@@ -209,40 +208,50 @@ def _cost_complexity_alphas(tree, instance):
 
     def do_pass(node):
         if node.is_leaf:
-            return maxsize, node
+            return maxsize, [node]
         else:
-            min_alpha = min(do_pass(node.left), do_pass(node.right))
+            # TODO: Add case where they are the same and merge nodes
+            r1 = do_pass(node.left)
+            r2 = do_pass(node.right)
+            if r1[0] == r2[0]:
+                min_alpha = r1
+                min_alpha[1].extend(r2[1])
+            else:
+                min_alpha = min(r1, r2)
             rt = errors[node.id]
             branch = branch_error[node.id]
             c_alpha = (rt - branch) / (leafs[node.id] - 1) / len(instance.examples)#len(assigned[node.id])
 
             if c_alpha < min_alpha[0]:
-                return c_alpha, node
+                return c_alpha, [node]
+            if c_alpha == min_alpha[0]:
+                min_alpha[1].append(node)
             return min_alpha
 
     alphas = []
     while True:
         c_min = do_pass(tree.root)
         alphas.append(c_min[0])
-        if c_min[1].id == tree.root.id:
+        if any(x.id == tree.root.id for x in c_min[1]):
             break
 
-        # Prune node
-        new_node = DecisionTreeLeaf(classes[c_min[1].id], c_min[1].id, tree)
-        new_node.parent = c_min[1].parent
-        tree.nodes[c_min[1].id] = new_node
-        if c_min[1].parent.left.id == c_min[1].id:
-            c_min[1].parent.left = new_node
-        else:
-            c_min[1].parent.right = new_node
+        for c_node in c_min[1]:
+            # Prune node
+            new_node = DecisionTreeLeaf(classes[c_node.id], c_node.id, tree)
+            new_node.parent = c_node.parent
+            tree.nodes[c_node.id] = new_node
+            if c_node.parent.left.id == c_node.id:
+                c_node.parent.left = new_node
+            else:
+                c_node.parent.right = new_node
 
-        diff = errors[c_min[1].id] - branch_error[c_min[1].id]
-        cnode = c_min[1]
-        while cnode.parent is not None:
-            cp = cnode.parent
-            leafs[cp.id] -= leafs[c_min[1].id] - 1
-            branch_error[cp.id] += diff
-            cnode = cp
+            diff = errors[c_node.id] - branch_error[c_node.id]
+            cnode = c_node
+            while cnode.parent is not None:
+                cp = cnode.parent
+                leafs[cp.id] -= leafs[c_node.id] - 1
+                branch_error[cp.id] += diff
+                cnode = cp
 
     return alphas
 
@@ -309,10 +318,12 @@ def _cost_complexity_prune(tree, instance, test_instance, alphas):
     results = []
     for new_alpha in alphas:
         ret = do_pass(tree.root, new_alpha)
+
         if ret[0] is not None:
             tree.root = ret[0]
 
         results.append(tree.get_accuracy(test_instance.examples))
+        # print(f"{tree.get_nodes()} {results[-1]} {new_alpha}")
 
     return results
 
@@ -326,7 +337,9 @@ def cost_complexity(tree, instance, validation_tree, validation_training, valida
     new_tree.clean(validation_training)
     accuracies = _cost_complexity_prune(new_tree, validation_training, validation_test, alphas)
 
-    best_alpha, best_accuracy = max(list(enumerate(accuracies)), key=lambda k: k[1])
-    _cost_complexity_prune(tree, instance, instance, [alphas[best_alpha]])
+    best_alpha, best_accuracy = max(list(enumerate(accuracies)), key=lambda k: (k[1], -k[0]))
+    _cost_complexity_prune(tree.copy(), validation_training, validation_test, [alphas[best_alpha]])
+    _cost_complexity_prune(tree, instance, instance, alphas[0:best_alpha+1])
+
     tree.root.reclassify(instance.examples)
     return best_accuracy

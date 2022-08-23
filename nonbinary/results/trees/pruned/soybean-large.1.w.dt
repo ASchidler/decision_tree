@@ -1,0 +1,75 @@
+a(26) <= 0.0
+-a(15) <= 1.0
+--a(15) <= 0.0
+---a(22) <= 1.0
+----a(14) <= 0.0
+-----a(2) <= 0.4533333333333333
+------c(bacterial-blight)
+------c(bacterial-pustule)
+-----c(bacterial-pustule)
+----c(purple-seed-stain)
+---a(18) <= 1.0
+----a(28) <= 0.0
+-----a(17) <= 0.06103286384976526
+------a(1) <= 2.0
+-------a(3) <= 0.0
+--------c(phyllosticta-leaf-spot)
+--------c(brown-spot)
+-------a(23) <= 0.16097560975609757
+--------a(1) <= 3.4217391304347826
+---------a(8) <= 0.0
+----------c(phyllosticta-leaf-spot)
+----------a(6) <= 0.0
+-----------c(alternarialeaf-spot)
+-----------c(frog-eye-leaf-spot)
+---------a(19) <= 0.0
+----------a(1) <= 5.0
+-----------a(3) <= 1.0
+------------a(9) <= 0.0
+-------------c(alternarialeaf-spot)
+-------------c(frog-eye-leaf-spot)
+------------a(4) <= 1.12
+-------------a(16) <= 0.15566037735849056
+--------------a(1) <= 4.0
+---------------a(2) <= 0.4533333333333333
+----------------c(frog-eye-leaf-spot)
+----------------c(alternarialeaf-spot)
+---------------a(9) <= 0.0
+----------------a(6) <= 2.0
+-----------------c(alternarialeaf-spot)
+-----------------c(frog-eye-leaf-spot)
+----------------c(frog-eye-leaf-spot)
+--------------c(alternarialeaf-spot)
+-------------c(alternarialeaf-spot)
+-----------c(alternarialeaf-spot)
+----------c(frog-eye-leaf-spot)
+--------c(brown-spot)
+------c(phyllosticta-leaf-spot)
+-----c(frog-eye-leaf-spot)
+----c(downy-mildew)
+--a(21) <= 0.0
+---a(12) <= 0.0
+----a(5) <= 0.22885572139303484
+-----c(diaporthe-pod-&-stem-blight)
+-----c(purple-seed-stain)
+----c(powdery-mildew)
+---a(22) <= 1.0
+----a(12) <= 0.0
+-----c(rhizoctonia-root-rot)
+-----a(29) <= 2.0
+------c(anthracnose)
+------c(diaporthe-stem-canker)
+----a(30) <= 0.18571428571428572
+-----a(7) <= 1.0
+------c(phytophthora-rot)
+------c(anthracnose)
+-----c(anthracnose)
+-a(16) <= 0.0
+--a(17) <= 0.06103286384976526
+---a(26) <= 1.0
+----c(brown-stem-rot)
+----c(charcoal-rot)
+---c(herbicide-injury)
+--a(11) <= 0.36086956521739133
+---c(2-4-d-injury)
+---c(cyst-nematode)

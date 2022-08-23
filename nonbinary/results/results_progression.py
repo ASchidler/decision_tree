@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 #     ("dt-nb-q-1.tar.bz2", "DP"), ("dt-nb-q-2.tar.bz2", "DP"),
 #     ("dt-nb-f-1.tar.bz2", "SZ-DP")
 # ]
-logfiles = [("bdd-journal-unpruned-z.tar.bz2", "DT-SLIM")]
+logfiles = [("bdd-journal-unpruned-z.tar.bz2", "DT-SLIM D + S"), ("bdd-journal-unpruned-d.tar.bz2", "DT-SLIM D")]
 # logfiles = [
 #     ("dt-nb-m-1.tar.bz2", "Old Budget"),
 #     ("dt-nb-x-1.tar.bz2", "DT Budget"),

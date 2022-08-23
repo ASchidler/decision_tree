@@ -1,0 +1,31 @@
+a(2) = x
+-a(1) = x
+--a(5) = x
+---c(positive)
+---a(3) = x
+----c(positive)
+----a(4) = x
+-----a(7) = x
+------c(positive)
+------c(negative)
+-----c(negative)
+--a(5) = x
+---c(positive)
+---c(negative)
+-a(5) = x
+--c(positive)
+--a(9) = x
+---a(7) = x
+----c(positive)
+----a(6) = x
+-----a(3) = x
+------c(positive)
+------c(negative)
+-----c(negative)
+---a(7) = x
+----a(4) = x
+-----a(1) = x
+------c(positive)
+------c(negative)
+-----c(negative)
+----c(negative)

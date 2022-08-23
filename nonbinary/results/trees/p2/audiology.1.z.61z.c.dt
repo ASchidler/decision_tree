@@ -1,0 +1,33 @@
+a(15) = t
+-a(66) = a
+--a(2) = normal
+---c(cochlear_poss_noise)
+---a(1) = f
+----a(18) = t
+-----c(cochlear_unknown)
+-----c(cochlear_poss_noise)
+----c(cochlear_age_and_noise)
+--c(mixed_cochlear_unk_discontinuity)
+-a(5) = normal
+--a(1) = t
+---c(cochlear_age)
+---c(cochlear_unknown)
+--a(4) = absent
+---a(3) = t
+----a(60) = elevated
+-----c(conductive_discontinuity)
+-----a(7) = t
+------c(mixed_cochlear_unk_ser_om)
+------a(6) = normal
+-------c(conductive_fixation)
+-------c(mixed_cochlear_unk_fixation)
+----c(normal_ear)
+---a(6) = normal
+----c(cochlear_unknown)
+----a(59) = elevated
+-----c(cochlear_unknown)
+-----a(3) = t
+------c(mixed_cochlear_age_otitis_media)
+------a(1) = t
+-------c(cochlear_age)
+-------c(cochlear_unknown)

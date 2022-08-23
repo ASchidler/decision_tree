@@ -143,7 +143,7 @@ for fl in fls:
             cls = tree.DecisionTreeClassifier()
             cls.fit(x, y)
         else:
-            full_instance, _, _ = parse(pth, fl, c_slice, use_validation=False)
+            full_instance, _, _ = parse(pth, fl, c_slice, use_validation=True)
             full_x, full_y, _, _, _, _ = convert_instance(all_domains, full_instance, f_map, v_map, c_map)
             val_x, val_y, _, _, _, _ = convert_instance(all_domains, instance_validation, f_map, v_map, c_map)
 

@@ -17,18 +17,17 @@ def parse_file(fl, experiment):
     c_val = ""
     parsed_first = False
 
+    start = False
     for ci, cl in enumerate(fl):
         if type(cl) is not str:
             cl = cl.decode('ascii')
 
         # First line
-        if ci == 0:
-            if cl.startswith("Only "):
-                # Error if the index is too high
-                return
-
-        if not parsed_first and cl.startswith("Instance:"):
-            parsed_first = True
+        if cl.startswith("Only "):
+            # Error if the index is too high
+            return
+        if cl.startswith("Instance"):
+            start = True
             data_file = cl.split(",")[0].split(":")[1].strip()
             c_flags = cl[cl.find("(")+1:cl.find(")")].split(",")
             cfs = {x[0]: x[1] for x in (y.strip().split("=") for y in c_flags)}

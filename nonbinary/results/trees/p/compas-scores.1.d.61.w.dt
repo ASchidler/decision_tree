@@ -1,0 +1,121 @@
+a(2) <= 25.0
+-a(5) <= 7.0
+--a(5) <= 4.0
+---a(10) <= 1.0
+----a(1) = Female
+-----a(5) <= 3.0
+------c(Low-Low)
+------a(2) <= 22.0
+-------c(Medium-Low)
+-------c(Low-Low)
+-----a(3) = Hispanic
+------a(5) <= 2.0
+-------c(Low-Low)
+-------c(Medium-Low)
+------a(5) <= 3.0
+-------a(2) <= 22.0
+--------a(5) <= 2.0
+---------a(2) <= 21.0
+----------c(Medium-Low)
+----------c(Low-Low)
+---------c(Medium-Low)
+--------c(Low-Low)
+-------c(Medium-Low)
+----a(5) <= 2.0
+-----c(Low-Low)
+-----a(2) <= 22.0
+------c(Medium-Low)
+------c(Low-Low)
+---a(6) <= 0.0
+----a(5) <= 5.0
+-----a(2) <= 23.0
+------c(Medium-Medium)
+------c(Low-Medium)
+-----c(Medium-Medium)
+----c(Medium-Medium)
+--a(2) <= 23.0
+---a(14) <= 9.0
+----a(5) <= 9.0
+-----a(1) = Female
+------c(Medium-High)
+------c(High-High)
+-----c(High-High)
+----a(5) <= 9.0
+-----a(5) <= 8.0
+------a(14) <= 99.0
+-------c(Medium-High)
+-------c(High-High)
+------a(8) <= 2.0
+-------c(High-High)
+-------c(Medium-High)
+-----c(High-High)
+---a(4) <= 0.0
+----a(8) <= 6.0
+-----a(5) <= 8.0
+------c(Medium-High)
+------c(High-High)
+-----c(High-High)
+----c(High-High)
+-a(5) <= 7.0
+--a(5) <= 4.0
+---c(Low-Low)
+---a(2) <= 28.0
+----a(5) <= 5.0
+-----c(Low-Medium)
+-----a(9) <= 16.0
+------a(8) <= 5.0
+-------a(14) <= 10.0
+--------c(Low-Medium)
+--------c(Medium-Medium)
+-------c(Medium-Medium)
+------a(13) = F
+-------c(Low-Medium)
+-------c(Medium-Medium)
+----c(Low-Medium)
+--a(2) <= 44.0
+---a(10) <= 1.0
+----a(5) <= 8.0
+-----a(9) <= 3
+------a(2) <= 27
+-------a(2) <= 26
+--------a(10) <= 0
+---------c(Medium-High)
+---------c(Low-High)
+--------c(Medium-High)
+-------c(Low-High)
+------a(8) <= 10
+-------a(2) <= 28
+--------c(High-High)
+--------c(Medium-High)
+-------c(Medium-High)
+-----a(5) <= 9.0
+------a(13) = F
+-------a(9) <= 4.0
+--------c(High-High)
+--------c(Medium-High)
+-------c(Medium-High)
+------a(11) = F
+-------a(8) <= 5.0
+--------a(8) <= 0.0
+---------c(Medium-High)
+---------c(High-High)
+--------a(2) <= 35.0
+---------c(Medium-High)
+---------c(High-High)
+-------c(High-High)
+----a(5) <= 8.0
+-----a(11) = M
+------c(Low-High)
+------c(Medium-High)
+-----a(5) <= 9.0
+------a(13) = F
+-------c(Low-High)
+-------c(Medium-High)
+------c(High-High)
+---a(5) <= 9.0
+----a(9) <= 246.0
+-----a(13) = M
+------c(Medium-High)
+------c(Low-High)
+-----c(Medium-High)
+----c(Medium-High)
