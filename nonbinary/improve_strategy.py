@@ -211,6 +211,9 @@ def find_least_occupied_leaf(tree, assigned, ignore=None):
             parent[c_node.right.id] = c_node
             q.extend([c_node.left, c_node.right])
 
+    if c_min is None:
+        return None
+
     c_node = c_min[1]
     while c_node is not None:
         if c_node.id not in ignore:
