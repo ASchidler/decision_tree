@@ -1,3 +1,7 @@
+=== UPDATE ===
+The folder non_binary contains a complete extended re-implementation. The dependencies are the same as for the main folder.
+
+=== ORIGINAL ===
 The code in this repository applies SAT-based local improvement to heuristically computed decision trees, thereby reducing its depth.
 It also contains several decision tree encodings and can produce depth/size optimal decision trees.
 Our approach is discussed in our paper "SAT-based Decision Tree Learning for Large Data Sets" at AAAI'21, soon to be published.
