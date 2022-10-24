@@ -1,0 +1,3 @@
+rain,0,normal,false,+
+overcast,0,normal,true,+
+sunny,2,high,false,-

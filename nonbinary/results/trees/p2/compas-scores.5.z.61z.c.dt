@@ -1,0 +1,25 @@
+a(5) <= 7.5
+-a(5) <= 4.5
+--a(2) <= 22.5
+---a(5) <= 2.5
+----a(2) <= 21.5
+-----c(Medium-Low)
+-----c(Low-Low)
+----c(Medium-Low)
+---c(Low-Low)
+--a(2) <= 24.5
+---c(Medium-Medium)
+---c(Low-Medium)
+-a(5) <= 8.5
+--c(Medium-High)
+--a(5) <= 9.5
+---a(2) <= 25.5
+----a(13) = M
+-----c(High-High)
+-----a(1) = Female
+------c(Medium-High)
+------c(High-High)
+----a(2) <= 44.5
+-----c(Medium-High)
+-----c(Low-High)
+---c(High-High)

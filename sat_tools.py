@@ -20,7 +20,6 @@ class BaseSolver:
         print("Not implemented")
         raise
 
-
 class MiniSatSolver(BaseSolver):
     def run(self, input_file, model_file, mem_limit=0):
         FNULL = open(os.devnull, 'w')
@@ -94,9 +93,9 @@ class WrMaxsatSolver(BaseSolver):
     def run(self, input_file, model_file, timeout=0):
         with open(model_file, "w") as mf:
             if timeout == 0:
-                return subprocess.Popen(['uwrmaxsat', input_file, '-m'], stdout=mf)
+                return subprocess.Popen(['bin/uwrmaxsat', input_file, '-m'], stdout=mf)
             else:
-                return subprocess.Popen(['uwrmaxsat', input_file, '-m', f'-cpu-lim={timeout}'],
+                return subprocess.Popen(['bin/uwrmaxsat', input_file, '-m', f'-cpu-lim={timeout}'],
                                         stdout=mf)
 
     def parse(self, f):

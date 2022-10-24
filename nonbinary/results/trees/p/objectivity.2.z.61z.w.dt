@@ -1,0 +1,9 @@
+a(34) <= 18.0
+-a(22) <= 39
+--c(objective)
+--c(subjective)
+-a(41) <= 12
+--c(subjective)
+--a(25) <= 8
+---c(objective)
+---c(subjective)

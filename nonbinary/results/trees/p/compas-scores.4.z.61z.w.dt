@@ -1,0 +1,203 @@
+a(5) <= 7.0
+-a(2) <= 28.0
+--a(5) <= 4.0
+---a(2) <= 22.0
+----a(5) <= 2.0
+-----a(2) <= 21.0
+------c(Medium-Low)
+------c(Low-Low)
+-----a(1) = Female
+------a(2) <= 20.0
+-------c(Medium-Low)
+-------a(8) <= 1.0
+--------c(Low-Low)
+--------c(Medium-Low)
+------c(Medium-Low)
+----a(2) <= 25.0
+-----a(13) = F
+------c(Low-Low)
+------a(5) <= 3.0
+-------a(5) <= 2.0
+--------c(Low-Low)
+--------a(1) = Female
+---------c(Low-Low)
+---------a(10) <= 20.0
+----------a(3) = Hispanic
+-----------c(Medium-Low)
+-----------a(2) <= 23.0
+------------a(9) <= 1.0
+-------------a(11) = O
+--------------c(Medium-Low)
+--------------c(Low-Low)
+-------------c(Medium-Low)
+------------c(Low-Low)
+----------c(Low-Low)
+-------a(3) = African-American
+--------a(10) <= 20.0
+---------a(1) = Female
+----------c(Low-Low)
+----------c(Medium-Low)
+---------c(Low-Low)
+--------a(9) <= 5.0
+---------a(14) <= 0.0
+----------a(1) = Female
+-----------c(Low-Low)
+-----------c(Medium-Low)
+----------c(Low-Low)
+---------c(Low-Low)
+-----c(Low-Low)
+---a(2) <= 25.0
+----a(2) <= 23.0
+-----a(4) <= 0.0
+------c(Medium-Medium)
+------c(High-Medium)
+-----a(9) <= 2.0
+------a(5) <= 5.0
+-------c(Low-Medium)
+-------a(6) <= 0.0
+--------c(Medium-Medium)
+--------c(Low-Medium)
+------a(9) <= 3.0
+-------c(Medium-Medium)
+-------a(5) <= 5.0
+--------c(Low-Medium)
+--------c(Medium-Medium)
+----a(8) <= 9.0
+-----a(5) <= 5.0
+------a(14) <= 67.0
+-------c(Low-Medium)
+-------c(Medium-Medium)
+------a(14) <= 38.0
+-------a(3) = Caucasian
+--------c(Low-Medium)
+--------c(Medium-Medium)
+-------c(Medium-Medium)
+-----a(8) <= 11.0
+------c(Medium-Medium)
+------c(Low-Medium)
+--a(5) <= 6.0
+---a(5) <= 4.0
+----c(Low-Low)
+----a(2) <= 38.0
+-----a(2) <= 30.0
+------c(Low-Medium)
+------a(9) <= 16.0
+-------a(8) <= 10.0
+--------a(8) <= 7.0
+---------c(Low-Medium)
+---------c(Low-Medium)
+--------c(Low-Medium)
+-------a(9) <= 54.0
+--------c(Low-Medium)
+--------a(3) = Caucasian
+---------c(Low-Medium)
+---------a(9) <= 191.0
+----------c(Low-Medium)
+----------c(Low-Medium)
+-----a(10) <= 1.0
+------a(2) <= 54.0
+-------c(Low-Medium)
+-------a(14) <= 9.0
+--------c(Low-Medium)
+--------c(Medium-Medium)
+------c(Low-Medium)
+---a(2) <= 33
+----a(8) <= 6
+-----a(11) = F
+------a(2) <= 29
+-------c(Medium-Medium)
+-------c(Low-Medium)
+------c(Medium-Medium)
+-----c(Low-Medium)
+----c(Low-Medium)
+-a(5) <= 9.0
+--a(2) <= 23.0
+---a(9) <= 3
+----a(9) <= 1
+-----a(9) <= 0
+------a(10) <= 1
+-------c(Medium-High)
+-------a(3) = Caucasian
+--------c(High-High)
+--------c(Medium-High)
+------a(16) = O
+-------a(1) = Male
+--------c(High-High)
+--------c(Medium-High)
+-------c(Medium-High)
+-----a(8) <= 1
+------a(1) = Male
+-------c(High-High)
+-------c(Medium-High)
+------c(Medium-High)
+----a(13) = O
+-----a(1) = Male
+------c(High-High)
+------c(Medium-High)
+-----a(13) = F
+------a(5) <= 8
+-------c(Medium-High)
+-------c(High-High)
+------c(High-High)
+---a(2) <= 29.0
+----a(2) <= 25.0
+-----a(5) <= 8.0
+------c(Medium-High)
+------a(3) = Caucasian
+-------c(Medium-High)
+-------c(High-High)
+-----a(5) <= 8.0
+------a(9) <= 19.0
+-------a(9) <= 4.0
+--------a(8) <= 11.0
+---------a(10) <= 0.0
+----------c(Medium-High)
+----------a(13) = M
+-----------c(Low-High)
+-----------c(Medium-High)
+---------c(Low-High)
+--------c(Low-High)
+-------c(Medium-High)
+------c(Medium-High)
+----a(6) <= 0.0
+-----a(2) <= 35.0
+------a(10) <= 67.0
+-------a(5) <= 8.0
+--------a(3) = Caucasian
+---------c(Low-High)
+---------a(10) <= 25.0
+----------c(Low-High)
+----------c(Low-High)
+--------c(Medium-High)
+-------a(5) <= 8.0
+--------c(Medium-High)
+--------c(Low-High)
+------a(5) <= 8.0
+-------c(Low-High)
+-------a(9) <= 0.0
+--------c(Medium-High)
+--------c(Low-High)
+-----c(Medium-High)
+--a(2) <= 39.0
+---a(2) <= 26.0
+----c(High-High)
+----a(10) <= 2.0
+-----a(8) <= 0.0
+------a(1) = Female
+-------c(Medium-High)
+-------a(9) <= 2.0
+--------c(High-High)
+--------c(Medium-High)
+------a(14) <= 25.0
+-------a(9) <= 103.0
+--------a(4) <= 1.0
+---------c(High-High)
+---------c(Medium-High)
+--------c(High-High)
+-------a(1) = Female
+--------c(Medium-High)
+--------c(Medium-High)
+-----c(High-High)
+---a(2) <= 46.0
+----c(High-High)
+----c(Medium-High)

@@ -1,0 +1,9 @@
+a(34) <= 15.0
+-c(objective)
+-a(19) <= 7
+--c(subjective)
+--a(3) <= 34
+---a(52) <= 18
+----c(objective)
+----c(subjective)
+---c(subjective)

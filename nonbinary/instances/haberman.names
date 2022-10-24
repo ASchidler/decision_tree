@@ -1,0 +1,4 @@
+1, 2.
+Age_of_patient_at_time_of_operation: continuous.
+Patients_year_of_operation: continuous.
+Number_of_positive_axillary_nodes_detected: continuous.

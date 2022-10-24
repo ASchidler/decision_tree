@@ -1,0 +1,14 @@
+0, 1.
+Age: continuous.
+Sex: continuous.
+Chest pain type: continuous.
+Trestbps: continuous.
+Cholesterol: continuous.
+Fasting blood sugar &lt: continuous.
+120: continuous.
+Resting ecg: continuous.
+Max heart rate: continuous.
+Exercise induced angina: continuous.
+Oldpeak: continuous.
+Slope: continuous.
+Number of vessels colored: continuous.

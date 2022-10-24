@@ -1,12 +1,13 @@
 import sys
 from collections import defaultdict
 
-import bdd_instance
-import sat_tools
+import class_instance
+from pysat.solvers import Glucose3, Glucose4
 from decision_tree import DecisionTreeNode, DecisionTreeLeaf
-from tree_depth_encoding import TreeDepthEncoding
-import aaai_encoding
-import switching_encoding
+from sat import switching_encoding, encoding_base
+
+# 500 Mio. takes ~ < 16 GB, 250 Mio. ~ < 12 GB, 200 Mio. sometimes goes over 8 GB
+literal_limit = 200 * 1000 * 1000 # 200 * 1000 * 1000
 
 
 def assign_samples(tree, instance):
@@ -61,6 +62,7 @@ def replace(old_tree, new_tree, root):
     # Clean tree
     q = [root]
     ids = []
+
     while q:
         r_n = q.pop()
 
@@ -74,31 +76,51 @@ def replace(old_tree, new_tree, root):
             old_tree.nodes[r_n.id] = None
             ids.append(r_n.id)
 
-    # Add other tree
-    root.feature = new_tree.root.feature
-    q = [(new_tree.root, root)]
+    # Add other tree. First case is if we reduced the tree to one node.
+    if new_tree.root.is_leaf:
+        # Find parent
+        def find_parent(c_n, target_id):
+            if not c_n.is_leaf:
+                if c_n.left.id == target_id:
+                    return c_n, True
+                elif c_n.right.id == target_id:
+                    return c_n, False
+                ll = find_parent(c_n.left, target_id)
+                return ll if ll else find_parent(c_n.right, target_id)
+            return None
+        parent, is_left = find_parent(old_tree.root, root.id)
+        n_n = DecisionTreeLeaf(new_tree.root.cls, root.id)
+        if is_left:
+            parent.left = n_n
+        else:
+            parent.right = n_n
+        old_tree.nodes[root.id] = n_n
+    else:
+        root.feature = new_tree.root.feature
+        q = [(new_tree.root, root)]
+    
+        while q:
+            r_n, r_o = q.pop()
+    
+            if len(ids) < 2:  # Lower max. depth may still have more nodes
+                ids.append(len(old_tree.nodes))
+                ids.append(len(old_tree.nodes) + 1)
+                old_tree.nodes.append(None)
+                old_tree.nodes.append(None)
+    
+            cs = [(r_n.left, True), (r_n.right, False)]
+            for nn, pol in cs:
+                if nn.is_leaf:
+                    old_tree.add_leaf(ids.pop(), r_o.id, pol, nn.cls)
+                else:
+                    n_r = old_tree.add_node(ids.pop(), r_o.id, nn.feature, pol)
+                    q.append((nn, n_r))
+    
+        # Sub-tree is now been added in place of the old sub-tree
 
-    while q:
-        r_n, r_o = q.pop()
 
-        if len(ids) < 2:  # Lower max. depth may still have more nodes
-            ids.append(len(old_tree.nodes))
-            ids.append(len(old_tree.nodes) + 1)
-            old_tree.nodes.append(None)
-            old_tree.nodes.append(None)
+def stitch(old_tree, new_tree, root, instance):
 
-        cs = [(r_n.left, True), (r_n.right, False)]
-        for nn, pol in cs:
-            if nn.is_leaf:
-                old_tree.add_leaf(ids.pop(), r_o.id, pol, nn.cls)
-            else:
-                n_r = old_tree.add_node(ids.pop(), r_o.id, nn.feature, pol)
-                q.append((nn, n_r))
-
-    # Sub-tree is now been added in place of the old sub-tree
-
-
-def stitch(old_tree, new_tree, root):
     # Remove unnecessary
 
     # find leaves in new node
@@ -108,13 +130,14 @@ def stitch(old_tree, new_tree, root):
     while q:
         c_q = q.pop()
         if c_q.is_leaf:
-            if c_q.cls >= 0 and c_q.cls != False and c_q.cls != True:
+            # TODO: Find out what the second part did
+            if not c_q.cls.startswith("-"): #and c_q.cls not in instance.classes:
                 leaves.append(c_q)
-                hit_count[c_q.cls].append(c_q)
+                hit_count[int(c_q.cls)].append(c_q)
         else:
             q.extend(c_q.get_children().values())
 
-    original_ids = set(x.cls for x in leaves)
+    original_ids = set(int(x.cls) for x in leaves)
 
     # Duplicate structures for leaves used multiple times
     for k, v in hit_count.items():
@@ -126,7 +149,8 @@ def stitch(old_tree, new_tree, root):
                     old_tree.nodes.append(DecisionTreeLeaf(old_tree.nodes[k].cls, n_id))
                 else:
                     old_tree.nodes.append(DecisionTreeNode(old_tree.nodes[k].feature, n_id))
-                c_l.cls = n_id
+                    
+                c_l.cls = f"{n_id}"
 
                 if not old_tree.nodes[k].is_leaf:
                     q = [(old_tree.nodes[k], old_tree.nodes[-1])]
@@ -158,32 +182,54 @@ def stitch(old_tree, new_tree, root):
                 ids.append(c_q.id)
 
     # Stitch in new tree
-    q = [(root, new_tree.get_root())]
-    root.feature = new_tree.get_root().feature
-    root.left = None
-    root.right = None
+    if new_tree.root.is_leaf:
+        # Find parent
+        def find_parent(c_n, target_id):
+            if not c_n.is_leaf:
+                if c_n.left.id == target_id:
+                    return c_n, True
+                elif c_n.right.id == target_id:
+                    return c_n, False
+                ll = find_parent(c_n.left, target_id)
+                return ll if ll else find_parent(c_n.right, target_id)
+            return None
+        parent, is_left = find_parent(old_tree.root, root.id)
+        n_n = DecisionTreeLeaf(new_tree.root.cls, root.id)
+        if is_left:
+            parent.left = n_n
+        else:
+            parent.right = n_n
+        old_tree.nodes[root.id] = n_n
+    else:
+        q = [(root, new_tree.get_root())]
+        root.feature = new_tree.get_root().feature
+        root.left = None
+        root.right = None
 
-    while q:
-        o_r, n_r = q.pop()
+        while q:
+            o_r, n_r = q.pop()
 
-        if len(ids) < 2:  # Lower max. depth may still have more nodes
-            ids.append(len(old_tree.nodes))
-            ids.append(len(old_tree.nodes) + 1)
-            old_tree.nodes.append(None)
-            old_tree.nodes.append(None)
+            if len(ids) < 2:  # Lower max. depth may still have more nodes
+                ids.append(len(old_tree.nodes))
+                ids.append(len(old_tree.nodes) + 1)
+                old_tree.nodes.append(None)
+                old_tree.nodes.append(None)
 
-        for c_p, c_c in [(True, n_r.get_children()[True]), (False, n_r.get_children()[False])]:
-            if c_c.is_leaf:
-                if c_c.cls < 0:
-                    old_tree.add_leaf(ids.pop(), o_r.id, c_p, True if c_c.cls == -2 else False)
-                else:
-                    if c_p:
-                        o_r.left = old_tree.nodes[c_c.cls]
+            for c_p, c_c in [(True, n_r.get_children()[True]), (False, n_r.get_children()[False])]:
+                if c_c.is_leaf:
+                    if c_c.cls.startswith("-"):
+                        old_tree.add_leaf(ids.pop(), o_r.id, c_p, c_c.cls[1:])
                     else:
-                        o_r.right = old_tree.nodes[c_c.cls]
-            else:
-                n_r = old_tree.add_node(ids.pop(), o_r.id, c_c.feature, c_p)
-                q.append((n_r, c_c))
+                        if c_p:
+                            o_r.left = old_tree.nodes[int(c_c.cls)]
+                        else:
+                            o_r.right = old_tree.nodes[int(c_c.cls)]
+                else:
+                    n_r = old_tree.add_node(ids.pop(), o_r.id, c_c.feature, c_p)
+                    q.append((n_r, c_c))
+
+    # TODO: This is necessary if sub-trees are duplicated, but only has to be performed for the sub-tree
+    old_tree.clean(instance)
 
 
 def build_unique_set(root, samples, examples, limit=sys.maxsize):
@@ -209,8 +255,9 @@ def build_unique_set(root, samples, examples, limit=sys.maxsize):
     for i in range(1, len(c_features) + 1):
         feature_map[i] = c_features[i - 1]
 
-    new_instance = bdd_instance.BddInstance()
-    added = set()
+
+    new_instance = class_instance.ClassificationInstance()
+    added = {}
     for s in samples:
         values = [None for _ in range(0, len(feature_map) + 1)]
         for k, v in feature_map.items():
@@ -218,14 +265,20 @@ def build_unique_set(root, samples, examples, limit=sys.maxsize):
 
         tp = tuple(values)
         if tp not in added:
-            added.add(tp)
+            added[tp] = examples[s].cls
             new_instance.add_example(
-                bdd_instance.BddExamples(values, examples[s].cls, examples[s].id))
+                class_instance.ClassificationExample(values, examples[s].cls, examples[s].id))
+        else:
+            # This check is necessary: if the decision tree is pruned, some samples may be misclassified.
+            # In that case, the feature set of the sub-tree may not be a support set.
+            if added[tp] != examples[s].cls:
+                return None
 
     return new_instance, feature_map, c_leafs, depth
 
 
-def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit, reduce):
+
+def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit, reduce, encoding):
     max_dist = depth_from(root)
     q = [[] for _ in range(0, max_dist+1)]
     q[max_dist].append((0, root))
@@ -237,7 +290,7 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
     max_depth = 0
 
     while q:
-        while not q[-1]:
+        while q and not q[-1]:
             q.pop()
 
         if not q:
@@ -262,6 +315,7 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
             c_n = tree.nodes[cl]
             if not c_n.is_leaf and c_n.left.is_leaf and c_n.right.is_leaf:
                 frontier.remove(cl)
+                features.add(c_n.feature)
                 frontier.add(c_n.left.id)
                 frontier.add(c_n.right.id)
 
@@ -274,43 +328,51 @@ def build_reduced_set(root, tree, examples, assigned, depth_limit, sample_limit,
             for c_leaf in frontier:
                 for s in assigned[c_leaf]:
                     if tree.nodes[c_leaf].is_leaf:
-                        class_mapping[s] = -2 if tree.nodes[c_leaf].cls else -1
+                        class_mapping[s] = f"-{tree.nodes[c_leaf].cls}"
                     else:
                         cnt_internal += 1
-                        class_mapping[s] = c_leaf
+                        class_mapping[s] = f"{c_leaf}"
 
             # If all "leaves" are leaves, this method is not required, as it will be handled by separate improvements
             if cnt_internal > 0:
-                new_instance = bdd_instance.BddInstance()
+                new_instance = class_instance.ClassificationInstance()
                 for s in assigned[root.id]:
-                    new_instance.add_example(bdd_instance.BddExamples(examples[s].features, class_mapping[s], examples[s].id))
+                    new_instance.add_example(class_instance.ClassificationExample(examples[s].features, class_mapping[s], examples[s].id))
 
                 if reduce:
                     # key = new_instance.min_key(randomize=True)
-                    bdd_instance.reduce(new_instance, randomized_runs=1)
+                    class_instance.reduce(new_instance, randomized_runs=1, slow=len(new_instance.examples) < 5000)
                 else:
-                    bdd_instance.reduce(new_instance, min_key=features)
+                    class_instance.reduce(new_instance, min_key=features)
 
                 # TODO: This leads to adding as many nodes as possible. To emphasize the remaining depth more,
                 #  one should stop when the node with the highest remaining depth fails due to too high depth
                 #  or too many samples
-                if len(new_instance.examples) <= sample_limit[c_max_depth]:
-                    last_instance = new_instance
-                    max_depth = c_max_depth
+                if encoding.estimate_size(new_instance, c_max_depth-1) <= literal_limit:
+                    if len(new_instance.examples) <= sample_limit[c_max_depth] \
+                            or (last_instance is None and len(new_instance.examples) < sample_limit[1]):
+                        last_instance = new_instance
+                        max_depth = c_max_depth
                 else:
                     q = None
 
     return last_instance, max_depth
 
 
-def build_runner(tmp_dir):
-    return sat_tools.SatRunner(switching_encoding.SwitchingEncoding, sat_tools.GlucoseSolver(), base_path=tmp_dir)
-    #return sat_tools.SatRunner(aaai_encoding.AAAIEncoding, sat_tools.GlucoseSolver(), base_path=tmp_dir)
-    #return sat_tools.SatRunner(TreeDepthEncoding, sat_tools.GlucoseSolver(), base_path=tmp_dir)
+def build_runner():
+    return switching_encoding, Glucose3
 
 
-def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, tmp_dir="."):
-    runner = build_runner(tmp_dir)
+def _get_max_bound(size, sample_limit):
+    new_ub = -1
+    for cb, sl in enumerate(sample_limit):
+        if sl < size:
+            new_ub = cb
+    return new_ub
+
+
+def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, opt_size=False):
+    runner, slv = build_runner()
 
     prev_instance = None
     prev_idx = path_idx
@@ -319,9 +381,16 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
         c_d = depth_from(path[path_idx])
         if c_d > depth_limit:
             break
+
         new_instance = build_unique_set(path[path_idx], assigned[path[path_idx].id], instance.examples)
-        if len(new_instance[0].examples) > sample_limit[c_d]:
+        if new_instance is None:
             break
+
+        if runner.estimate_size(new_instance[0], c_d) > literal_limit:
+            break
+        if len(new_instance[0].examples) > sample_limit[c_d]:
+            if prev_instance is not None or len(new_instance[0].examples) > sample_limit[1]:
+                break
 
         prev_instance = new_instance
         prev_idx = path_idx
@@ -331,9 +400,13 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
         node = path[prev_idx]
         new_instance, feature_map, c_leafs, _ = prev_instance
         cd = depth_from(node)
+        
+        new_ub = _get_max_bound(len(prev_instance[0].examples), sample_limit)
+        if new_ub < 1:
+            return False, prev_idx
 
         # Solve instance
-        new_tree, _ = runner.run(new_instance, cd - 1, u_bound=cd - 1, timeout=time_limit)
+        new_tree = encoding_base.run(runner, new_instance, slv, start_bound=min(new_ub, cd-1), timeout=time_limit, ub=min(new_ub, cd-1), opt_size=opt_size)
 
         # Either the branch is done, or
         if new_tree is None:
@@ -350,12 +423,13 @@ def leaf_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample
 
             # Clean tree
             replace(tree, new_tree, node)
+
             return True, prev_idx
 
     return False, prev_idx
 
 
-def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, tmp_dir="."):
+def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, opt_size=False):
     last_idx = path_idx
     while path_idx < len(path):
         c_d = depth_from(path[path_idx])
@@ -366,19 +440,23 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
 
     node = path[last_idx]
     c_d = depth_from(node)
-    if not (2 < c_d <= depth_limit) or len(assigned[node.id]) > sample_limit[c_d]:
+    if c_d <= 2:
         return False, last_idx
 
-    runner = build_runner(tmp_dir)
+    new_ub = _get_max_bound(len(assigned[node.id]), sample_limit)
 
-    new_instance = bdd_instance.BddInstance()
+    if new_ub < 1:
+        return False, last_idx
+
+    runner, slv = build_runner()
+    new_instance = class_instance.ClassificationInstance()
     for s in assigned[node.id]:
         new_instance.add_example(instance.examples[s].copy())
 
-    if len(new_instance.examples) == 0:
+    if len(new_instance.examples) == 0 or runner.estimate_size(new_instance, c_d-1) > literal_limit:
         return False, last_idx
 
-    new_tree, _ = runner.run(new_instance, c_d-1, u_bound=c_d-1, timeout=time_limit)
+    new_tree = encoding_base.run(runner, new_instance, slv, start_bound=min(new_ub, c_d - 1), timeout=time_limit, ub=min(new_ub, c_d - 1), opt_size=opt_size)
     if new_tree is None:
         return False, last_idx
     else:
@@ -386,8 +464,8 @@ def leaf_select(tree, instance, path_idx, path, assigned, depth_limit, sample_li
         return True, last_idx
 
 
-def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, tmp_dir="."):
-    runner = build_runner(tmp_dir)
+def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, opt_size=False):
+    runner, slv = build_runner()
 
     if path[path_idx].is_leaf:
         return False, path_idx
@@ -397,45 +475,59 @@ def mid_rearrange(tree, instance, path_idx, path, assigned, depth_limit, sample_
 
     for r in range(1, depth_limit+1):
         c_instance = build_unique_set(c_parent, assigned[c_parent.id], instance.examples, r)
-
-        if len(c_instance[0].examples) > sample_limit[c_instance[3]]:
+        if c_instance is None:
             break
+        if runner.estimate_size(c_instance[0], r-1) > literal_limit:
+            break
+        if len(c_instance[0].examples) > sample_limit[c_instance[3]]:
+            if last_instance is not None or len(c_instance[0].examples) > sample_limit[1]:
+                break
 
         last_instance = c_instance
 
-    if last_instance[3] <= 1:
+    if last_instance is None or last_instance[3] <= 1:
         return False, path_idx
 
-    class_mapping = {}
+    classes = set()
+    class_map = {}
     for cl in last_instance[2]:
-        for al in assigned[cl]:
-            class_mapping[al + 1] = cl
+        if tree.nodes[cl].is_leaf:
+            for al in assigned[cl]:
+                class_map[al+1] = f"-{tree.nodes[cl].cls}"
+        else:
+            for al in assigned[cl]:
+                class_map[al + 1] = f"{cl}"
 
-    for ex in last_instance[0].examples:
-        ex.cls = class_mapping[ex.id]
+    for c_ex in last_instance[0].examples:
+        c_ex.cls = class_map[c_ex.id]
+        classes.add(c_ex.cls)
+    last_instance[0].classes = classes
 
-    if len(last_instance[0].examples) == 0:
+    new_ub = _get_max_bound(len(last_instance[0].examples), sample_limit)
+    if len(last_instance[0].examples) == 0 or new_ub < 1:
         return False, path_idx
 
-    new_tree, _ = runner.run(last_instance[0], last_instance[3] - 1, u_bound=last_instance[3] - 1, timeout=time_limit)
+    new_tree = encoding_base.run(runner, last_instance[0], slv, start_bound=min(new_ub, last_instance[3] - 1),
+                          timeout=time_limit, ub=min(new_ub, last_instance[3] - 1), opt_size=opt_size)
 
     if new_tree is not None:
-        q = [new_tree.nodes[0]]
+        q = [new_tree.root]
+
         while q:
             c_q = q.pop()
             if not c_q.is_leaf:
                 c_q.feature = last_instance[1][c_q.feature]
-                q.append(c_q.children[True])
-                q.append(c_q.children[False])
+                q.append(c_q.left)
+                q.append(c_q.right)
         # Stitch the new tree in the middle
-        stitch(tree, new_tree, c_parent)
+        stitch(tree, new_tree, c_parent, instance)
         return True, path_idx
 
     return False, path_idx
 
 
-def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, tmp_dir="."):
-    runner = build_runner(tmp_dir)
+def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_limit, time_limit, opt_size=False):
+    runner, slv = build_runner()
 
     prev_instance = None
     prev_idx = path_idx
@@ -447,17 +539,21 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
         if c_d > depth_limit:
             break
 
-        new_instance = bdd_instance.BddInstance()
+        new_instance = class_instance.ClassificationInstance()
+
         for s in assigned[path[path_idx].id]:
             new_instance.add_example(instance.examples[s].copy())
 
         if len(new_instance.examples) == 0:
             break
 
-        bdd_instance.reduce(new_instance, randomized_runs=1)
+        class_instance.reduce(new_instance, randomized_runs=1, slow=len(new_instance.examples) < 5000)
 
-        if len(new_instance.examples) > sample_limit[c_d]:
+        if runner.estimate_size(new_instance, c_d-1) > literal_limit:
             break
+        if len(new_instance.examples) > sample_limit[c_d]:
+            if prev_instance is not None or len(new_instance.examples) > sample_limit[1]:
+                break
 
         prev_instance = new_instance
         prev_idx = path_idx
@@ -466,7 +562,12 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
     if prev_instance is not None:
         node = path[prev_idx]
         nd = depth_from(node)
-        new_tree, _ = runner.run(prev_instance,  nd-1, u_bound=nd-1, timeout=time_limit)
+        new_ub = _get_max_bound(len(prev_instance.examples), sample_limit)
+        if new_ub < 1:
+            return False, prev_idx
+
+        new_tree = encoding_base.run(runner, prev_instance, slv, start_bound=min(new_ub, nd - 1), timeout=time_limit,
+                              ub=min(new_ub, nd - 1), opt_size=opt_size)
 
         if new_tree is not None:
             prev_instance.unreduce_instance(new_tree)
@@ -477,26 +578,30 @@ def reduced_leaf(tree, instance, path_idx, path, assigned, depth_limit, sample_l
     return False, prev_idx
 
 
-def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit, depth_limit, time_limit, tmp_dir="."):
-    runner = build_runner(tmp_dir)
+def mid_reduced(tree, instance, path_idx, path, assigned, reduce, sample_limit, depth_limit, time_limit, opt_size=False):
+    runner, slv = build_runner()
 
     # Exclude nodes with fewer than limit samples, as this will be handled by the leaf methods
     if path[path_idx].is_leaf:
         return False, path_idx
 
     c_parent = path[path_idx]
-    instance, i_depth = build_reduced_set(c_parent, tree, instance.examples, assigned, depth_limit, sample_limit, reduce)
+    new_instance, i_depth = build_reduced_set(c_parent, tree, instance.examples, assigned, depth_limit, sample_limit, reduce, runner)
 
-    if instance is None or len(instance.examples) == 0:
+    if new_instance is None or len(new_instance.examples) == 0:
+        return False, path_idx
+    new_ub = _get_max_bound(len(new_instance.examples), sample_limit)
+    if new_ub < 1:
         return False, path_idx
 
-    new_tree, _ = runner.run(instance, i_depth - 1, u_bound=i_depth-1, timeout=time_limit)
-
+    new_tree = encoding_base.run(runner, new_instance, slv, start_bound=min(new_ub, i_depth - 1), timeout=time_limit,
+                          ub=min(new_ub, i_depth - 1), opt_size=opt_size)
     if new_tree is not None:
-        instance.unreduce_instance(new_tree)
+        new_instance.unreduce_instance(new_tree)
 
         # Stitch the new tree in the middle
-        stitch(tree, new_tree, c_parent)
+        stitch(tree, new_tree, c_parent, instance)
+
         return True, path_idx
 
     return False, path_idx

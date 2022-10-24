@@ -1,0 +1,23 @@
+a(22) <= 35.0
+-a(42) <= 1.0
+--a(43) <= 0.0
+---c(objective)
+---a(43) <= 1.0
+----a(31) <= 10.0
+-----c(objective)
+-----c(subjective)
+----c(subjective)
+--a(42) <= 2.0
+---a(38) <= 1.0
+----c(subjective)
+----c(objective)
+---c(subjective)
+-a(41) <= 11.0
+--c(subjective)
+--a(42) <= 0.0
+---c(objective)
+---a(24) <= 0.0
+----a(20) <= 61.0
+-----c(objective)
+-----c(subjective)
+----c(subjective)
